@@ -18,7 +18,7 @@ class AIConnectionError(RuntimeError):
 
 
 _OFFLINE_MSG = (
-    "⚠️ **AI service unavailable.**\n\n"
+    " **AI service unavailable.**\n\n"
     "Set the NVIDIA API key in your environment and try again."
 )
 

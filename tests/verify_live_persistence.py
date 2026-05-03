@@ -23,27 +23,27 @@ def run_test():
         
     # Check if logged in (session cookie)
     if not S.cookies:
-        print("❌ Login Failed: No cookies")
+        print(" Login Failed: No cookies")
         return
         
-    print("✅ Logged In")
+    print(" Logged In")
     
     # 2. Create Habit
     print("Creating Habit...")
     res = S.post(f"{BASE_URL}/api/habits", json={
         "title": "Persistence Test Habit",
         "category": "Test",
-        "icon": "🧪",
+        "icon": "",
         "time_of_day": "Morning"
     })
     
     if res.status_code != 200:
-        print(f"❌ Create Failed: {res.text}")
+        print(f" Create Failed: {res.text}")
         return
         
     habit_data = res.json()
     habit_id = habit_data.get('id')
-    print(f"✅ Created Habit ID: {habit_id}")
+    print(f" Created Habit ID: {habit_id}")
     
     # 3. Verify Initial State (Should be False)
     res = S.get(f"{BASE_URL}/api/habits")
@@ -64,9 +64,9 @@ def run_test():
     print(f"State After Toggle: {my_habit['completed_today']}")
     
     if my_habit['completed_today']:
-        print("✅ PASSED: Server persisted state.")
+        print(" PASSED: Server persisted state.")
     else:
-        print("❌ FAILED: Server returned False after toggle!")
+        print(" FAILED: Server returned False after toggle!")
 
 if __name__ == "__main__":
     try:

@@ -9,7 +9,7 @@ DB_NAME = "partnerai.db"
 
 def list_users():
     if not os.path.exists(DB_NAME):
-        print(f"❌ Database {DB_NAME} not found.")
+        print(f" Database {DB_NAME} not found.")
         return
 
     conn = sqlite3.connect(DB_NAME)

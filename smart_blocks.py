@@ -14,31 +14,31 @@ from smart_blocks_db import (
 BLOCK_TYPES = {
     'idea': {
         'name': 'Idea Block',
-        'icon': '💡',
+        'icon': '',
         'description': 'Startup ideas, content ideas, brainstorming',
         'template': {'tags': [], 'priority': 'medium'}
     },
     'task': {
         'name': 'Task Block',
-        'icon': '✅',
+        'icon': '',
         'description': 'Daily/weekly tasks, actionable items',
         'template': {'due_date': None, 'priority': 'medium', 'estimated_time': None}
     },
     'learning': {
         'name': 'Learning Block',
-        'icon': '📘',
+        'icon': '',
         'description': 'What you learned today, insights',
         'template': {'source': None, 'key_points': []}
     },
     'habit': {
         'name': 'Habit Block',
-        'icon': '🔁',
+        'icon': '',
         'description': 'Habits and streaks tracking',
         'template': {'frequency': 'daily', 'target_time': None, 'current_streak': 0}
     },
     'reflection': {
         'name': 'Reflection Block',
-        'icon': '📊',
+        'icon': '',
         'description': 'Weekly self-review, progress analysis',
         'template': {'week': None, 'wins': [], 'improvements': []}
     }

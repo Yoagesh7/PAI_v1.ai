@@ -1,4 +1,4 @@
-"""rag_engine.py — lightweight retrieval helpers for PartnerAI.
+"""rag_engine.py  lightweight retrieval helpers for PartnerAI.
 
 This version avoids heavy local embedding libraries so it can run in
 serverless environments such as Vercel.
@@ -153,7 +153,7 @@ def ingest_domain_file(domain_type: str, file_path: str) -> int:
         conn.commit()
 
     domain_knowledge_index.size += len(chunks)
-    print(f"📚 Ingested {len(chunks)} chunks from '{file_path}' → domain '{domain_type}'", flush=True)
+    print(f" Ingested {len(chunks)} chunks from '{file_path}'  domain '{domain_type}'", flush=True)
     return len(chunks)
 
 
@@ -182,7 +182,7 @@ def init_rag_system():
     user_memory_index.size = int(user_count or 0)
     domain_knowledge_index.size = int(domain_count or 0)
     print(
-        f"✅ RAG system initialised (memories={user_memory_index.size}, domain={domain_knowledge_index.size})",
+        f" RAG system initialised (memories={user_memory_index.size}, domain={domain_knowledge_index.size})",
         flush=True,
     )
 
@@ -194,7 +194,7 @@ def _truncate_to_words(text: str, max_words: int) -> str:
     words = text.split()
     if len(words) <= max_words:
         return text
-    return " ".join(words[:max_words]) + "…"
+    return " ".join(words[:max_words]) + ""
 
 
 def _domain_from_goal(goal: str) -> str:
@@ -252,7 +252,7 @@ def maybe_extract_memory(user_id: int, user_message: str):
             if SequenceMatcher(None, existing[0].lower(), lower).ratio() > 0.75:
                 return
         save_user_memory(user_id, user_message)
-        print(f"🧠 Saved memory for user {user_id}: {user_message[:60]}…", flush=True)"""rag_engine.py — lightweight retrieval helpers for PartnerAI.
+        print(f" Saved memory for user {user_id}: {user_message[:60]}", flush=True)"""rag_engine.py  lightweight retrieval helpers for PartnerAI.
 
 This version avoids heavy local embedding libraries so it can run in
 serverless environments such as Vercel.
@@ -407,7 +407,7 @@ def ingest_domain_file(domain_type: str, file_path: str) -> int:
         conn.commit()
 
     domain_knowledge_index.size += len(chunks)
-    print(f"📚 Ingested {len(chunks)} chunks from '{file_path}' → domain '{domain_type}'", flush=True)
+    print(f" Ingested {len(chunks)} chunks from '{file_path}'  domain '{domain_type}'", flush=True)
     return len(chunks)
 
 
@@ -436,7 +436,7 @@ def init_rag_system():
     user_memory_index.size = int(user_count or 0)
     domain_knowledge_index.size = int(domain_count or 0)
     print(
-        f"✅ RAG system initialised (memories={user_memory_index.size}, domain={domain_knowledge_index.size})",
+        f" RAG system initialised (memories={user_memory_index.size}, domain={domain_knowledge_index.size})",
         flush=True,
     )
 
@@ -448,7 +448,7 @@ def _truncate_to_words(text: str, max_words: int) -> str:
     words = text.split()
     if len(words) <= max_words:
         return text
-    return " ".join(words[:max_words]) + "…"
+    return " ".join(words[:max_words]) + ""
 
 
 def _domain_from_goal(goal: str) -> str:
@@ -506,18 +506,18 @@ def maybe_extract_memory(user_id: int, user_message: str):
             if SequenceMatcher(None, existing[0].lower(), lower).ratio() > 0.75:
                 return
         save_user_memory(user_id, user_message)
-        print(f"🧠 Saved memory for user {user_id}: {user_message[:60]}…", flush=True)"""
-rag_engine.py — Retrieval-Augmented Generation for PartnerAI
+        print(f" Saved memory for user {user_id}: {user_message[:60]}", flush=True)"""
+rag_engine.py  Retrieval-Augmented Generation for PartnerAI
 
 Provides:
-  • User Memory RAG   — stores & retrieves per-user memories via FAISS
-  • Domain Knowledge RAG — ingests .txt files, chunks them, retrieves relevant context
-  • Context builder    — assembles RAG context for injection into LLM prompts
+   User Memory RAG    stores & retrieves per-user memories via FAISS
+   Domain Knowledge RAG  ingests .txt files, chunks them, retrieves relevant context
+   Context builder     assembles RAG context for injection into LLM prompts
 
 Optimised for 8 GB RAM:
-  • all-MiniLM-L6-v2 (≈80 MB)  — loaded once as a singleton
-  • FAISS IndexFlatL2 (dim 384) — rebuilt from SQLite on startup
-  • Top-3 retrieval per category, total injection ≤ 800 words
+   all-MiniLM-L6-v2 (80 MB)   loaded once as a singleton
+   FAISS IndexFlatL2 (dim 384)  rebuilt from SQLite on startup
+   Top-3 retrieval per category, total injection  800 words
 """
 
 import os
@@ -545,9 +545,9 @@ def _get_model():
         with _model_lock:
             if _embedding_model is None:  # double-check after lock
                 from sentence_transformers import SentenceTransformer
-                print("📦 Loading embedding model (all-MiniLM-L6-v2)…", flush=True)
+                print(" Loading embedding model (all-MiniLM-L6-v2)", flush=True)
                 _embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
-                print("✅ Embedding model loaded.", flush=True)
+                print(" Embedding model loaded.", flush=True)
     return _embedding_model
 
 
@@ -559,7 +559,7 @@ def embed_text(text: str) -> np.ndarray:
 
 
 def embed_texts(texts: list[str]) -> np.ndarray:
-    """Batch-embed a list of strings → (N, 384) float32 array."""
+    """Batch-embed a list of strings  (N, 384) float32 array."""
     model = _get_model()
     vecs = model.encode(texts, convert_to_numpy=True,
                         normalize_embeddings=True, batch_size=64,
@@ -568,7 +568,7 @@ def embed_texts(texts: list[str]) -> np.ndarray:
 
 
 # ---------------------------------------------------------------------------
-# Blob helpers  (float32 array ↔ bytes)
+# Blob helpers  (float32 array  bytes)
 # ---------------------------------------------------------------------------
 
 def _vec_to_blob(vec: np.ndarray) -> bytes:
@@ -634,7 +634,7 @@ class FAISSIndex:
     def __init__(self, dim: int = EMBEDDING_DIM):
         self.dim = dim
         self.index = faiss.IndexFlatL2(dim)
-        self.id_map: list[int] = []          # position → SQLite row id
+        self.id_map: list[int] = []          # position  SQLite row id
         self._lock = threading.Lock()
 
     # -- mutators ----------------------------------------------------------
@@ -685,7 +685,7 @@ domain_knowledge_index = FAISSIndex()
 
 
 # ---------------------------------------------------------------------------
-# PART 1 — User Memory RAG
+# PART 1  User Memory RAG
 # ---------------------------------------------------------------------------
 
 def save_user_memory(user_id: int, text: str, importance_score: int = 1) -> int:
@@ -745,7 +745,7 @@ def retrieve_user_memory(user_id: int, query: str, top_k: int = 3) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
-# PART 2 — Domain Knowledge RAG
+# PART 2  Domain Knowledge RAG
 # ---------------------------------------------------------------------------
 
 def _chunk_text(text: str, chunk_size: int = 400, overlap: int = 50) -> list[str]:
@@ -793,7 +793,7 @@ def ingest_domain_file(domain_type: str, file_path: str) -> int:
         conn.commit()
 
     domain_knowledge_index.bulk_add(row_ids, vectors)
-    print(f"📚 Ingested {len(chunks)} chunks from '{file_path}' → domain '{domain_type}'", flush=True)
+    print(f" Ingested {len(chunks)} chunks from '{file_path}'  domain '{domain_type}'", flush=True)
     return len(chunks)
 
 
@@ -829,7 +829,7 @@ def retrieve_domain_knowledge(domain_type: str, query: str, top_k: int = 3) -> l
 
 
 # ---------------------------------------------------------------------------
-# PART 3 — Startup / index rebuild
+# PART 3  Startup / index rebuild
 # ---------------------------------------------------------------------------
 
 def init_rag_system():
@@ -841,7 +841,7 @@ def init_rag_system():
 
     t0 = time.time()
 
-    # ── Rebuild user_memory_index ─────────────────────────────────────────
+    #  Rebuild user_memory_index 
     user_memory_index.reset()
     with _get_db() as conn:
         rows = conn.execute(
@@ -853,7 +853,7 @@ def init_rag_system():
         vecs = np.array([_blob_to_vec(r[1]) for r in rows], dtype=np.float32)
         user_memory_index.bulk_add(row_ids, vecs)
 
-    # ── Rebuild domain_knowledge_index ────────────────────────────────────
+    #  Rebuild domain_knowledge_index 
     domain_knowledge_index.reset()
     with _get_db() as conn:
         rows = conn.execute(
@@ -867,14 +867,14 @@ def init_rag_system():
 
     elapsed = time.time() - t0
     print(
-        f"✅ RAG system initialised in {elapsed:.2f}s  "
+        f" RAG system initialised in {elapsed:.2f}s  "
         f"(memories={user_memory_index.size}, domain={domain_knowledge_index.size})",
         flush=True,
     )
 
 
 # ---------------------------------------------------------------------------
-# PART 4 — Context builder  (used by the chat endpoint)
+# PART 4  Context builder  (used by the chat endpoint)
 # ---------------------------------------------------------------------------
 
 MAX_CONTEXT_WORDS = 800  # hard cap for injected context
@@ -884,7 +884,7 @@ def _truncate_to_words(text: str, max_words: int) -> str:
     words = text.split()
     if len(words) <= max_words:
         return text
-    return " ".join(words[:max_words]) + "…"
+    return " ".join(words[:max_words]) + ""
 
 
 def _domain_from_goal(goal: str) -> str:
@@ -904,7 +904,7 @@ def _domain_from_goal(goal: str) -> str:
 def build_rag_context(user_id: int, query: str, user_goal: str = "") -> str:
     """Retrieve memories + domain knowledge and return a formatted block.
 
-    The result is guaranteed to be ≤ MAX_CONTEXT_WORDS words so it can be
+    The result is guaranteed to be  MAX_CONTEXT_WORDS words so it can be
     injected straight into the system prompt without blowing up the context
     window.
     """
@@ -939,7 +939,7 @@ def build_rag_context(user_id: int, query: str, user_goal: str = "") -> str:
 
 
 # ---------------------------------------------------------------------------
-# PART 5 — Automatic memory extraction helper
+# PART 5  Automatic memory extraction helper
 # ---------------------------------------------------------------------------
 
 # Keywords / phrases that signal a meaningful user fact worth remembering
@@ -954,7 +954,7 @@ _MEMORY_SIGNALS = (
 def maybe_extract_memory(user_id: int, user_message: str):
     """Heuristic: if the message looks like a personal fact, save it.
 
-    This is intentionally conservative — only fires on clear self-disclosures.
+    This is intentionally conservative  only fires on clear self-disclosures.
     Call this in the background so it never slows down the chat response.
     """
     lower = user_message.lower().strip()
@@ -970,4 +970,4 @@ def maybe_extract_memory(user_id: int, user_message: str):
             if ratio > 0.75:
                 return  # too similar, skip
         save_user_memory(user_id, user_message)
-        print(f"🧠 Saved memory for user {user_id}: {user_message[:60]}…", flush=True)
+        print(f" Saved memory for user {user_id}: {user_message[:60]}", flush=True)

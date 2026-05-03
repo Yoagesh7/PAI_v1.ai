@@ -10,14 +10,14 @@ import os
 
 doc = Document()
 
-# ── Page margins ──
+#  Page margins 
 for section in doc.sections:
     section.top_margin = Cm(2)
     section.bottom_margin = Cm(2)
     section.left_margin = Cm(2.5)
     section.right_margin = Cm(2.5)
 
-# ── Styles ──
+#  Styles 
 style = doc.styles['Normal']
 font = style.font
 font.name = 'Calibri'
@@ -56,7 +56,7 @@ def add_bullet(text, bold_prefix=None):
     if bold_prefix:
         run = p.add_run(bold_prefix)
         run.bold = True
-        p.add_run(f" — {text}")
+        p.add_run(f"  {text}")
     else:
         p.add_run(text)
 
@@ -72,9 +72,9 @@ def add_code_block(text):
     pf.left_indent = Cm(1)
 
 
-# ══════════════════════════════════════════════════════════════════════════════
+# 
 # TITLE PAGE
-# ══════════════════════════════════════════════════════════════════════════════
+# 
 doc.add_paragraph()
 doc.add_paragraph()
 doc.add_paragraph()
@@ -109,7 +109,7 @@ info = doc.add_paragraph()
 info.alignment = WD_ALIGN_PARAGRAPH.CENTER
 run = info.add_run('Date: February 2026\n')
 run.font.size = Pt(11)
-run = info.add_run('Tech Stack: Python Flask · Phi-3 LLM · SQLite · APScheduler\n')
+run = info.add_run('Tech Stack: Python Flask  Phi-3 LLM  SQLite  APScheduler\n')
 run.font.size = Pt(11)
 run.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
 run = info.add_run('Architecture: Local-First AI with RLHF Strategy Selection')
@@ -118,15 +118,15 @@ run.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
 
 doc.add_page_break()
 
-# ══════════════════════════════════════════════════════════════════════════════
+# 
 # TABLE OF CONTENTS
-# ══════════════════════════════════════════════════════════════════════════════
+# 
 doc.add_heading('Table of Contents', level=1)
 toc_items = [
     '1. Project Overview',
     '2. Tech Stack',
     '3. System Architecture',
-    '4. AI Fine-Tuning — RLHF System (Step by Step)',
+    '4. AI Fine-Tuning  RLHF System (Step by Step)',
     '5. Dynamic Persona System',
     '6. Automation System',
     '7. Reminder & Notification System',
@@ -143,9 +143,9 @@ for item in toc_items:
 
 doc.add_page_break()
 
-# ══════════════════════════════════════════════════════════════════════════════
+# 
 # 1. PROJECT OVERVIEW
-# ══════════════════════════════════════════════════════════════════════════════
+# 
 doc.add_heading('1. Project Overview', level=1)
 
 doc.add_paragraph(
@@ -181,9 +181,9 @@ add_bullet('Small teams working on collaborative projects')
 
 doc.add_page_break()
 
-# ══════════════════════════════════════════════════════════════════════════════
+# 
 # 2. TECH STACK
-# ══════════════════════════════════════════════════════════════════════════════
+# 
 doc.add_heading('2. Tech Stack', level=1)
 
 add_table(
@@ -191,7 +191,7 @@ add_table(
     [
         ['Frontend', 'HTML/CSS/JS + Jinja2', 'Vanilla JS, no framework, dark theme design system'],
         ['Backend', 'Python Flask', 'Single-file server (app.py ~3300 lines), REST API'],
-        ['Database', 'SQLite', 'partnerai.db — 18+ tables, thread-safe connections'],
+        ['Database', 'SQLite', 'partnerai.db  18+ tables, thread-safe connections'],
         ['AI Model', 'Microsoft Phi-3-mini-4k', 'Q4 quantized GGUF format, 3.8B parameters'],
         ['AI Server', 'llama.cpp (llama-server.exe)', 'Runs on http://127.0.0.1:8080, OpenAI-compatible API'],
         ['Scheduler', 'APScheduler', 'BackgroundScheduler with CronTrigger for 3 daily jobs'],
@@ -202,17 +202,17 @@ add_table(
 )
 
 doc.add_heading('Python Dependencies (requirements.txt)', level=2)
-deps = ['flask — Web framework', 'requests — HTTP client for llama-server API',
-        'apscheduler — Background job scheduling', 'google-generativeai — Fallback AI (optional)',
-        'ollama — Alternative LLM interface (optional)']
+deps = ['flask  Web framework', 'requests  HTTP client for llama-server API',
+        'apscheduler  Background job scheduling', 'google-generativeai  Fallback AI (optional)',
+        'ollama  Alternative LLM interface (optional)']
 for d in deps:
     add_bullet(d)
 
 doc.add_page_break()
 
-# ══════════════════════════════════════════════════════════════════════════════
+# 
 # 3. SYSTEM ARCHITECTURE
-# ══════════════════════════════════════════════════════════════════════════════
+# 
 doc.add_heading('3. System Architecture', level=1)
 
 doc.add_heading('3.1 High-Level Architecture', level=2)
@@ -223,16 +223,16 @@ doc.add_paragraph(
 
 add_code_block(
     'User (Browser)\n'
-    '    │\n'
-    '    ▼\n'
+    '    \n'
+    '    \n'
     'Flask Web Server (app.py, port 5000)\n'
-    '    │\n'
-    '    ├── Templates (HTML/CSS/JS) ─── Rendered pages\n'
-    '    ├── SQLite (memory.py) ──────── User data, chat, tasks, habits\n'
-    '    ├── Local LLM (local_llm.py) ── Phi-3 via llama-server:8080\n'
-    '    ├── RLHF (rlhf/) ───────────── Feedback → strategy selection\n'
-    '    ├── Scheduler (ai_task_scheduler.py) ── Cron jobs\n'
-    '    └── Email (smtplib) ─────────── Gmail SMTP reminders'
+    '    \n'
+    '     Templates (HTML/CSS/JS)  Rendered pages\n'
+    '     SQLite (memory.py)  User data, chat, tasks, habits\n'
+    '     Local LLM (local_llm.py)  Phi-3 via llama-server:8080\n'
+    '     RLHF (rlhf/)  Feedback  strategy selection\n'
+    '     Scheduler (ai_task_scheduler.py)  Cron jobs\n'
+    '     Email (smtplib)  Gmail SMTP reminders'
 )
 
 doc.add_heading('3.2 Request Flow for AI Chat', level=2)
@@ -242,12 +242,12 @@ steps = [
     'app.py loads user profile from SQLite (name, goal, age, work/free time)',
     'RLHF StrategySelector picks a coaching style (epsilon-greedy: 80% exploit, 20% explore)',
     'Dynamic persona is built based on user\'s goal (fitness coach, dev mentor, etc.)',
-    'System prompt + last 10 chat messages + current message → sent to llama-server',
+    'System prompt + last 10 chat messages + current message  sent to llama-server',
     'llama-server streams response token-by-token via Server-Sent Events (SSE)',
     'Frontend renders markdown in real-time as tokens arrive',
     'Full response saved to chat_history table in SQLite',
     'Smart suggestion poll buttons generated based on response content',
-    'User can click thumbs up/down → RLHF feedback logged and strategy scores updated',
+    'User can click thumbs up/down  RLHF feedback logged and strategy scores updated',
 ]
 for i, step in enumerate(steps, 1):
     p = doc.add_paragraph()
@@ -259,31 +259,31 @@ doc.add_heading('3.3 Component Files', level=2)
 add_table(
     ['File', 'Lines', 'Purpose'],
     [
-        ['web/app.py', '~3300', 'Main Flask server — routes, API, chat logic, commands'],
-        ['memory.py', '~1080', 'SQLite data layer — all DB operations, 18+ tables'],
-        ['local_llm.py', '~106', 'LLM wrapper — connects to llama-server, streaming, retries'],
-        ['reminders.py', '~80', 'Time parser — "10m", "5pm", "in 2 hours" etc.'],
-        ['ai_task_scheduler.py', '~183', 'APScheduler — 3 cron jobs for automated emails'],
-        ['habit_intelligence.py', '~40', 'Habit analysis — completion stats and insights'],
-        ['coach_engine.py', '~25', 'Weekly report generation — scores, wins, improvements'],
-        ['smart_blocks.py', '—', 'Knowledge block management — CRUD, linking, suggestions'],
-        ['rlhf/strategy_selector.py', '~80', 'RLHF — epsilon-greedy strategy selection'],
-        ['rlhf/reward_engine.py', '~25', 'RLHF — feedback score calculation'],
-        ['rlhf/feedback_manager.py', '~35', 'RLHF — orchestrates feedback processing'],
-        ['rlhf/storage.py', '~82', 'RLHF — SQLite tables for logs and scores'],
+        ['web/app.py', '~3300', 'Main Flask server  routes, API, chat logic, commands'],
+        ['memory.py', '~1080', 'SQLite data layer  all DB operations, 18+ tables'],
+        ['local_llm.py', '~106', 'LLM wrapper  connects to llama-server, streaming, retries'],
+        ['reminders.py', '~80', 'Time parser  "10m", "5pm", "in 2 hours" etc.'],
+        ['ai_task_scheduler.py', '~183', 'APScheduler  3 cron jobs for automated emails'],
+        ['habit_intelligence.py', '~40', 'Habit analysis  completion stats and insights'],
+        ['coach_engine.py', '~25', 'Weekly report generation  scores, wins, improvements'],
+        ['smart_blocks.py', '', 'Knowledge block management  CRUD, linking, suggestions'],
+        ['rlhf/strategy_selector.py', '~80', 'RLHF  epsilon-greedy strategy selection'],
+        ['rlhf/reward_engine.py', '~25', 'RLHF  feedback score calculation'],
+        ['rlhf/feedback_manager.py', '~35', 'RLHF  orchestrates feedback processing'],
+        ['rlhf/storage.py', '~82', 'RLHF  SQLite tables for logs and scores'],
     ]
 )
 
 doc.add_page_break()
 
-# ══════════════════════════════════════════════════════════════════════════════
-# 4. AI FINE-TUNING — RLHF SYSTEM
-# ══════════════════════════════════════════════════════════════════════════════
-doc.add_heading('4. AI Fine-Tuning — RLHF System (Step by Step)', level=1)
+# 
+# 4. AI FINE-TUNING  RLHF SYSTEM
+# 
+doc.add_heading('4. AI Fine-Tuning  RLHF System (Step by Step)', level=1)
 
 doc.add_paragraph(
     'PartnerAI does NOT fine-tune the model weights (Phi-3 runs as-is from the GGUF file). '
-    'Instead, it uses Reinforcement Learning from Human Feedback (RLHF) at the PROMPT level — '
+    'Instead, it uses Reinforcement Learning from Human Feedback (RLHF) at the PROMPT level  '
     'adjusting HOW the AI talks (coaching style), not WHAT it knows. This approach requires '
     'no GPU for training and adapts instantly based on user feedback.'
 )
@@ -306,14 +306,14 @@ add_table(
 )
 
 doc.add_heading('Step 2: Strategy Selection (Epsilon-Greedy Algorithm)', level=2)
-doc.add_paragraph('File: rlhf/strategy_selector.py → get_best_strategy()')
+doc.add_paragraph('File: rlhf/strategy_selector.py  get_best_strategy()')
 doc.add_paragraph(
     'Before every AI response, the system selects which coaching strategy to use:'
 )
 add_bullet('Load all strategy scores from the rlhf_strategy_scores database table')
-add_bullet('If last strategy received negative feedback → remove it from candidates')
-add_bullet('80% of the time → Pick the highest-scoring strategy (EXPLOITATION)')
-add_bullet('20% of the time → Pick a random strategy (EXPLORATION)')
+add_bullet('If last strategy received negative feedback  remove it from candidates')
+add_bullet('80% of the time  Pick the highest-scoring strategy (EXPLOITATION)')
+add_bullet('20% of the time  Pick a random strategy (EXPLORATION)')
 add_bullet('This is the epsilon-greedy algorithm from reinforcement learning')
 
 doc.add_paragraph(
@@ -322,7 +322,7 @@ doc.add_paragraph(
 )
 
 doc.add_heading('Step 3: Inject Strategy into System Prompt', level=2)
-doc.add_paragraph('File: web/app.py → chat handler (~line 1245)')
+doc.add_paragraph('File: web/app.py  chat handler (~line 1245)')
 doc.add_paragraph(
     'The selected strategy becomes a coaching instruction inside the AI\'s system prompt:'
 )
@@ -340,13 +340,13 @@ doc.add_paragraph(
 )
 
 doc.add_heading('Step 4: User Gives Feedback', level=2)
-doc.add_paragraph('File: web/templates/chat.html → HITL (Human-in-the-Loop) bar')
+doc.add_paragraph('File: web/templates/chat.html  HITL (Human-in-the-Loop) bar')
 doc.add_paragraph(
     'After every AI response in the chat, the user sees action buttons:'
 )
-add_bullet('👍 Thumbs Up — marks the response as helpful')
-add_bullet('👎 Thumbs Down — marks the response as not helpful')
-add_bullet('✏️ Correct — allows the user to submit a text correction')
+add_bullet(' Thumbs Up  marks the response as helpful')
+add_bullet(' Thumbs Down  marks the response as not helpful')
+add_bullet(' Correct  allows the user to submit a text correction')
 doc.add_paragraph(
     'When clicked, a POST request is sent to /api/feedback with the user input, '
     'AI response, strategy used, and feedback label.'
@@ -365,7 +365,7 @@ add_table(
 )
 
 doc.add_heading('Step 6: Feedback Processing & Storage', level=2)
-doc.add_paragraph('File: rlhf/feedback_manager.py → process_feedback()')
+doc.add_paragraph('File: rlhf/feedback_manager.py  process_feedback()')
 doc.add_paragraph('When feedback is received, the FeedbackManager does 4 things:')
 
 p = doc.add_paragraph()
@@ -390,7 +390,7 @@ p.add_run('If score < 0, tell StrategySelector to avoid this strategy next turn'
 
 doc.add_heading('Step 7: The Feedback Loop Closes', level=2)
 doc.add_paragraph(
-    'Next time the user sends a message, Step 2 runs again — but now the strategy scores '
+    'Next time the user sends a message, Step 2 runs again  but now the strategy scores '
     'have been updated by the feedback. Over time, strategies that get more positive feedback '
     'accumulate higher scores and are selected more often. Bad strategies get penalized and '
     'naturally phase out.'
@@ -408,9 +408,9 @@ p.add_run(
 
 doc.add_page_break()
 
-# ══════════════════════════════════════════════════════════════════════════════
+# 
 # 5. DYNAMIC PERSONA SYSTEM
-# ══════════════════════════════════════════════════════════════════════════════
+# 
 doc.add_heading('5. Dynamic Persona System', level=1)
 
 doc.add_paragraph(
@@ -437,9 +437,9 @@ add_bullet('Conversation rules (max 1 question per reply, no filler openers, etc
 
 doc.add_page_break()
 
-# ══════════════════════════════════════════════════════════════════════════════
+# 
 # 6. AUTOMATION SYSTEM
-# ══════════════════════════════════════════════════════════════════════════════
+# 
 doc.add_heading('6. Automation System', level=1)
 
 doc.add_heading('6.1 Background Scheduler', level=2)
@@ -463,7 +463,7 @@ add_code_block(
     '# In app.py __main__ block:\n'
     'from ai_task_scheduler import init_scheduler\n'
     'scheduler = init_scheduler(app)\n'
-    'print("✅ AI Task Scheduler initialized")'
+    'print(" AI Task Scheduler initialized")'
 )
 
 doc.add_heading('6.2 Email System', level=2)
@@ -480,9 +480,9 @@ add_table(
 
 doc.add_page_break()
 
-# ══════════════════════════════════════════════════════════════════════════════
+# 
 # 7. REMINDER & NOTIFICATION SYSTEM
-# ══════════════════════════════════════════════════════════════════════════════
+# 
 doc.add_heading('7. Reminder & Notification System', level=1)
 
 doc.add_heading('7.1 Three Ways to Set Reminders', level=2)
@@ -530,12 +530,12 @@ add_bullet('User can dismiss notification (calls /api/reminders/dismiss)')
 
 doc.add_page_break()
 
-# ══════════════════════════════════════════════════════════════════════════════
+# 
 # 8. DATABASE SCHEMA
-# ══════════════════════════════════════════════════════════════════════════════
+# 
 doc.add_heading('8. Database Schema', level=1)
 
-doc.add_paragraph('File: memory.py — SQLite database with 18+ tables')
+doc.add_paragraph('File: memory.py  SQLite database with 18+ tables')
 
 doc.add_heading('8.1 Core Tables', level=2)
 add_table(
@@ -604,9 +604,9 @@ add_table(
 
 doc.add_page_break()
 
-# ══════════════════════════════════════════════════════════════════════════════
+# 
 # 9. FRONTEND PAGES
-# ══════════════════════════════════════════════════════════════════════════════
+# 
 doc.add_heading('9. Frontend Pages', level=1)
 
 add_table(
@@ -644,9 +644,9 @@ add_table(
 
 doc.add_page_break()
 
-# ══════════════════════════════════════════════════════════════════════════════
+# 
 # 10. CHAT COMMAND SYSTEM
-# ══════════════════════════════════════════════════════════════════════════════
+# 
 doc.add_heading('10. Chat Command System', level=1)
 
 add_table(
@@ -676,10 +676,10 @@ add_table(
     ['AI Response Context', 'Suggestion Buttons Shown'],
     [
         ['Asks a yes/no question', 'Yes | No | Tell me more'],
-        ['Asks "are you ready?"', 'Yes, let\'s go! 🚀 | Not yet | Tell me more'],
+        ['Asks "are you ready?"', 'Yes, let\'s go!  | Not yet | Tell me more'],
         ['Talks about tasks/plans', 'Show my tasks | What\'s next? | /daily'],
-        ['Sets a reminder', 'Set another reminder | Show my tasks | Thanks! 👍'],
-        ['Gives motivation', 'What\'s next? | Give me a challenge | Thanks! 🙏'],
+        ['Sets a reminder', 'Set another reminder | Show my tasks | Thanks! '],
+        ['Gives motivation', 'What\'s next? | Give me a challenge | Thanks! '],
         ['Discusses code', 'Show me the code | Explain more | What else?'],
         ['Welcome/greeting', '/daily | /plan | I need help with something'],
         ['Default', 'Tell me more | What\'s next? | /daily'],
@@ -688,9 +688,9 @@ add_table(
 
 doc.add_page_break()
 
-# ══════════════════════════════════════════════════════════════════════════════
+# 
 # 11. HOW TO RUN
-# ══════════════════════════════════════════════════════════════════════════════
+# 
 doc.add_heading('11. How to Run the Project', level=1)
 
 steps = [
@@ -718,9 +718,9 @@ add_bullet('Flask serves the web app on port 5000 (all interfaces)')
 
 doc.add_page_break()
 
-# ══════════════════════════════════════════════════════════════════════════════
+# 
 # 12. KEY DESIGN DECISIONS
-# ══════════════════════════════════════════════════════════════════════════════
+# 
 doc.add_heading('12. Key Design Decisions', level=1)
 
 add_table(
@@ -730,8 +730,8 @@ add_table(
         ['llama.cpp instead of Ollama', 'More control, lighter footprint, direct GGUF loading'],
         ['RLHF at prompt level instead of model fine-tuning', 'No GPU needed, instant adaptation, simple implementation'],
         ['SQLite instead of PostgreSQL', 'Zero setup, single-file DB, perfect for single-user/small scale'],
-        ['Streaming responses (SSE)', 'Better UX — user sees text appear word-by-word'],
-        ['Threading for reminders', 'Non-blocking — server stays responsive while timer waits'],
+        ['Streaming responses (SSE)', 'Better UX  user sees text appear word-by-word'],
+        ['Threading for reminders', 'Non-blocking  server stays responsive while timer waits'],
         ['APScheduler in-process', 'No external cron daemon needed, runs inside Flask'],
         ['Vanilla JS instead of React', 'No build step, simpler deployment, lighter bundle'],
         ['Dark theme by default', 'Reduces eye strain for productivity app used daily'],
@@ -741,54 +741,54 @@ add_table(
 
 doc.add_page_break()
 
-# ══════════════════════════════════════════════════════════════════════════════
+# 
 # 13. FILE STRUCTURE
-# ══════════════════════════════════════════════════════════════════════════════
+# 
 doc.add_heading('13. File Structure Reference', level=1)
 
 add_code_block(
     'E:\\PartnerAI\\\n'
-    '├── web/\n'
-    '│   ├── app.py                  # Main Flask server (~3300 lines)\n'
-    '│   ├── static/\n'
-    '│   │   ├── css/design-system.css   # Theme & design tokens\n'
-    '│   │   ├── js/focus_mode_v5.js     # Focus mode logic\n'
-    '│   │   └── images/                 # Wallpapers, icons\n'
-    '│   └── templates/\n'
-    '│       ├── base.html               # Base layout + nav\n'
-    '│       ├── chat.html               # AI chat interface\n'
-    '│       ├── home.html               # Dashboard\n'
-    '│       ├── habits.html             # Habit tracker\n'
-    '│       ├── workspace.html          # Knowledge blocks\n'
-    '│       ├── block_editor.html       # Block editor\n'
-    '│       ├── focus_mode.html         # Pomodoro timer\n'
-    '│       ├── report.html             # Weekly report\n'
-    '│       ├── settings.html           # User settings\n'
-    '│       ├── login.html              # Authentication\n'
-    '│       ├── onboarding.html         # Setup wizard\n'
-    '│       ├── community.html          # Social feed\n'
-    '│       └── group.html              # Team page\n'
-    '├── rlhf/\n'
-    '│   ├── strategy_selector.py    # Epsilon-greedy selection\n'
-    '│   ├── reward_engine.py        # Score calculation\n'
-    '│   ├── feedback_manager.py     # Feedback orchestration\n'
-    '│   └── storage.py              # RLHF database tables\n'
-    '├── memory.py                   # SQLite data layer\n'
-    '├── local_llm.py                # LLM wrapper (llama-server)\n'
-    '├── reminders.py                # Time parser\n'
-    '├── ai_task_scheduler.py        # APScheduler cron jobs\n'
-    '├── habit_intelligence.py       # Habit analysis\n'
-    '├── coach_engine.py             # Weekly reports\n'
-    '├── smart_blocks.py             # Knowledge blocks logic\n'
-    '├── requirements.txt            # Python dependencies\n'
-    '├── partnerai.db                # SQLite database\n'
-    '└── start_llama.bat             # LLM server launcher'
+    ' web/\n'
+    '    app.py                  # Main Flask server (~3300 lines)\n'
+    '    static/\n'
+    '       css/design-system.css   # Theme & design tokens\n'
+    '       js/focus_mode_v5.js     # Focus mode logic\n'
+    '       images/                 # Wallpapers, icons\n'
+    '    templates/\n'
+    '        base.html               # Base layout + nav\n'
+    '        chat.html               # AI chat interface\n'
+    '        home.html               # Dashboard\n'
+    '        habits.html             # Habit tracker\n'
+    '        workspace.html          # Knowledge blocks\n'
+    '        block_editor.html       # Block editor\n'
+    '        focus_mode.html         # Pomodoro timer\n'
+    '        report.html             # Weekly report\n'
+    '        settings.html           # User settings\n'
+    '        login.html              # Authentication\n'
+    '        onboarding.html         # Setup wizard\n'
+    '        community.html          # Social feed\n'
+    '        group.html              # Team page\n'
+    ' rlhf/\n'
+    '    strategy_selector.py    # Epsilon-greedy selection\n'
+    '    reward_engine.py        # Score calculation\n'
+    '    feedback_manager.py     # Feedback orchestration\n'
+    '    storage.py              # RLHF database tables\n'
+    ' memory.py                   # SQLite data layer\n'
+    ' local_llm.py                # LLM wrapper (llama-server)\n'
+    ' reminders.py                # Time parser\n'
+    ' ai_task_scheduler.py        # APScheduler cron jobs\n'
+    ' habit_intelligence.py       # Habit analysis\n'
+    ' coach_engine.py             # Weekly reports\n'
+    ' smart_blocks.py             # Knowledge blocks logic\n'
+    ' requirements.txt            # Python dependencies\n'
+    ' partnerai.db                # SQLite database\n'
+    ' start_llama.bat             # LLM server launcher'
 )
 
-# ══════════════════════════════════════════════════════════════════════════════
+# 
 # SAVE
-# ══════════════════════════════════════════════════════════════════════════════
+# 
 output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'PartnerAI_Project_Report.docx')
 doc.save(output_path)
-print(f"\n✅ Report saved to: {output_path}")
+print(f"\n Report saved to: {output_path}")
 print(f"   File size: {os.path.getsize(output_path) / 1024:.1f} KB")

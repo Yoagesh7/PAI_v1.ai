@@ -26,6 +26,8 @@ def _default_db_path():
 
 
 DB_NAME = _default_db_path()
+PL = "%s" if os.getenv("DATABASE_URL") else "?"
+
 
 
 @contextmanager
@@ -47,7 +49,7 @@ def get_db():
                 conn.close()
         except ImportError:
             # Fallback if psycopg2 is missing but URL is provided
-            print("⚠️ DATABASE_URL provided but psycopg2 not installed. Falling back to SQLite.")
+            print(" DATABASE_URL provided but psycopg2 not installed. Falling back to SQLite.")
             conn = sqlite3.connect(DB_NAME, check_same_thread=False)
             try:
                 yield conn
@@ -196,15 +198,26 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
+
+        cursor.execute(f"""
+        CREATE TABLE IF NOT EXISTS password_resets (
+            id {id_type_ai},
+            username TEXT NOT NULL,
+            email TEXT NOT NULL,
+            code TEXT NOT NULL,
+            expires_at TIMESTAMP NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
         
         conn.commit()
 
 # Initialize DB immediately (with error handling for serverless environments)
 try:
     init_db()
-    print(f"✅ Database initialized at: {DB_NAME}", flush=True)
+    print(f"Database initialized at: {DB_NAME}", flush=True)
 except Exception as e:
-    print(f"⚠️ Warning: DB initialization failed: {e}. Will retry on first query.", flush=True)
+    print(f"Warning: DB initialization failed: {e}. Will retry on first query.", flush=True)
 
 
 # --- AUTH ---
@@ -213,22 +226,22 @@ def create_account(username, password, email):
     username = username.strip() if username else ""
     email = email.strip() if email else ""
     
-    logging.info(f"✍️ Creating account: username='{username}', email='{email}'")
+    logging.info(f" Creating account: username='{username}', email='{email}'")
     
     with get_db() as conn:
         cursor = conn.cursor()
         # Check if username or email already exists (case-insensitive)
-        cursor.execute("SELECT user_id FROM users WHERE LOWER(username)=LOWER(?) OR LOWER(email)=LOWER(?)", (username, email))
+        cursor.execute(f"SELECT user_id FROM users WHERE LOWER(username)=LOWER({PL}) OR LOWER(email)=LOWER({PL})", (username, email))
         if cursor.fetchone():
-            logging.warning(f"⚠️ Account already exists: username='{username}' or email='{email}'")
+            logging.warning(f" Account already exists: username='{username}' or email='{email}'")
             return None
             
         # Hash password before storing
         hashed = _hash_password(password)
-        cursor.execute("INSERT INTO users (username, password, email, name) VALUES (?, ?, ?, ?)", (username, hashed, email, username))
+        cursor.execute(f"INSERT INTO users (username, password, email, name) VALUES ({PL}, {PL}, {PL}, {PL})", (username, hashed, email, username))
         conn.commit()
         user_id = cursor.lastrowid
-        logging.info(f"✅ Account created: user_id={user_id}, username='{username}', email='{email}'")
+        logging.info(f" Account created: user_id={user_id}, username='{username}', email='{email}'")
         return user_id
 
 def verify_user(username_or_email, password):
@@ -237,18 +250,18 @@ def verify_user(username_or_email, password):
     with get_db() as conn:
         cursor = conn.cursor()
         # Fetch all potential matches (case-insensitive)
-        cursor.execute("SELECT user_id, password FROM users WHERE LOWER(username)=LOWER(?) OR LOWER(email)=LOWER(?)", (val, val))
+        cursor.execute(f"SELECT user_id, password FROM users WHERE LOWER(username)=LOWER({PL}) OR LOWER(email)=LOWER({PL})", (val, val))
         rows = cursor.fetchall()
         
         for row in rows:
             user_id, stored = row[0], row[1]
             match = _verify_password(stored, password)
             import logging
-            logging.info(f"🔐 Verify attempt for user_id={user_id}: match={match}")
+            logging.info(f" Verify attempt for user_id={user_id}: match={match}")
             if match:
                 return user_id
                 
-        logging.warning(f"❌ Login failed: No matching password for identifier='{val}'")
+        logging.warning(f" Login failed: No matching password for identifier='{val}'")
         return None
 
 
@@ -256,7 +269,7 @@ def get_user(user_id):
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT user_id, name, career, hobbies, last_task, task_status, state, tasks_completed, streak, last_active_date, daily_topic, work_time, free_time, age, last_task_date, username, password, email, flow_day FROM users WHERE user_id=?",
+            f"SELECT user_id, name, career, hobbies, last_task, task_status, state, tasks_completed, streak, last_active_date, daily_topic, work_time, free_time, age, last_task_date, username, password, email, flow_day FROM users WHERE user_id={PL}",
             (user_id,)
         )
         row = cursor.fetchone()
@@ -278,17 +291,19 @@ def save_user(user_id, **fields):
     values = []
     for key, value in fields.items():
         if key in allowed:
-            updates.append(f"{key}=?")
+            updates.append(f"{key}={PL}")
             values.append(value)
     if not updates:
         return True
     values.append(user_id)
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute(f"UPDATE users SET {', '.join(updates)} WHERE user_id=?", values)
+        cursor.execute(f"UPDATE users SET {', '.join(updates)} WHERE user_id={PL}", values)
         if cursor.rowcount == 0:
+            # PostgreSQL doesn't support named parameters with list in the same way, but this should work for basic INSERT
+            placeholders = ", ".join([PL] * 19)
             cursor.execute(
-                "INSERT INTO users (user_id, name, career, hobbies, last_task, task_status, state, tasks_completed, streak, last_active_date, daily_topic, work_time, free_time, age, last_task_date, username, password, email, flow_day) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                f"INSERT INTO users (user_id, name, career, hobbies, last_task, task_status, state, tasks_completed, streak, last_active_date, daily_topic, work_time, free_time, age, last_task_date, username, password, email, flow_day) VALUES ({placeholders})",
                 [user_id] + [fields.get(k) for k in ['name', 'career', 'hobbies', 'last_task', 'task_status', 'state', 'tasks_completed', 'streak', 'last_active_date', 'daily_topic', 'work_time', 'free_time', 'age', 'last_task_date', 'username', 'password', 'email', 'flow_day']]
             )
         conn.commit()
@@ -325,7 +340,7 @@ def username_exists(username_or_email):
     with get_db() as conn:
         cursor = conn.cursor()
         # Check both username and email (case-insensitive)
-        cursor.execute("SELECT user_id FROM users WHERE LOWER(username)=LOWER(?) OR LOWER(email)=LOWER(?)", (val, val))
+        cursor.execute(f"SELECT user_id FROM users WHERE LOWER(username)=LOWER({PL}) OR LOWER(email)=LOWER({PL})", (val, val))
         return cursor.fetchone() is not None
 
 
@@ -334,11 +349,11 @@ def save_signup_verification(username, password, email, code, expires_at):
     with get_db() as conn:
         cursor = conn.cursor()
         # Delete any existing verification for this email/username to avoid duplicates
-        cursor.execute("DELETE FROM signup_verifications WHERE username=? OR email=?", (username, email))
+        cursor.execute(f"DELETE FROM signup_verifications WHERE username={PL} OR email={PL}", (username, email))
         cursor.execute(
-            """
+            f"""
             INSERT INTO signup_verifications (username, password, email, code, expires_at)
-            VALUES (?, ?, ?, ?, ?)
+            VALUES ({PL}, {PL}, {PL}, {PL}, {PL})
             """,
             (username, password, email, code, expires_at),
         )
@@ -349,10 +364,10 @@ def verify_signup_code(username, email, password, code):
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(
-            """
+            f"""
             SELECT id, expires_at, password, email
             FROM signup_verifications
-            WHERE username=? AND code=?
+            WHERE username={PL} AND code={PL}
             """,
             (username, code),
         )
@@ -382,7 +397,7 @@ def verify_signup_code(username, email, password, code):
 def clear_signup_verification(username):
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("DELETE FROM signup_verifications WHERE username=?", (username,))
+        cursor.execute(f"DELETE FROM signup_verifications WHERE username={PL}", (username,))
         conn.commit()
 
 
@@ -390,7 +405,7 @@ def cleanup_expired_signup_verifications():
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("DELETE FROM signup_verifications WHERE expires_at < ?", (now_str,))
+        cursor.execute(f"DELETE FROM signup_verifications WHERE expires_at < {PL}", (now_str,))
         conn.commit()
 
 
@@ -398,9 +413,9 @@ def save_login_verification(username, code, expires_at):
     """Store login OTP."""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("DELETE FROM login_verifications WHERE username=?", (username,))
+        cursor.execute(f"DELETE FROM login_verifications WHERE username={PL}", (username,))
         cursor.execute(
-            "INSERT INTO login_verifications (username, code, expires_at) VALUES (?, ?, ?)",
+            f"INSERT INTO login_verifications (username, code, expires_at) VALUES ({PL}, {PL}, {PL})",
             (username, code, expires_at)
         )
         conn.commit()
@@ -410,7 +425,7 @@ def verify_login_code(username, code):
     """Verify login OTP."""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT id, expires_at FROM login_verifications WHERE username=? AND code=?", (username, code))
+        cursor.execute(f"SELECT id, expires_at FROM login_verifications WHERE username={PL} AND code={PL}", (username, code))
         row = cursor.fetchone()
         if not row:
             return False, 'Invalid verification code.'
@@ -431,7 +446,7 @@ def verify_login_code(username, code):
 def clear_login_verification(username):
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("DELETE FROM login_verifications WHERE username=?", (username,))
+        cursor.execute(f"DELETE FROM login_verifications WHERE username={PL}", (username,))
         conn.commit()
 
 
@@ -439,14 +454,68 @@ def cleanup_expired_login_verifications():
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("DELETE FROM login_verifications WHERE expires_at < ?", (now_str,))
+        cursor.execute(f"DELETE FROM login_verifications WHERE expires_at < {PL}", (now_str,))
+        conn.commit()
+
+
+def save_password_reset(username, email, code, expires_at):
+    """Store password reset OTP."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(f"DELETE FROM password_resets WHERE username={PL} OR email={PL}", (username, email))
+        cursor.execute(
+            f"INSERT INTO password_resets (username, email, code, expires_at) VALUES ({PL}, {PL}, {PL}, {PL})",
+            (username, email, code, expires_at)
+        )
+        conn.commit()
+
+
+def verify_reset_code(username_or_email, code):
+    """Verify password reset OTP."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            f"SELECT id, expires_at, username FROM password_resets WHERE (LOWER(username)=LOWER({PL}) OR LOWER(email)=LOWER({PL})) AND code={PL}",
+            (username_or_email, username_or_email, code)
+        )
+        row = cursor.fetchone()
+        if not row:
+            return False, "Invalid reset code.", None
+
+        _, expires_at, username = row
+        # Handle both string (SQLite) and datetime (PG)
+        if isinstance(expires_at, str):
+            exp_dt = datetime.strptime(expires_at, "%Y-%m-%d %H:%M:%S")
+        else:
+            exp_dt = expires_at
+
+        if datetime.now() > exp_dt:
+            return False, "Reset code expired.", None
+
+        return True, None, username
+
+
+def update_password(username, new_password):
+    """Update user password with hashing."""
+    hashed = _hash_password(new_password)
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(f"UPDATE users SET password={PL} WHERE LOWER(username)=LOWER({PL})", (hashed, username))
+        conn.commit()
+        return cursor.rowcount > 0
+
+
+def clear_password_reset(username):
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(f"DELETE FROM password_resets WHERE LOWER(username)=LOWER({PL})", (username,))
         conn.commit()
 
 
 def get_user_email(user_id):
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT email FROM users WHERE user_id=?", (user_id,))
+        cursor.execute(f"SELECT email FROM users WHERE user_id={PL}", (user_id,))
         row = cursor.fetchone()
         return row[0] if row and row[0] else None
 
@@ -455,7 +524,7 @@ def get_user_by_username(username_or_email):
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT user_id, name, career, hobbies, last_task, task_status, state, tasks_completed, streak, last_active_date, daily_topic, work_time, free_time, age, last_task_date, username, password, email, flow_day FROM users WHERE LOWER(username)=LOWER(?) OR LOWER(email)=LOWER(?)",
+            f"SELECT user_id, name, career, hobbies, last_task, task_status, state, tasks_completed, streak, last_active_date, daily_topic, work_time, free_time, age, last_task_date, username, password, email, flow_day FROM users WHERE LOWER(username)=LOWER({PL}) OR LOWER(email)=LOWER({PL})",
             (username_or_email, username_or_email)
         )
         row = cursor.fetchone()
@@ -520,86 +589,86 @@ def reset_user(user_id):
     """Resets user data (chat, streaks, goals) without deleting the account row."""
     with get_db() as conn:
         # Clear chat
-        conn.execute("DELETE FROM chat_history WHERE user_id=?", (user_id,))
+        conn.execute(f"DELETE FROM chat_history WHERE user_id={PL}", (user_id,))
         # Reset user fields
-        conn.execute("UPDATE users SET state='NEW', career=NULL, streak=0, tasks_completed=0, last_task=NULL, flow_day=1 WHERE user_id=?", (user_id,))
+        conn.execute(f"UPDATE users SET state='NEW', career=NULL, streak=0, tasks_completed=0, last_task=NULL, flow_day=1 WHERE user_id={PL}", (user_id,))
         conn.commit()
     import logging
-    logging.info(f"🧹 user_id {user_id} has been fully reset (account preserved)")
+    logging.info(f" user_id {user_id} has been fully reset (account preserved)")
 
 # --- POSTS ---
 def create_post(user_name, content):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with get_db() as conn:
-        conn.execute("INSERT INTO community_posts (user_name, content, timestamp) VALUES (?, ?, ?)", (user_name, content, timestamp))
+        conn.execute(f"INSERT INTO community_posts (user_name, content, timestamp) VALUES ({PL}, {PL}, {PL})", (user_name, content, timestamp))
         conn.commit()
 
 def get_posts(limit=20):
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM community_posts ORDER BY id DESC LIMIT ?", (limit,))
+        cursor.execute(f"SELECT * FROM community_posts ORDER BY id DESC LIMIT {PL}", (limit,))
         return cursor.fetchall()
 
 # --- GROUPS ---
 def create_group(name, leader_id, goal=None):
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO groups (name, leader_id, status, goal) VALUES (?, ?, 'PLANNING', ?)", (name, leader_id, goal))
+        cursor.execute(f"INSERT INTO groups (name, leader_id, status, goal) VALUES ({PL}, {PL}, 'PLANNING', {PL})", (name, leader_id, goal))
         group_id = cursor.lastrowid
-        cursor.execute("INSERT INTO group_members (group_id, user_id) VALUES (?, ?)", (group_id, leader_id))
+        cursor.execute(f"INSERT INTO group_members (group_id, user_id) VALUES ({PL}, {PL})", (group_id, leader_id))
         conn.commit()
         return group_id
 
 def join_group(group_id, user_id):
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM group_members WHERE group_id=? AND user_id=?", (group_id, user_id))
+        cursor.execute(f"SELECT * FROM group_members WHERE group_id={PL} AND user_id={PL}", (group_id, user_id))
         if cursor.fetchone(): return True
-        cursor.execute("INSERT INTO group_members (group_id, user_id) VALUES (?, ?)", (group_id, user_id))
+        cursor.execute(f"INSERT INTO group_members (group_id, user_id) VALUES ({PL}, {PL})", (group_id, user_id))
         conn.commit()
         return True
 
 def get_user_group(user_id):
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT g.* FROM groups g
             JOIN group_members gm ON g.id = gm.group_id
-            WHERE gm.user_id = ? ORDER BY g.id DESC LIMIT 1
+            WHERE gm.user_id = {PL} ORDER BY g.id DESC LIMIT 1
         """, (user_id,))
         return cursor.fetchone()
 
 def get_group_members(group_id):
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT user_id FROM group_members WHERE group_id=?", (group_id,))
+        cursor.execute(f"SELECT user_id FROM group_members WHERE group_id={PL}", (group_id,))
         return [row[0] for row in cursor.fetchall()]
 
 def set_group_goal(group_id, goal):
     with get_db() as conn:
-        conn.execute("UPDATE groups SET goal=?, status='ACTIVE' WHERE id=?", (goal, group_id))
+        conn.execute(f"UPDATE groups SET goal={PL}, status='ACTIVE' WHERE id={PL}", (goal, group_id))
         conn.commit()
 
 def update_group(group_id, name, goal):
     with get_db() as conn:
-        conn.execute("UPDATE groups SET name=?, goal=? WHERE id=?", (name, goal, group_id))
+        conn.execute(f"UPDATE groups SET name={PL}, goal={PL} WHERE id={PL}", (name, goal, group_id))
         conn.commit()
 
 def add_group_task(group_id, user_id, task):
     with get_db() as conn:
-        conn.execute("INSERT INTO group_tasks (group_id, assigned_user_id, task_content) VALUES (?, ?, ?)", 
+        conn.execute(f"INSERT INTO group_tasks (group_id, assigned_user_id, task_content) VALUES ({PL}, {PL}, {PL})", 
                        (group_id, user_id, task))
         conn.commit()
 
 def get_group_tasks(group_id):
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM group_tasks WHERE group_id=?", (group_id,))
+        cursor.execute(f"SELECT * FROM group_tasks WHERE group_id={PL}", (group_id,))
         return cursor.fetchall() 
 
 def complete_group_task(task_id):
     with get_db() as conn:
-        conn.execute("UPDATE group_tasks SET status='DONE' WHERE id=?", (task_id,))
+        conn.execute(f"UPDATE group_tasks SET status='DONE' WHERE id={PL}", (task_id,))
         conn.commit()
 
 # --- TEAM COLLABORATION ---
@@ -613,7 +682,7 @@ def generate_invite_code():
 def set_group_project(group_id, project_name, deadline):
     """Set project details for a group"""
     with get_db() as conn:
-        conn.execute("UPDATE groups SET project_name=?, deadline=? WHERE id=?", 
+        conn.execute(f"UPDATE groups SET project_name={PL}, deadline={PL} WHERE id={PL}", 
                    (project_name, deadline, group_id))
         conn.commit()
 
@@ -621,14 +690,14 @@ def  get_or_create_invite_code(group_id):
     """Get existing or create new invite code for group"""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT invite_code FROM groups WHERE id=?", (group_id,))
+        cursor.execute(f"SELECT invite_code FROM groups WHERE id={PL}", (group_id,))
         row = cursor.fetchone()
         if row and row[0]:
             return row[0]
         
         # Generate new code
         code = generate_invite_code()
-        cursor.execute("UPDATE groups SET invite_code=? WHERE id=?", (code, group_id))
+        cursor.execute(f"UPDATE groups SET invite_code={PL} WHERE id={PL}", (code, group_id))
         conn.commit()
         return code
 
@@ -637,20 +706,20 @@ def join_group_by_invite(invite_code, user_id):
     from datetime import datetime
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT id FROM groups WHERE invite_code=?", (invite_code,))
+        cursor.execute(f"SELECT id FROM groups WHERE invite_code={PL}", (invite_code,))
         row = cursor.fetchone()
         if not row:
             return None
         
         group_id = row[0]
         # Check if already member
-        cursor.execute("SELECT * FROM group_members WHERE group_id=? AND user_id=?", (group_id, user_id))
+        cursor.execute(f"SELECT * FROM group_members WHERE group_id={PL} AND user_id={PL}", (group_id, user_id))
         if cursor.fetchone():
             return group_id
         
         # Add as member
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        cursor.execute("INSERT INTO group_members (group_id, user_id, role, joined_at) VALUES (?, ?, 'member', ?)",
+        cursor.execute(f"INSERT INTO group_members (group_id, user_id, role, joined_at) VALUES ({PL}, {PL}, 'member', {PL})",
                      (group_id, user_id, timestamp))
         conn.commit()
         return group_id
@@ -658,34 +727,34 @@ def join_group_by_invite(invite_code, user_id):
 def update_task_status(task_id, new_status):
     """Update task status (PENDING, IN_PROGRESS, DONE)"""
     with get_db() as conn:
-        conn.execute("UPDATE group_tasks SET status=? WHERE id=?", (new_status, task_id))
+        conn.execute(f"UPDATE group_tasks SET status={PL} WHERE id={PL}", (new_status, task_id))
         conn.commit()
 
 def get_group_with_details(group_id):
     """Get group with all details including members and tasks"""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM groups WHERE id=?", (group_id,))
+        cursor.execute(f"SELECT * FROM groups WHERE id={PL}", (group_id,))
         group = cursor.fetchone()
         
         if not group:
             return None
         
         # Get members with names
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT u.user_id, u.name, gm.role 
             FROM group_members gm
             JOIN users u ON gm.user_id = u.user_id
-            WHERE gm.group_id = ?
+            WHERE gm.group_id = {PL}
         """, (group_id,))
         members = cursor.fetchall()
         
         # Get tasks
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT gt.id, gt.task_content, gt.status, gt.assigned_user_id, u.name
             FROM group_tasks gt
             LEFT JOIN users u ON gt.assigned_user_id = u.user_id
-            WHERE gt.group_id = ?
+            WHERE gt.group_id = {PL}
         """, (group_id,))
         tasks = cursor.fetchall()
         
@@ -700,18 +769,18 @@ def get_group_with_details(group_id):
 def save_group_message(group_id, user_id, role, content):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with get_db() as conn:
-        conn.execute("INSERT INTO group_chat_messages (group_id, user_id, role, content, timestamp) VALUES (?, ?, ?, ?, ?)",
+        conn.execute(f"INSERT INTO group_chat_messages (group_id, user_id, role, content, timestamp) VALUES ({PL}, {PL}, {PL}, {PL}, {PL})",
                        (group_id, user_id, role, content, timestamp))
         conn.commit()
 
 def get_group_messages(group_id, limit=50):
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT m.user_id, m.role, m.content, m.timestamp, u.name 
             FROM group_chat_messages m
             LEFT JOIN users u ON m.user_id = u.user_id
-            WHERE m.group_id=? ORDER BY m.id ASC
+            WHERE m.group_id={PL} ORDER BY m.id ASC
         """, (group_id,))
         rows = cursor.fetchall()
         
@@ -727,14 +796,14 @@ def get_group_messages(group_id, limit=50):
 def save_chat_message(user_id, role, content):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with get_db() as conn:
-        conn.execute("INSERT INTO chat_history (user_id, role, content, timestamp) VALUES (?, ?, ?, ?)", 
+        conn.execute(f"INSERT INTO chat_history (user_id, role, content, timestamp) VALUES ({PL}, {PL}, {PL}, {PL})", 
                        (user_id, role, content, timestamp))
         conn.commit()
 
 def get_chat_history(user_id, limit=50):
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT role, content FROM chat_history WHERE user_id=? ORDER BY id ASC", (user_id,))
+        cursor.execute(f"SELECT role, content FROM chat_history WHERE user_id={PL} ORDER BY id ASC", (user_id,))
         rows = cursor.fetchall()
         if len(rows) > limit:
             rows = rows[-limit:]
@@ -742,28 +811,28 @@ def get_chat_history(user_id, limit=50):
 
 def clear_chat_history(user_id):
     with get_db() as conn:
-        conn.execute("DELETE FROM chat_history WHERE user_id=?", (user_id,))
+        conn.execute(f"DELETE FROM chat_history WHERE user_id={PL}", (user_id,))
         conn.commit()
 
 # --- REWARDS ---
 def add_reward(user_id, reward_type, duration_minutes=25):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with get_db() as conn:
-        conn.execute("INSERT INTO user_rewards (user_id, reward_type, earned_at, duration_minutes) VALUES (?, ?, ?, ?)", 
+        conn.execute(f"INSERT INTO user_rewards (user_id, reward_type, earned_at, duration_minutes) VALUES ({PL}, {PL}, {PL}, {PL})", 
                        (user_id, reward_type, timestamp, duration_minutes))
         conn.commit()
 
 def get_rewards(user_id):
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT reward_type, earned_at, duration_minutes FROM user_rewards WHERE user_id=? ORDER BY id DESC", (user_id,))
+        cursor.execute(f"SELECT reward_type, earned_at, duration_minutes FROM user_rewards WHERE user_id={PL} ORDER BY id DESC", (user_id,))
         return [{'type': r[0], 'date': r[1], 'duration': r[2] if len(r) > 2 and r[2] else 25} for r in cursor.fetchall()]
 
 # --- DAILY TASKS ---
 def create_daily_task(user_id, task_content):
     date = datetime.now().strftime("%Y-%m-%d")
     with get_db() as conn:
-        conn.execute("INSERT INTO daily_tasks (user_id, task_content, is_completed, created_at) VALUES (?, ?, 0, ?)", 
+        conn.execute(f"INSERT INTO daily_tasks (user_id, task_content, is_completed, created_at) VALUES ({PL}, {PL}, 0, {PL})", 
                        (user_id, task_content, date))
         conn.commit()
 
@@ -771,13 +840,13 @@ def get_daily_tasks(user_id):
     date = datetime.now().strftime("%Y-%m-%d")
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT id, task_content, is_completed FROM daily_tasks WHERE user_id=? AND created_at=?", (user_id, date))
+        cursor.execute(f"SELECT id, task_content, is_completed FROM daily_tasks WHERE user_id={PL} AND created_at={PL}", (user_id, date))
         return [{'id': r[0], 'task': r[1], 'is_completed': bool(r[2])} for r in cursor.fetchall()]
 
 def toggle_daily_task(task_id, status):
     val = 1 if status else 0
     with get_db() as conn:
-        conn.execute("UPDATE daily_tasks SET is_completed=? WHERE id=?", (val, task_id))
+        conn.execute(f"UPDATE daily_tasks SET is_completed={PL} WHERE id={PL}", (val, task_id))
         conn.commit()
 
 def get_weekly_productivity(user_id):
@@ -801,9 +870,9 @@ def get_weekly_productivity(user_id):
             day_str = current.strftime("%Y-%m-%d")
             day_label = current.strftime("%a") # Mon, Tue
             
-            cursor.execute("""
+            cursor.execute(f"""
                 SELECT COUNT(*) FROM daily_tasks 
-                WHERE user_id=? AND is_completed=1 AND created_at=?
+                WHERE user_id={PL} AND is_completed=1 AND created_at={PL}
             """, (user_id, day_str))
             
             count = cursor.fetchone()[0]
@@ -815,53 +884,20 @@ def get_weekly_productivity(user_id):
             
     return {'days': days, 'counts': counts}
 
-def get_weekly_productivity(user_id):
-    """
-    Get completed tasks count for the last 7 days.
-    Returns: {'days': ['Mon', 'Tue'...], 'counts': [0, 2, 5...]}
-    """
-    days = []
-    counts = []
-    
-    # Calculate last 7 days dates
-    end_date = datetime.now()
-    start_date = end_date - timedelta(days=6)
-    
-    with get_db() as conn:
-        cursor = conn.cursor()
-        
-        # We iterate 7 days to ensure 0s are included for empty days
-        current = start_date
-        while current <= end_date:
-            day_str = current.strftime("%Y-%m-%d")
-            day_label = current.strftime("%a") # Mon, Tue
-            
-            cursor.execute("""
-                SELECT COUNT(*) FROM daily_tasks 
-                WHERE user_id=? AND is_completed=1 AND created_at=?
-            """, (user_id, day_str))
-            
-            count = cursor.fetchone()[0]
-            
-            days.append(day_label)
-            counts.append(count)
-            
-            current += timedelta(days=1)
-            
-    return {'days': days, 'counts': counts}
+
 
 # --- DAILY ARTICLES ---
 def create_daily_article(user_id, content):
     date = datetime.now().strftime("%Y-%m-%d")
     with get_db() as conn:
-        conn.execute("INSERT INTO daily_articles (user_id, content, created_at) VALUES (?, ?, ?)", 
+        conn.execute(f"INSERT INTO daily_articles (user_id, content, created_at) VALUES ({PL}, {PL}, {PL})", 
                        (user_id, content, date))
         conn.commit()
 
 def get_latest_article(user_id):
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT content FROM daily_articles WHERE user_id=? ORDER BY id DESC LIMIT 1", (user_id,))
+        cursor.execute(f"SELECT content FROM daily_articles WHERE user_id={PL} ORDER BY id DESC LIMIT 1", (user_id,))
         row = cursor.fetchone()
         return row[0] if row else None
 
@@ -869,14 +905,14 @@ def get_latest_article(user_id):
 def save_daily_news(user_id, news_json):
     date = datetime.now().strftime("%Y-%m-%d")
     with get_db() as conn:
-        conn.execute("INSERT INTO daily_news (user_id, news_json, created_at) VALUES (?, ?, ?)", 
+        conn.execute(f"INSERT INTO daily_news (user_id, news_json, created_at) VALUES ({PL}, {PL}, {PL})", 
                        (user_id, news_json, date))
         conn.commit()
 
 def get_daily_news(user_id):
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT news_json FROM daily_news WHERE user_id=? ORDER BY id DESC LIMIT 1", (user_id,))
+        cursor.execute(f"SELECT news_json FROM daily_news WHERE user_id={PL} ORDER BY id DESC LIMIT 1", (user_id,))
         row = cursor.fetchone()
         return row[0] if row else None
 
@@ -884,10 +920,10 @@ def get_daily_news(user_id):
 def save_focus_session(user_id, duration_minutes, task_description=None):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with get_db() as conn:
-        conn.execute("INSERT INTO focus_sessions (user_id, duration_minutes, task_description, completed_at) VALUES (?, ?, ?, ?)", 
+        conn.execute(f"INSERT INTO focus_sessions (user_id, duration_minutes, task_description, completed_at) VALUES ({PL}, {PL}, {PL}, {PL})", 
                        (user_id, duration_minutes, task_description, timestamp))
         # Also add to rewards (XP)
-        conn.execute("INSERT INTO user_rewards (user_id, reward_type, earned_at, duration_minutes) VALUES (?, ?, ?, ?)", 
+        conn.execute(f"INSERT INTO user_rewards (user_id, reward_type, earned_at, duration_minutes) VALUES ({PL}, {PL}, {PL}, {PL})", 
                        (user_id, "FOCUS_SESSION", timestamp, duration_minutes))
         conn.commit()
 
@@ -905,9 +941,9 @@ def get_focus_stats(user_id):
         cursor = conn.cursor()
         
         # Get total for week
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT SUM(duration_minutes), COUNT(*) FROM focus_sessions 
-            WHERE user_id=? AND completed_at >= ?
+            WHERE user_id={PL} AND completed_at >= {PL}
         """, (user_id, start_date.strftime("%Y-%m-%d")))
         
         row = cursor.fetchone()
@@ -921,9 +957,9 @@ def get_focus_stats(user_id):
             day_label = current.strftime("%a")
             
             # SQLite string comparison for date part of timestamp
-            cursor.execute("""
+            cursor.execute(f"""
                 SELECT SUM(duration_minutes) FROM focus_sessions 
-                WHERE user_id=? AND completed_at LIKE ?
+                WHERE user_id={PL} AND completed_at LIKE {PL}
             """, (user_id, f"{day_str}%"))
             
             row = cursor.fetchone()
@@ -958,12 +994,12 @@ def aggregate_user_routine(user_id, days=7):
         cursor = conn.cursor()
         
         # 1. HABITS DATA
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT strftime('%Y-%m-%d', completed_at) as day, 
                    COUNT(*) as completed,
                    COUNT(DISTINCT habit_id) as unique_habits
             FROM habit_completions
-            WHERE user_id = ? AND completed_at >= ?
+            WHERE user_id = {PL} AND completed_at >= {PL}
             GROUP BY day
             ORDER BY day
         """, (user_id, start_date.isoformat()))
@@ -975,14 +1011,14 @@ def aggregate_user_routine(user_id, days=7):
             habit_completion_rate = round((total_daily / (len(habits_data) * 5)) * 100, 1) if len(habits_data) > 0 else 0
         
         # 2. FOCUS SESSIONS
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT strftime('%Y-%m-%d', started_at) as day,
                    SUM(duration_minutes) as total_minutes,
                    COUNT(*) as sessions,
                    AVG(focus_score) as avg_score,
                    strftime('%H', started_at) as hour
             FROM focus_sessions
-            WHERE user_id = ? AND started_at >= ?
+            WHERE user_id = {PL} AND started_at >= {PL}
             GROUP BY day
         """, (user_id, start_date.isoformat()))
         focus_data = cursor.fetchall()
@@ -992,12 +1028,12 @@ def aggregate_user_routine(user_id, days=7):
         avg_focus_score = round(sum(row[3] or 0 for row in focus_data) / len(focus_data), 1) if focus_data else 0
         
         # 3. DAILY TASKS
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT strftime('%Y-%m-%d', created_at) as day,
                    COUNT(*) as total,
                    SUM(CASE WHEN is_completed = 1 THEN 1 ELSE 0 END) as completed
             FROM daily_tasks
-            WHERE user_id = ? AND created_at >= ?
+            WHERE user_id = {PL} AND created_at >= {PL}
             GROUP BY day
         """, (user_id, start_date.isoformat()))
         tasks_data = cursor.fetchall()
@@ -1007,13 +1043,13 @@ def aggregate_user_routine(user_id, days=7):
         task_completion_rate = round((completed_tasks / total_tasks * 100), 1) if total_tasks > 0 else 0
         
         # 4. AI DAILY TASKS
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT task_date,
                    COUNT(*) as total,
                    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
                    SUM(CASE WHEN status = 'rolled_over' THEN 1 ELSE 0 END) as rolled
             FROM ai_daily_tasks
-            WHERE user_id = ? AND task_date >= ?
+            WHERE user_id = {PL} AND task_date >= {PL}
             GROUP BY task_date
         """, (user_id, start_date.date().isoformat()))
         ai_tasks_data = cursor.fetchall()
@@ -1024,14 +1060,14 @@ def aggregate_user_routine(user_id, days=7):
         ai_task_completion_rate = round((completed_ai_tasks / total_ai_tasks * 100), 1) if total_ai_tasks > 0 else 0
         
         # 5. ACTIVITY TIMESTAMPS (for pattern detection)
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT strftime('%H', completed_at) as hour, COUNT(*) as activity_count
             FROM (
-                SELECT completed_at as created_at FROM habit_completions WHERE user_id = ? AND completed_at >= ?
+                SELECT completed_at as created_at FROM habit_completions WHERE user_id = {PL} AND completed_at >= {PL}
                 UNION ALL
-                SELECT started_at as created_at FROM focus_sessions WHERE user_id = ? AND started_at >= ?
+                SELECT started_at as created_at FROM focus_sessions WHERE user_id = {PL} AND started_at >= {PL}
                 UNION ALL
-                SELECT created_at FROM daily_tasks WHERE user_id = ? AND created_at >= ?
+                SELECT created_at FROM daily_tasks WHERE user_id = {PL} AND created_at >= {PL}
             )
             GROUP BY hour
             ORDER BY activity_count DESC
@@ -1040,10 +1076,10 @@ def aggregate_user_routine(user_id, days=7):
         peak_hours = cursor.fetchall()
         
         # 6. CHAT ACTIVITY
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT COUNT(*) as messages
             FROM chat_history
-            WHERE user_id = ? AND timestamp >= ?
+            WHERE user_id = {PL} AND timestamp >= {PL}
         """, (user_id, start_date.isoformat()))
         chat_activity = cursor.fetchone()[0]
         
@@ -1092,7 +1128,7 @@ def create_ai_task(user_id, task_content, task_date=None):
     
     with get_db() as conn:
         conn.execute(
-            "INSERT INTO ai_daily_tasks (user_id, task_content, task_date, status, created_at) VALUES (?, ?, ?, 'pending', ?)",
+            f"INSERT INTO ai_daily_tasks (user_id, task_content, task_date, status, created_at) VALUES ({PL}, {PL}, {PL}, 'pending', {PL})",
             (user_id, task_content, task_date, created_at)
         )
         conn.commit()
@@ -1105,7 +1141,7 @@ def get_ai_tasks_for_date(user_id, task_date=None):
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT id, task_content, status, created_at, completed_at FROM ai_daily_tasks WHERE user_id=? AND task_date=? ORDER BY id ASC",
+            f"SELECT id, task_content, status, created_at, completed_at FROM ai_daily_tasks WHERE user_id={PL} AND task_date={PL} ORDER BY id ASC",
             (user_id, task_date)
         )
         rows = cursor.fetchall()
@@ -1122,7 +1158,7 @@ def complete_ai_task(task_id):
     completed_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with get_db() as conn:
         conn.execute(
-            "UPDATE ai_daily_tasks SET status='completed', completed_at=?WHERE id=?",
+            f"UPDATE ai_daily_tasks SET status='completed', completed_at={PL} WHERE id={PL}",
             (completed_at, task_id)
         )
         conn.commit()
@@ -1135,7 +1171,7 @@ def get_incomplete_ai_tasks(user_id, task_date=None):
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT id, task_content FROM ai_daily_tasks WHERE user_id=? AND task_date=? AND status='pending' ORDER BY id ASC",
+            f"SELECT id, task_content FROM ai_daily_tasks WHERE user_id={PL} AND task_date={PL} AND status='pending' ORDER BY id ASC",
             (user_id, task_date)
         )
         rows = cursor.fetchall()
@@ -1151,14 +1187,14 @@ def rollover_incomplete_tasks():
         
         # Find all incomplete tasks from yesterday
         cursor.execute(
-            "SELECT user_id, task_content FROM ai_daily_tasks WHERE task_date=? AND status='pending'",
+            f"SELECT user_id, task_content FROM ai_daily_tasks WHERE task_date={PL} AND status='pending'",
             (yesterday,)
         )
         incomplete_tasks = cursor.fetchall()
         
         # Mark old tasks as rolled_over
         cursor.execute(
-            "UPDATE ai_daily_tasks SET status='rolled_over' WHERE task_date=? AND status='pending'",
+            f"UPDATE ai_daily_tasks SET status='rolled_over' WHERE task_date={PL} AND status='pending'",
             (yesterday,)
         )
         
@@ -1166,7 +1202,7 @@ def rollover_incomplete_tasks():
         created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         for user_id, task_content in incomplete_tasks:
             cursor.execute(
-                "INSERT INTO ai_daily_tasks (user_id, task_content, task_date, status, created_at) VALUES (?, ?, ?, 'pending', ?)",
+                f"INSERT INTO ai_daily_tasks (user_id, task_content, task_date, status, created_at) VALUES ({PL}, {PL}, {PL}, 'pending', {PL})",
                 (user_id, task_content, today, created_at)
             )
         
@@ -1190,7 +1226,7 @@ def clear_ai_tasks_for_date(user_id, task_date=None):
     
     with get_db() as conn:
         conn.execute(
-            "DELETE FROM ai_daily_tasks WHERE user_id=? AND task_date=?",
+            f"DELETE FROM ai_daily_tasks WHERE user_id={PL} AND task_date={PL}",
             (user_id, task_date)
         )
         conn.commit()
@@ -1202,7 +1238,7 @@ def save_reminder(user_id, content, trigger_at):
     """Save a reminder that will fire at trigger_at (ISO string)"""
     with get_db() as conn:
         conn.execute(
-            "INSERT INTO reminders (user_id, content, trigger_at, triggered, dismissed, created_at) VALUES (?, ?, ?, 0, 0, ?)",
+            f"INSERT INTO reminders (user_id, content, trigger_at, triggered, dismissed, created_at) VALUES ({PL}, {PL}, {PL}, 0, 0, {PL})",
             (user_id, content, trigger_at, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         )
         conn.commit()
@@ -1213,7 +1249,7 @@ def get_pending_reminders(user_id):
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT id, content, trigger_at, created_at FROM reminders WHERE user_id=? AND trigger_at <= ? AND dismissed=0",
+            f"SELECT id, content, trigger_at, created_at FROM reminders WHERE user_id={PL} AND trigger_at <= {PL} AND dismissed=0",
             (user_id, now)
         )
         rows = cursor.fetchall()
@@ -1222,6 +1258,6 @@ def get_pending_reminders(user_id):
 def dismiss_reminder(reminder_id):
     """Mark a reminder as dismissed"""
     with get_db() as conn:
-        conn.execute("UPDATE reminders SET dismissed=1, triggered=1 WHERE id=?", (reminder_id,))
+        conn.execute(f"UPDATE reminders SET dismissed=1, triggered=1 WHERE id={PL}", (reminder_id,))
         conn.commit()
 

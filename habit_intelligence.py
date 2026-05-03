@@ -9,7 +9,7 @@ def analyze_habit_data(habits, logs):
     if not habits:
         return "No habits found. Start tracking!"
         
-    analysis = "📊 **Habit Analysis**\n\n"
+    analysis = " **Habit Analysis**\n\n"
     
     analysis += f"Tracking {len(habits)} habits.\n"
     total_logs = len(logs)
@@ -30,9 +30,9 @@ def analyze_habit_data(habits, logs):
         title = h[2]
         count = habit_counts.get(h_id, 0)
         
-        status = "Needs Focus ⚠️"
-        if count > 5: status = "Doing Great! 🔥"
-        elif count > 2: status = "Good Start 👍"
+        status = "Needs Focus "
+        if count > 5: status = "Doing Great! "
+        elif count > 2: status = "Good Start "
             
         analysis += f"- **{title}**: {count} logs ({status})\n"
         

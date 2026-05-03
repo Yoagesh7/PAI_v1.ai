@@ -64,9 +64,9 @@ MODEL_NAME = MAIN_MODEL
 try:
     from nvidia_llm import rag_system, AIConnectionError, _OFFLINE_MSG
     from rag_engine_cloud import init_rag_system, build_rag_context, maybe_extract_memory
-    print("✅ AI/RAG modules loaded successfully", flush=True)
+    print("AI/RAG modules loaded successfully", flush=True)
 except Exception as e:
-    print(f"⚠️ AI/RAG modules not available: {e}", flush=True)
+    print(f"AI/RAG modules not available: {e}", flush=True)
     rag_system = None
     AIConnectionError = Exception
     _OFFLINE_MSG = "AI system unavailable"
@@ -96,11 +96,13 @@ try:
         create_ai_task, get_ai_tasks_for_date, complete_ai_task,
         # Reminder functions
         save_reminder, get_pending_reminders, dismiss_reminder,
-        clear_chat_history
+        clear_chat_history,
+        # Password reset functions
+        save_password_reset, verify_reset_code, update_password, clear_password_reset
     )
-    print("✅ Memory/database modules loaded successfully", flush=True)
+    print(" Memory/database modules loaded successfully", flush=True)
 except Exception as e:
-    print(f"❌ CRITICAL: Memory modules failed to load: {e}", flush=True)
+    print(f" CRITICAL: Memory modules failed to load: {e}", flush=True)
     import traceback
     traceback.print_exc()
     raise
@@ -115,9 +117,10 @@ try:
         get_user_blocks, update_smart_block, delete_smart_block,
         link_blocks, get_block_relationships, search_blocks
     )
-    print("✅ Smart Blocks modules loaded successfully", flush=True)
+    print(" Smart Blocks modules loaded successfully", flush=True)
+    print("Smart Blocks modules loaded successfully", flush=True)
 except Exception as e:
-    print(f"⚠️ Smart Blocks modules not available: {e}", flush=True)
+    print(f"Smart Blocks modules not available: {e}", flush=True)
 
 # Habit Intelligence imports (optional)
 # from habit_intelligence import (...) # Removed unused imports
@@ -125,9 +128,9 @@ except Exception as e:
 # Coach Engine imports (optional)
 try:
     from coach_engine import create_weekly_report, calculate_progress_score
-    print("✅ Coach Engine modules loaded successfully", flush=True)
+    print("Coach Engine modules loaded successfully", flush=True)
 except Exception as e:
-    print(f"⚠️ Coach Engine modules not available: {e}", flush=True)
+    print(f"Coach Engine modules not available: {e}", flush=True)
 
 # RLHF Imports (optional)
 try:
@@ -139,16 +142,16 @@ try:
         # Fallback if running from root
         from rlhf.strategy_selector import StrategySelector
         from rlhf.feedback_manager import FeedbackManager
-    print("✅ RLHF modules loaded successfully", flush=True)
+    print(" RLHF modules loaded successfully", flush=True)
 except Exception as e:
-    print(f"⚠️ RLHF modules not available: {e}", flush=True)
+    print(f" RLHF modules not available: {e}", flush=True)
 
 # Reminders import (optional)
 try:
     from reminders import parse_reminder_time, IST
-    print("✅ Reminders modules loaded successfully", flush=True)
+    print(" Reminders modules loaded successfully", flush=True)
 except Exception as e:
-    print(f"⚠️ Reminders modules not available: {e}", flush=True)
+    print(f" Reminders modules not available: {e}", flush=True)
     parse_reminder_time = None
     IST = None
 
@@ -165,7 +168,7 @@ def generate_weekly_insights(user_id):
     elif completion_rate < 70:
         recommendations.append('Your consistency is decent; tighten your routine with fixed time blocks.')
     else:
-        recommendations.append('Excellent momentum — keep your current cadence and protect it.')
+        recommendations.append('Excellent momentum  keep your current cadence and protect it.')
 
     return {
         'week_score': completion_rate,
@@ -256,7 +259,7 @@ app.config.update({
     'SESSION_COOKIE_NAME': 'partnerai_session',
 })
 
-print(f"🔧 Session Config: SameSite={'None' if (is_vercel or is_production) else 'Lax'}, Secure={is_vercel or is_production}, Environment={'Vercel' if is_vercel else 'Local'}", flush=True)
+print(f" Session Config: SameSite={'None' if (is_vercel or is_production) else 'Lax'}, Secure={is_vercel or is_production}, Environment={'Vercel' if is_vercel else 'Local'}", flush=True)
 
 
 @app.before_request
@@ -341,11 +344,11 @@ def rate_limit(key_prefix, limit=10, window=60):
     return decorator
 
 QUOTES = [
-    "Believe in yourself! 🌟",
-    "Consistency is key. 🗝️",
-    "Small steps lead to big places. 🚀",
-    "You got this! 💪",
-    "Keep pushing, you're doing great! 🔥"
+    "Believe in yourself! ",
+    "Consistency is key. ",
+    "Small steps lead to big places. ",
+    "You got this! ",
+    "Keep pushing, you're doing great! "
 ]
 
 @app.route('/debug/routes')
@@ -456,7 +459,7 @@ def complete_onboarding():
     free_time = data.get('free_time')
     
     # 1. Save User FIRST with placeholder to ensure instant transition
-    initial_tasks = f"✅ Define your first milestone for '{goal}'\n✅ Calendar blocking for {free_time}\n✅ Research best resources"
+    initial_tasks = f" Define your first milestone for '{goal}'\n Calendar blocking for {free_time}\n Research best resources"
     
     save_user(user_id, 
               name=name, 
@@ -499,7 +502,7 @@ def complete_onboarding():
              save_user(user_id, last_task=new_tasks)
              
              # Send welcome message
-             welcome_msg = f"All set, {name}! 🚀\n\nI've analyzed your schedule and goal ('{goal}').\nI'm ready to help you grow. Check your tasks below! 👇"
+             welcome_msg = f"All set, {name}! \n\nI've analyzed your schedule and goal ('{goal}').\nI'm ready to help you grow. Check your tasks below! "
              save_chat_message(user_id, 'ai', welcome_msg)
              print(f"DEBUG: Background AI Onboarding Complete for {name}", flush=True)
 
@@ -510,10 +513,10 @@ def complete_onboarding():
                  user_email = updated_user[17] if updated_user and len(updated_user) > 17 else None
                  
                  if user_email and "@" in user_email:
-                     subject = "🚀 Welcome to PartnerAI - Let's Crush Your Goals!"
+                     subject = " Welcome to PartnerAI - Let's Crush Your Goals!"
                      body = f"""Hi {name}!
                      
-Welcome to PartnerAI! I'm thrilled to be your productivity partner. 🌟
+Welcome to PartnerAI! I'm thrilled to be your productivity partner. 
 
 You've set a bold goal: "{goal}".
 I've already analyzed your schedule and I'm ready to help you every step of the way.
@@ -523,7 +526,7 @@ Here's what you can do next:
 2. Use Focus Mode to crush your work sessions.
 3. Chat with me anytime for advice or motivation.
 
-Let's make it happen! 💪
+Let's make it happen! 
 
 - Your PartnerAI Mentor
 """
@@ -549,7 +552,7 @@ def reset_account():
         clear_chat_history(user_id)
         # Reset user state so they can re-onboard
         save_user(user_id, state="NEW", career=None, last_task=None)
-        logging.info(f"🔄 Account reset for user {user_id}: chat cleared, state set to NEW")
+        logging.info(f" Account reset for user {user_id}: chat cleared, state set to NEW")
     return redirect('/onboarding')
 
 
@@ -782,7 +785,7 @@ def _set_auth_session(user_row):
     # user_row[15] is username, user_row[1] is name
     session['user_name'] = user_row[15] if len(user_row) > 15 and user_row[15] else user_row[1]
     session.permanent = True
-    logging.info(f"🔑 Session set for user_id={user_row[0]}, name={session['user_name']}")
+    logging.info(f" Session set for user_id={user_row[0]}, name={session['user_name']}")
 
 
 def _serialize_user(user_row):
@@ -834,7 +837,7 @@ The PartnerAI Team"""
     
     success = send_email(email, subject, body)
     if success:
-        logging.info(f"📧 Signup OTP sent to {email}")
+        logging.info(f" Signup OTP sent to {email}")
         return jsonify({'success': True, 'verification_required': True, 'message': 'Verification code sent to your email.'})
     else:
         return jsonify({'error': 'Failed to send verification email. Please check your email address.'}), 500
@@ -914,7 +917,7 @@ def login():
     body = f"Hello {username}!\n\nYour login verification code is: {otp}\n\nIt will expire in 10 minutes."
     
     send_email(email, subject, body)
-    logging.info(f"📧 Login OTP sent to {email}")
+    logging.info(f" Login OTP sent to {email}")
     
     return jsonify({
         'success': True,
@@ -947,6 +950,74 @@ def login_verify():
     })
 
 
+@app.route('/api/password/reset/request', methods=['POST'])
+@rate_limit('password_reset_req', limit=5, window=600)
+def password_reset_request():
+    data = request.json
+    identifier = (data.get('identifier') or '').strip() # username or email
+
+    if not identifier:
+        return jsonify({'error': 'Username or Email is required.'}), 400
+
+    # Find user
+    user_row = get_user_by_username(identifier)
+    if not user_row:
+        # For security, don't reveal if user exists, but we need an email to send to
+        # In this specific app, we'll just say not found for better UX as it's a productivity tool
+        return jsonify({'error': 'Account not found.'}), 404
+
+    username = user_row[15] or user_row[1]
+    email = user_row[17]
+    
+    if not email:
+        return jsonify({'error': 'No email associated with this account. Please contact support.'}), 400
+
+    # Generate OTP
+    import random
+    otp = str(random.randint(100000, 999999))
+    expires_at = (datetime.now() + timedelta(minutes=15)).strftime("%Y-%m-%d %H:%M:%S")
+    
+    save_password_reset(username, email, otp, expires_at)
+    
+    # Send Email
+    subject = "PartnerAI Password Reset"
+    body = f"Hello {username}!\n\nYour password reset code is: {otp}\n\nIt will expire in 15 minutes. If you did not request this, please ignore this email."
+    
+    try:
+        send_email(email, subject, body)
+        logging.info(f" Password reset OTP sent to {email}")
+        return jsonify({'success': True, 'message': 'Reset code sent to your email.', 'email': email})
+    except Exception as e:
+        logging.error(f"Failed to send reset email: {e}")
+        return jsonify({'error': 'Failed to send email. Please try again later.'}), 500
+
+
+@app.route('/api/password/reset/verify', methods=['POST'])
+def password_reset_verify():
+    data = request.json
+    identifier = (data.get('identifier') or '').strip()
+    code = (data.get('code') or '').strip()
+    new_password = (data.get('new_password') or '').strip()
+
+    if not identifier or not code or not new_password:
+        return jsonify({'error': 'Missing required fields.'}), 400
+    
+    if len(new_password) < 6:
+        return jsonify({'error': 'Password must be at least 6 characters.'}), 400
+
+    success, error, username = verify_reset_code(identifier, code)
+    if not success:
+        return jsonify({'error': error}), 400
+
+    # Update password
+    if update_password(username, new_password):
+        clear_password_reset(username)
+        logging.info(f" Password reset successful for user: {username}")
+        return jsonify({'success': True, 'message': 'Password updated successfully! You can now log in.'})
+    else:
+        return jsonify({'error': 'Failed to update password.'}), 500
+
+
 @app.route('/api/auth/check', methods=['GET'])
 def auth_check():
     """Check if user is currently logged in"""
@@ -954,7 +1025,7 @@ def auth_check():
     user_name = session.get('user_name')
     
     if not user_id:
-        logging.info(f"❌ Auth check: No session (IP={request.remote_addr})")
+        logging.info(f" Auth check: No session (IP={request.remote_addr})")
         return jsonify({
             'logged_in': False,
             'user_id': None,
@@ -964,7 +1035,7 @@ def auth_check():
     try:
         user = get_user(int(user_id))
         if user:
-            logging.info(f"✅ Auth check: user_id={user_id}, user_name={user_name}")
+            logging.info(f" Auth check: user_id={user_id}, user_name={user_name}")
             return jsonify({
                 'logged_in': True,
                 'user_id': user_id,
@@ -972,7 +1043,7 @@ def auth_check():
                 'session_expires': session.permanent
             })
         else:
-            logging.warning(f"❌ Auth check: User {user_id} not in DB")
+            logging.warning(f" Auth check: User {user_id} not in DB")
             session.clear()
             return jsonify({'logged_in': False, 'error': 'User not found'}), 401
     except Exception as e:
@@ -1083,7 +1154,7 @@ def group_set_goal():
 
 @app.route('/api/admin/clear_all', methods=['POST'])
 def admin_clear_all():
-    # Protected admin endpoint to wipe user data — requires ADMIN_TOKEN header
+    # Protected admin endpoint to wipe user data  requires ADMIN_TOKEN header
     token = request.headers.get('X-Admin-Token') or request.json.get('admin_token') if request.is_json else None
     expected = os.getenv('ADMIN_TOKEN')
     if not expected or token != expected:
@@ -1275,11 +1346,11 @@ def clear_ai_tasks_endpoint():
     clear_ai_tasks_for_date(session['user_id'])
     return jsonify({'success': True})
 
-# /api/ai-tasks/generate removed — tasks are now auto-extracted from chat conversations
+# /api/ai-tasks/generate removed  tasks are now auto-extracted from chat conversations
 
 
 # ---------------------------------------------------------------------------
-# Background task extractor — runs after every AI reply
+# Background task extractor  runs after every AI reply
 # ---------------------------------------------------------------------------
 def _extract_tasks_from_chat(user_id: int, user_message: str, ai_reply: str, user_goal: str):
     """Parse the AI reply for actionable tasks and save them to ai_daily_tasks.
@@ -1345,7 +1416,7 @@ def _extract_tasks_from_chat(user_id: int, user_message: str, ai_reply: str, use
             saved += 1
 
         if saved:
-            print(f"✅ Extracted {saved} task(s) from chat for user {user_id}", flush=True)
+            print(f" Extracted {saved} task(s) from chat for user {user_id}", flush=True)
 
     except Exception as e:
         print(f"DEBUG: Task extraction error (non-fatal): {e}", flush=True)
@@ -1363,8 +1434,8 @@ def _extract_plan_items(plan_text: str):
         line = raw.strip()
         if not line:
             continue
-        # Bullet lines: -, *, •
-        m_bullet = re.match(r'^[-*•]\s+(.+)$', line)
+        # Bullet lines: -, *, 
+        m_bullet = re.match(r'^[-*]\s+(.+)$', line)
         if m_bullet:
             items.append(m_bullet.group(1).strip())
             continue
@@ -1432,10 +1503,10 @@ def chat():
         if text.startswith("/custom"):
             custom_tasks = text.replace("/custom", "").strip()
             if not custom_tasks:
-                return Response("⚠️ Please specify tasks! Example: `/custom Write code, Drink water`", mimetype='text/plain')
+                return Response(" Please specify tasks! Example: `/custom Write code, Drink water`", mimetype='text/plain')
             
             save_user(user_id, last_task=custom_tasks, task_status="pending", state="ACTIVE")
-            msg = f"📝 **Tasks Updated!**\n\nI've set your current focus to:\n_{custom_tasks}_\n\nLet's get to work! 🚀"
+            msg = f" **Tasks Updated!**\n\nI've set your current focus to:\n_{custom_tasks}_\n\nLet's get to work! "
             save_chat_message(user_id, 'ai', msg)
             return Response(msg, mimetype='text/plain')
 
@@ -1444,7 +1515,7 @@ def chat():
             clean_text = text.replace("/reminder", "").strip()
             
             if not clean_text:
-                return Response("⏰ Usage: `/reminder [time] [message]`\nExamples:\n• `/reminder 10m Drink water`\n• `/reminder 2h Check oven`\n• `/reminder 5pm Call mom`", mimetype='text/plain')
+                return Response(" Usage: `/reminder [time] [message]`\nExamples:\n `/reminder 10m Drink water`\n `/reminder 2h Check oven`\n `/reminder 5pm Call mom`", mimetype='text/plain')
             
             # Parse time from the full text
             from reminders import parse_reminder_time, IST
@@ -1490,7 +1561,7 @@ def chat():
                 content = "Check in"
             
             if delay_seconds <= 0:
-                return Response("⚠️ Invalid time. Try:\n• `/reminder 10m Drink water`\n• `/reminder 2h Check oven`\n• `/reminder 5pm Call mom`", mimetype='text/plain')
+                return Response(" Invalid time. Try:\n `/reminder 10m Drink water`\n `/reminder 2h Check oven`\n `/reminder 5pm Call mom`", mimetype='text/plain')
             
             # Get user email
             user_email = user[17] if user and len(user) > 17 and user[17] else None
@@ -1498,7 +1569,7 @@ def chat():
             r_content = content
             r_delay = delay_seconds
             
-            print(f"DEBUG: Reminder set — email={user_email}, content='{r_content}', delay={int(r_delay)}s", flush=True)
+            print(f"DEBUG: Reminder set  email={user_email}, content='{r_content}', delay={int(r_delay)}s", flush=True)
             
             # Schedule email in background thread (simple, no LLM)
             def send_scheduled_email():
@@ -1510,8 +1581,8 @@ def chat():
                     email = u[17] if u and len(u) > 17 and u[17] else user_email
                     if email and "@" in email:
                         u_name = u[1] if u else r_name
-                        subject = f"⏰ Reminder: {r_content}"
-                        body = f"Hey {u_name}!\n\n🔔 Here's your reminder:\n\n    {r_content}\n\nStay on track! 💪\n\n- PartnerAI"
+                        subject = f" Reminder: {r_content}"
+                        body = f"Hey {u_name}!\n\n Here's your reminder:\n\n    {r_content}\n\nStay on track! \n\n- PartnerAI"
                         success = send_email(email, subject, body)
                         print(f"DEBUG: Reminder email sent={success} to {email}", flush=True)
                     else:
@@ -1525,21 +1596,21 @@ def chat():
             trigger_at = (datetime.now() + timedelta(seconds=delay_seconds)).strftime("%Y-%m-%d %H:%M:%S")
             save_reminder(user_id, content, trigger_at)
             
-            msg = f"⏰ **Reminder Set!**\n\nI'll remind you to **'{content}'** in **{time_label}**.\n📧 You'll get an email + in-app notification when it's time! 🔔"
+            msg = f" **Reminder Set!**\n\nI'll remind you to **'{content}'** in **{time_label}**.\n You'll get an email + in-app notification when it's time! "
             save_chat_message(user_id, 'ai', msg)
             return Response(msg, mimetype='text/plain')
 
         # /reset
         if text.startswith("/reset"):
              reset_user(user_id)
-             msg = "🧹 **Memory Wiped!**\n\nI've forgotten everything by your request. Let's start fresh! 🌟\n\nRefesh the page to restart onboarding."
+             msg = " **Memory Wiped!**\n\nI've forgotten everything by your request. Let's start fresh! \n\nRefesh the page to restart onboarding."
              save_chat_message(user_id, 'ai', msg)
              return Response(msg, mimetype='text/plain')
         
         # /report 
         if text.startswith("/report"):
             def analyze_user_report():
-                yield "📊 **Analyzing Your Productivity Report...**\n\nFetching your stats... 📈\n\n"
+                yield " **Analyzing Your Productivity Report...**\n\nFetching your stats... \n\n"
                 
                 try:
                     # Fetch user data
@@ -1583,21 +1654,21 @@ Task: Analyze this user's productivity data and provide a comprehensive, structu
 
 Generate a detailed productivity report with the following structure:
 
-# 📊 Your Productivity Analysis
+#  Your Productivity Analysis
 
-## 🎯 Current Status
+##  Current Status
 Brief overview of user's current level and performance
 
-## ✅ Areas of Improvement
+##  Areas of Improvement
 List 2-3 specific areas where the user has shown progress
 
-## ⚠️ Identified Weaknesses  
+##  Identified Weaknesses  
 List 2-3 areas that need attention or improvement
 
-## 💪 Positive Patterns
+##  Positive Patterns
 Highlight 2-3 positive habits or behaviors observed
 
-## 🚀 Recommendations for Next Week
+##  Recommendations for Next Week
 Provide 3-5 specific, actionable recommendations
 
 Use markdown formatting with proper headings, bold text, and emojis. Be encouraging but honest. Keep it concise but meaningful."""
@@ -1617,7 +1688,7 @@ Use markdown formatting with proper headings, bold text, and emojis. Be encourag
                     
                 except Exception as e:
                     print(f"Report Analysis Error: {e}", flush=True)
-                    error_msg = f"❌ **Error generating report analysis.**\n\nReason: {str(e)}\n\nPlease try again."
+                    error_msg = f" **Error generating report analysis.**\n\nReason: {str(e)}\n\nPlease try again."
                     save_chat_message(user_id, 'ai', error_msg)
                     yield error_msg
             
@@ -1628,7 +1699,7 @@ Use markdown formatting with proper headings, bold text, and emojis. Be encourag
             user_email = user[17] if user and len(user) > 17 and user[17] else None
             
             if not user_email:
-                msg = "❌ **No Email Found**\n\nPlease set your email in your profile to receive reminders!"
+                msg = " **No Email Found**\n\nPlease set your email in your profile to receive reminders!"
                 save_chat_message(user_id, 'ai', msg)
                 return Response(msg, mimetype='text/plain')
             
@@ -1639,34 +1710,34 @@ Use markdown formatting with proper headings, bold text, and emojis. Be encourag
             tasks = get_ai_tasks_for_date(user_id)
             
             if not tasks:
-                msg = "⚠️ **No Tasks Found**\n\nYou haven't generated any tasks yet. Use the home page to create your AI-powered daily tasks first!"
+                msg = " **No Tasks Found**\n\nYou haven't generated any tasks yet. Use the home page to create your AI-powered daily tasks first!"
                 save_chat_message(user_id, 'ai', msg)
                 return Response(msg, mimetype='text/plain')
             
             # Build task list
-            task_list = "\n".join([f"{'✅' if t['status'] == 'completed' else '⚠️'} {t['task']}" for t in tasks])
+            task_list = "\n".join([f"{'' if t['status'] == 'completed' else ''} {t['task']}" for t in tasks])
             
             motivational_quotes = [
-                "Every small step counts. Keep pushing forward! 💪",
+                "Every small step counts. Keep pushing forward! ",
                 "Success is the sum of small efforts repeated day in and day out.",
                 "Don't wait for perfect conditions. Start where you are!",
-                "Your only limit is you. Make today count! 🚀",
-                "Progress, not perfection. You've got this! 🔥"
+                "Your only limit is you. Make today count! ",
+                "Progress, not perfection. You've got this! "
             ]
             
             quote = random.choice(motivational_quotes)
             
             # Email subject and body
-            subject = f"⏰ Task Reminder for {name}!"
+            subject = f" Task Reminder for {name}!"
             body = f"""Hey {name}!
 
 Here's a reminder of your tasks for {datetime.now().strftime('%B %d, %Y')}:
 
 {task_list}
 
-💡 {quote}
+ {quote}
 
-Keep going strong! 💪
+Keep going strong! 
 
 - PartnerAI
 """
@@ -1674,10 +1745,10 @@ Keep going strong! 💪
             # Send email
             try:
                 send_email(user_email, subject, body)
-                msg = f"✅ **Reminder Sent!**\n\nI've sent an email to **{user_email}** with your current tasks. Check your inbox! 📧"
+                msg = f" **Reminder Sent!**\n\nI've sent an email to **{user_email}** with your current tasks. Check your inbox! "
             except Exception as e:
                 print(f"Email send error: {e}", flush=True)
-                msg = f"❌ **Email Failed**\n\nCouldn't send email to {user_email}. Please check your email settings.\n\nError: {str(e)}"
+                msg = f" **Email Failed**\n\nCouldn't send email to {user_email}. Please check your email settings.\n\nError: {str(e)}"
             
             save_chat_message(user_id, 'ai', msg)
             return Response(msg, mimetype='text/plain')
@@ -1686,13 +1757,13 @@ Keep going strong! 💪
         if text.startswith("/daily"):
             existing = get_daily_tasks(user_id)
             if existing:
-                msg = "📅 **Daily Tasks Already Set!**\n\nYou've already generated your tasks for today. Check the Productivity Dashboard to finish them! 🚀"
+                msg = " **Daily Tasks Already Set!**\n\nYou've already generated your tasks for today. Check the Productivity Dashboard to finish them! "
                 save_chat_message(user_id, 'ai', msg)
                 return Response(msg, mimetype='text/plain')
             
             # Generate Logic
             def generate_daily():
-                yield "🧠 **Analyzing your goals...** generating daily plan...\n\n"
+                yield " **Analyzing your goals...** generating daily plan...\n\n"
                 
                 user_goal = user[2] if user and len(user) > 2 and user[2] else "Productivity"
                 
@@ -1733,7 +1804,7 @@ Keep going strong! 💪
                     for t in tasks:
                         create_daily_task(user_id, t)
                         
-                    msg = f"✅ **Daily Plan Ready!**\n\nI've added {len(tasks)} tasks to your Productivity Dashboard.\n\nGo check them off! 📝"
+                    msg = f" **Daily Plan Ready!**\n\nI've added {len(tasks)} tasks to your Productivity Dashboard.\n\nGo check them off! "
                     save_chat_message(user_id, 'ai', msg)
                     yield msg
                 except Exception as e:
@@ -1743,14 +1814,14 @@ Keep going strong! 💪
                     yield error_msg
                 except Exception as e:
                     print(f"Daily Gen Error: {e}", flush=True)
-                    yield f"❌ **Error generating tasks.**\nReason: {str(e)}\n\nPlease try again."
+                    yield f" **Error generating tasks.**\nReason: {str(e)}\n\nPlease try again."
 
             return Response(stream_with_context(generate_daily()), mimetype='text/plain')
         
         # /article
         if text.startswith("/article"):
             def generate_article():
-                yield "📚 **Researching your personalized article...** this might take a moment... \n\n"
+                yield " **Researching your personalized article...** this might take a moment... \n\n"
                 
                 user_goal = user[2] if user and len(user) > 2 and user[2] else "Self Improvement"
                 prompt = f"User Goal: {user_goal}. Write a short, powerful motivational article (max 200 words) to help the user achieve this. \n\nCRITICAL REQUIREMENT: CITE REAL BOOKS AND AUTHORS.\nAt the end, list 2 recommended books with authors clearly. \nFormat with Markdown (Bold, Lists)."
@@ -1767,7 +1838,7 @@ Keep going strong! 💪
                     
                     # Send to chat
                     yield article_content
-                    yield "\n\n(Added to your Daily Read box on Dashboard! 📖)"
+                    yield "\n\n(Added to your Daily Read box on Dashboard! )"
                     
                 except Exception as e:
                     print(f"Article Gen Error (AI service): {e}", flush=True)
@@ -1776,38 +1847,38 @@ Keep going strong! 💪
                     yield error_msg
                 except Exception as e:
                     print(f"Article Gen Error: {e}")
-                    yield "❌ **Error generating article.** Please try again."
+                    yield " **Error generating article.** Please try again."
 
             return Response(stream_with_context(generate_article()), mimetype='text/plain')
         
         # /news
         if text.startswith("/news"):
             def generate_news():
-                yield "📰 **Fetching latest Indian headlines...**\n\n"
+                yield " **Fetching latest Indian headlines...**\n\n"
                 
                 user_goal = user[2] if user and len(user) > 2 and user[2] else "Technology"
                 
                 news_list = fetch_google_news(user_id, user_goal)
                 
                 if not news_list:
-                    yield "❌ **Error fetching news.** Please try again later."
+                    yield " **Error fetching news.** Please try again later."
                     return
 
-                msg = f"🇮🇳 **Top News for {user_goal}:**\n\n"
+                msg = f" **Top News for {user_goal}:**\n\n"
                 
                 for item in news_list:
-                    msg += f"🔹 [{item['title']}]({item['link']}) - *{item['source']}*\n"
+                    msg += f" [{item['title']}]({item['link']}) - *{item['source']}*\n"
                 
                 save_chat_message(user_id, 'ai', msg)
                 
                 yield msg
-                yield "\n\n(Added to 'Daily News' on Dashboard! 🗞️)"
+                yield "\n\n(Added to 'Daily News' on Dashboard! )"
 
             return Response(stream_with_context(generate_news()), mimetype='text/plain')
 
 
 
-        # (Duplicate /reminder handler removed — handled above)
+        # (Duplicate /reminder handler removed  handled above)
 
     # Define today for use in logic
     today = datetime.now().strftime("%Y-%m-%d")
@@ -1825,7 +1896,7 @@ Keep going strong! 💪
     text_lower = text.lower().strip()
     detected_reminder = None
     
-    # Pattern 1: "remind me to [content] in [time]" — handles m/min/minute/h/hr/hour/s/sec/second
+    # Pattern 1: "remind me to [content] in [time]"  handles m/min/minute/h/hr/hour/s/sec/second
     m = re.search(r'remind\s+me\s+(?:to\s+)?(.+?)\s+in\s+(\d+)\s*(m(?:in(?:ute)?s?)?|h(?:(?:ou)?rs?)?|s(?:ec(?:ond)?s?)?)', text_lower)
     if m:
         r_content = m.group(1).strip()
@@ -1895,13 +1966,13 @@ Keep going strong! 💪
             u_email = u[17] if u and len(u) > 17 else None
             u_name = u[1] if u else "Friend"
             if u_email:
-                subject = f"⏰ Reminder: {r_content}"
+                subject = f" Reminder: {r_content}"
                 body = f"Hey {u_name}!\n\nHere is your reminder: '{r_content}'.\n\n- PartnerAI"
                 send_email(u_email, subject, body)
         
         threading.Thread(target=send_nl_reminder_email).start()
         
-        msg = f"⏰ **Reminder Set!**\n\nI'll remind you to **'{r_content}'** in **{time_label}**.\n\nYou'll get a notification right here in chat when it's time! 🔔"
+        msg = f" **Reminder Set!**\n\nI'll remind you to **'{r_content}'** in **{time_label}**.\n\nYou'll get a notification right here in chat when it's time! "
         save_chat_message(user_id, 'ai', msg)
         return Response(msg, mimetype='text/plain')
 
@@ -1923,15 +1994,15 @@ Keep going strong! 💪
         strategy_instruction = StrategySelector.get_prompt_instruction(selected_strategy)
         print(f"DEBUG: Selected RLHF Strategy: {selected_strategy}", flush=True)
 
-        # ── Build domain-specific coaching persona ──────────────────────────────
+        #  Build domain-specific coaching persona 
         goal_lower = goal.lower()
         if any(k in goal_lower for k in ['fitness','gym','workout','muscle','weight','fat','body']):
             persona = (
                 f"You are a real fitness coach for {name}. "
-                "You talk like a human — short, direct, real. No bullet-point lectures. "
+                "You talk like a human  short, direct, real. No bullet-point lectures. "
                 "You ask ONE question at a time to understand where they are. "
                 "You give small concrete next steps, not big overwhelming plans. "
-                "You know that motivation is unreliable — you coach discipline and identity. "
+                "You know that motivation is unreliable  you coach discipline and identity. "
                 "You mix tough love with genuine care. You never judge."
             )
         elif any(k in goal_lower for k in ['code','coding','python','programming','software','developer','web','app']):
@@ -1941,12 +2012,12 @@ Keep going strong! 💪
                 "You give working code snippets when helpful, but keep explanations tight. "
                 "You debug thinking patterns, not just code bugs. "
                 "You ask what they've already tried before giving answers. "
-                "You celebrate small wins — shipping matters more than perfection."
+                "You celebrate small wins  shipping matters more than perfection."
             )
         elif any(k in goal_lower for k in ['business','startup','entrepreneur','freelance','money','income']):
             persona = (
                 f"You are a business mentor for {name}. "
-                "You've seen startups succeed and fail — you speak from experience. "
+                "You've seen startups succeed and fail  you speak from experience. "
                 "You cut through overthinking with real questions like 'Who is your first customer?' "
                 "You focus on revenue and traction first, strategy second. "
                 "You're direct but never dismissive of their ideas."
@@ -1961,7 +2032,7 @@ Keep going strong! 💪
         else:
             persona = (
                 f"You are a personal growth mentor for {name}. "
-                "You talk naturally — like a coach who genuinely knows them. "
+                "You talk naturally  like a coach who genuinely knows them. "
                 "You ask one good question at a time. You give real, specific advice. "
                 "You help them build habits and momentum, not just motivation spikes."
             )
@@ -1973,7 +2044,7 @@ Keep going strong! 💪
             "STANDARD MODE: Give a solid but concise answer (around 5-9 lines) with enough detail to act immediately."
         )
 
-        # ── Core system prompt ───────────────────────────────────────────────────
+        #  Core system prompt 
         system_prompt = f"""{persona}
 
 USER CONTEXT:
@@ -1990,19 +2061,19 @@ CONVERSATION RULES (follow naturally, don't state them):
 - Never start with "Great!", "Absolutely!", "Of course!" or similar filler openers.
 - Ask at most ONE question per reply. Make it specific and useful.
 - IMPORTANT: When you ask ANY question, you MUST end your reply with [OPTIONS: choice1 | choice2 | choice3] on a new line. This creates clickable buttons for the user. Examples:
-  - Yes/no question → [OPTIONS: Yes | No | Tell me more]
-  - Choice question → [OPTIONS: Option A | Option B | Option C]
-  - Open question → [OPTIONS: Help me decide | I'm not sure | Skip this]
+  - Yes/no question  [OPTIONS: Yes | No | Tell me more]
+  - Choice question  [OPTIONS: Option A | Option B | Option C]
+  - Open question  [OPTIONS: Help me decide | I'm not sure | Skip this]
   Never skip this. Always include 2-4 options.
 - Keep tone warm and motivating; use 1-3 relevant emojis naturally.
-- When giving steps, tips, or plans, prefer short bullet points (•) for clarity.
+- When giving steps, tips, or plans, prefer short bullet points () for clarity.
 - For advice, include: (1) quick insight, (2) practical steps, (3) one common mistake to avoid.
 - Use plain text. No markdown headers (#, ##). Bold is fine for key words.
 - If user asks for a plan, respond with a clear step-by-step bullet plan and end with: [OPTIONS: Add this to today's plan | Edit this plan | Make it shorter]
-- If they say they're tired, struggling, or failing — acknowledge it first before coaching.
+- If they say they're tired, struggling, or failing  acknowledge it first before coaching.
 - Never lecture. Never moralize. Give the next smallest step forward."""
 
-        # ── RAG Context Injection ────────────────────────────────────────────────
+        #  RAG Context Injection 
         try:
             rag_context = build_rag_context(user_id, text, user_goal=goal)
             if rag_context:
@@ -2010,28 +2081,28 @@ CONVERSATION RULES (follow naturally, don't state them):
         except Exception as _rag_err:
             print(f"DEBUG: RAG context error (non-fatal): {_rag_err}", flush=True)
 
-        # ── Extract user memory in background (non-blocking) ─────────────────────
+        #  Extract user memory in background (non-blocking) 
         threading.Thread(
             target=maybe_extract_memory,
             args=(user_id, text),
             daemon=True,
         ).start()
 
-        # ── Load recent conversation memory (last 12 turns) ──────────────────────
+        #  Load recent conversation memory (last 12 turns) 
         raw_history = get_chat_history(user_id, limit=14)
         # Exclude the message we just saved (last entry = current user msg)
-        # Convert role 'ai' → 'assistant' for the LLM
+        # Convert role 'ai'  'assistant' for the LLM
         history_messages = []
         for h in raw_history[:-1]:  # exclude just-saved current message
             role = 'assistant' if h['role'] == 'ai' else 'user'
             content = h['content']
             # skip empty or very long command outputs to save context
-            if content and len(content.strip()) > 0 and not content.startswith('📊') and len(content) < 1200:
+            if content and len(content.strip()) > 0 and not content.startswith('') and len(content) < 1200:
                 history_messages.append({"role": role, "content": content})
         # Cap to last 10 turns to stay within context window
         history_messages = history_messages[-10:]
 
-        # ── Build messages array: system + history + current ─────────────────────
+        #  Build messages array: system + history + current 
         messages_to_send = (
             [{"role": "system", "content": system_prompt}]
             + history_messages
@@ -2040,7 +2111,7 @@ CONVERSATION RULES (follow naturally, don't state them):
 
         print(f"DEBUG: Sending {len(messages_to_send)} messages to LLM (strategy={selected_strategy})", flush=True)
 
-        # ── Streaming response ────────────────────────────────────────────────────
+        #  Streaming response 
         full_text_accumulator = []
         _uid = user_id          # capture for closure
         _user_text = text       # capture for closure
@@ -2067,7 +2138,7 @@ CONVERSATION RULES (follow naturally, don't state them):
         return Response(_OFFLINE_MSG, mimetype='text/plain')
     except Exception as e:
         print(f"Chat Error: {e}", flush=True)
-        return Response(f"I'm having a bit of trouble connecting to my brain right now. 🧠\n\nDebug: {e}", mimetype='text/plain')
+        return Response(f"I'm having a bit of trouble connecting to my brain right now. \n\nDebug: {e}", mimetype='text/plain')
 
 
 @app.route('/api/chat/plan/add', methods=['POST'])
@@ -2097,7 +2168,7 @@ def add_plan_to_today():
         existing_lower.add(k)
         added.append(item)
 
-    msg = f"✅ Added {len(added)} step(s) to today's plan." if added else "ℹ️ All plan steps were already in today's plan."
+    msg = f" Added {len(added)} step(s) to today's plan." if added else " All plan steps were already in today's plan."
     save_chat_message(user_id, 'ai', msg)
     return jsonify({'success': True, 'added_count': len(added), 'added': added, 'message': msg})
 
@@ -2120,7 +2191,7 @@ def edit_plan_from_chat():
     try:
         prompt = (
             "Revise the following plan based on the user's edit request. "
-            "Return only the revised plan as short bullet points using •. "
+            "Return only the revised plan as short bullet points using . "
             "Keep it practical and concise (3-8 bullets).\n\n"
             f"Original plan:\n{plan_text}\n\n"
             f"User edit request:\n{edit_request}"
@@ -2176,7 +2247,7 @@ def submit_feedback():
     return jsonify(result)
 
 
-# --- AI RECOMMENDED TASKS (old manual generate removed — tasks come from chat now) ---
+# --- AI RECOMMENDED TASKS (old manual generate removed  tasks come from chat now) ---
 
 # --- SETTINGS & PROFILE (Moved from nested) ---
 @app.route('/settings')
@@ -2188,14 +2259,14 @@ def settings_page():
 def user_profile_api():
     try:
         if 'user_id' not in session: 
-            logging.warning(f"❌ Profile API: No session, remote_addr={request.remote_addr}")
+            logging.warning(f" Profile API: No session, remote_addr={request.remote_addr}")
             return jsonify({'error': 'Unauthorized', 'code': 'NO_SESSION'}), 401
         user_id = session['user_id']
         
         if request.method == 'GET':
             user = get_user(user_id)
             if not user:
-                logging.warning(f"❌ Profile GET: User {user_id} not found in DB")
+                logging.warning(f" Profile GET: User {user_id} not found in DB")
                 return jsonify({'error': 'User not found'}), 404
             
             profile = {
@@ -2207,7 +2278,7 @@ def user_profile_api():
                 'free_time': user[12] if len(user) > 12 else '',
                 'age': user[13] if len(user) > 13 else ''
             }
-            logging.info(f"✅ Profile GET: user={user_id}")
+            logging.info(f" Profile GET: user={user_id}")
             return jsonify(profile)
         
         # POST - Save profile
@@ -2223,10 +2294,10 @@ def user_profile_api():
             age=data.get('age')
         )
         session.modified = True  # Force session to refresh
-        logging.info(f"✅ Profile POST: user={user_id}, updated fields={list(data.keys())}")
+        logging.info(f" Profile POST: user={user_id}, updated fields={list(data.keys())}")
         return jsonify({'success': True})
     except Exception as e:
-        logging.error(f"❌ Profile API error: {e}", exc_info=True)
+        logging.error(f" Profile API error: {e}", exc_info=True)
         return jsonify({'error': str(e), 'code': 'INTERNAL_ERROR'}), 500
 
 @app.route('/api/init')
@@ -2252,7 +2323,7 @@ def init_chat():
         
         # Fetch History
         history = get_chat_history(user_id)
-        logging.info(f"✅ Init complete: user={name}, messages={len(history) if history else 0}")
+        logging.info(f" Init complete: user={name}, messages={len(history) if history else 0}")
         
         return jsonify({
             'is_new_user': False, 
@@ -2260,7 +2331,7 @@ def init_chat():
             'history': history 
         })
     except Exception as e:
-        logging.error(f"❌ Init error: {e}", exc_info=True)
+        logging.error(f" Init error: {e}", exc_info=True)
         return jsonify({'is_new_user': True, 'history': []}), 200  # Return 200 so page doesn't crash
 
 @app.route('/collection')
@@ -2340,7 +2411,7 @@ def get_daily_tasks_api():
                     tasks = get_daily_tasks(user_id)
                     
                     # Notify user only if it's a new day generation
-                    msg = f"🌅 **Day {day} of 14**\n\nGood morning! Here are your missions for today. Let's keep the momentum going! 🚀"
+                    msg = f" **Day {day} of 14**\n\nGood morning! Here are your missions for today. Let's keep the momentum going! "
                     save_chat_message(user_id, 'ai', msg)
         except Exception as e:
             print(f"Flow Logic Error: {e}")
@@ -2379,7 +2450,7 @@ def toggle_daily_task_api(task_id):
                  day = get_flow_day(session['user_id'])
                  if day <= 14:
                      increment_flow_day(session['user_id'])
-                     msg = f"🎉 **Day {day} Complete!**\n\nFantastic work! You've conquered today's missions. Get ready for Day {day+1} tomorrow! 🌟"
+                     msg = f" **Day {day} Complete!**\n\nFantastic work! You've conquered today's missions. Get ready for Day {day+1} tomorrow! "
                      save_chat_message(session['user_id'], 'ai', msg)
              except Exception as e:
                  print(f"Flow Increment Error: {e}")
@@ -2392,7 +2463,7 @@ def complete_daily_tasks_api():
     
     # Send congratulatory message
     user_name = session.get('user_name', 'Champ')
-    msg = f"🏆 **Victory!** 🏆\n\nOutstanding work, {user_name}! You crushed your daily tasks today. \n\nKeep this momentum going! 🔥"
+    msg = f" **Victory!** \n\nOutstanding work, {user_name}! You crushed your daily tasks today. \n\nKeep this momentum going! "
     save_chat_message(session['user_id'], 'ai', msg)
     
     return jsonify({'success': True})
@@ -2478,24 +2549,24 @@ def manage_habits():
             data = request.json
             title = data.get('title')
             category = data.get('category', 'General')
-            icon = data.get('icon', '📝')
+            icon = data.get('icon', '')
             time_of_day = data.get('time_of_day', 'Anytime')
             
             if not title: 
                 return jsonify({'error': 'Title required'}), 400
             
             habit_id = create_habit(user_id, title, category, icon, time_of_day)
-            logging.info(f"✅ Habit created: id={habit_id}, user={user_id}")
+            logging.info(f" Habit created: id={habit_id}, user={user_id}")
             return jsonify({'id': habit_id, 'status': 'created'})
             
         else:
             habits = get_user_habits(user_id)
-            logging.info(f"✅ Habits fetched: count={len(habits) if isinstance(habits, list) else 0}, user={user_id}")
+            logging.info(f" Habits fetched: count={len(habits) if isinstance(habits, list) else 0}, user={user_id}")
             return jsonify(habits)
     except Exception as e:
         import traceback
         error_details = traceback.format_exc()
-        logging.error(f"❌ Habits endpoint error: {e}\n{error_details}")
+        logging.error(f" Habits endpoint error: {e}\n{error_details}")
         return jsonify({
             'error': str(e), 
             'details': error_details if os.getenv("DEBUG") else "Internal Server Error",
@@ -2512,12 +2583,12 @@ def remove_habit(habit_id):
         success = delete_habit(habit_id, session['user_id'])
         
         if success:
-            logging.info(f"✅ Habit deleted: id={habit_id}, user={session['user_id']}")
+            logging.info(f" Habit deleted: id={habit_id}, user={session['user_id']}")
             return jsonify({'success': True})
         else:
             return jsonify({'error': 'Habit not found or unauthorized'}), 404
     except Exception as e:
-        logging.error(f"❌ Delete habit error: {e}", exc_info=True)
+        logging.error(f" Delete habit error: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/habits/<int:habit_id>/toggle', methods=['POST'])
@@ -2528,10 +2599,10 @@ def toggle_habit_route(habit_id):
         user_id = session['user_id']
         
         completed = toggle_habit(habit_id, user_id)
-        logging.info(f"✅ Habit toggled: id={habit_id}, completed={completed}, user={user_id}")
+        logging.info(f" Habit toggled: id={habit_id}, completed={completed}, user={user_id}")
         return jsonify({'id': habit_id, 'completed': completed})
     except Exception as e:
-        logging.error(f"❌ Toggle habit error: {e}", exc_info=True)
+        logging.error(f" Toggle habit error: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/habits/stats', methods=['GET'])
@@ -2542,10 +2613,10 @@ def habit_stats():
         user_id = session['user_id']
         
         stats = get_weekly_stats(user_id)
-        logging.info(f"✅ Habit stats fetched: user={user_id}")
+        logging.info(f" Habit stats fetched: user={user_id}")
         return jsonify(stats)
     except Exception as e:
-        logging.error(f"❌ Habit stats error: {e}", exc_info=True)
+        logging.error(f" Habit stats error: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/habits/analyze', methods=['GET'])
@@ -2556,10 +2627,10 @@ def ai_habit_analysis():
         user_id = session['user_id']
         
         insight = analyze_habits_ai(user_id)
-        logging.info(f"✅ Habit analysis generated: user={user_id}")
+        logging.info(f" Habit analysis generated: user={user_id}")
         return jsonify({'insight': insight})
     except Exception as e:
-        logging.error(f"❌ Habit analysis error: {e}", exc_info=True)
+        logging.error(f" Habit analysis error: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 def suggest_habits():
@@ -3841,25 +3912,25 @@ def get_routine_analysis_v2():
         # Build AI prompt with all data
         prompt = f"""Analyze this user's complete productivity routine over the past 7 days:
 
-📊 HABITS:
+ HABITS:
 - Completion Rate: {routine['habit_completion_rate']}%
 - Active Days: {routine['habit_days_active']}/7
 
-🎯 FOCUS SESSIONS:
+ FOCUS SESSIONS:
 - Total Time: {routine['total_focus_minutes']} minutes
 - Sessions: {routine['total_focus_sessions']}
 - Avg Score: {routine['avg_focus_score']}/10
 
-✅ DAILY TASKS:
+ DAILY TASKS:
 - Completed: {routine['completed_tasks']}/{routine['total_tasks']}
 - Completion Rate: {routine['task_completion_rate']}%
 
-🤖 AI DAILY TASKS (Goal-Based):
+ AI DAILY TASKS (Goal-Based):
 - Completed: {routine['ai_tasks_completed']}/{routine['ai_tasks_total']}
 - Rolled Over: {routine['ai_tasks_rolled']}
 - Completion Rate: {routine['ai_task_completion_rate']}%
 
-⏰ PRODUCTIVITY PATTERN:
+ PRODUCTIVITY PATTERN:
 - Peak Hours: {', '.join(routine['peak_hours']) if routine['peak_hours'] else 'Not enough data'}
 - Chat Activity: {routine['chat_activity']} interactions
 
@@ -3975,7 +4046,7 @@ def get_user_flow_api():
     count = get_flow_day(session['user_id'])
     return jsonify({'flow_day': count})
 
-# Duplicate /api/ai-tasks POST removed — tasks are auto-extracted from chat conversations
+# Duplicate /api/ai-tasks POST removed  tasks are auto-extracted from chat conversations
 
 def _auto_start_llm_server():
     """Cloud-only deployment: no local model server to start."""
@@ -3983,7 +4054,7 @@ def _auto_start_llm_server():
 
 
 if __name__ == '__main__':
-    print("🚀 Starting PartnerAI Server...\n")
+    print(" Starting PartnerAI Server...\n")
     try:
         init_habits_db()
     except Exception as e:
@@ -3995,9 +4066,9 @@ if __name__ == '__main__':
     # Initialize RAG system (lightweight SQLite ranking)
     try:
         init_rag_system()
-        print("✅ RAG system initialized", flush=True)
+        print("RAG system initialized", flush=True)
     except Exception as e:
-        print(f"⚠️ RAG init failed (non-fatal): {e}", flush=True)
+        print(f"RAG init failed (non-fatal): {e}", flush=True)
 
     # Initialize AI Task Scheduler
     try:
@@ -4006,9 +4077,9 @@ if __name__ == '__main__':
         sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         from ai_task_scheduler import init_scheduler
         scheduler = init_scheduler(app)
-        print("✅ AI Task Scheduler initialized")
+        print("AI Task Scheduler initialized")
     except Exception as e:
-        print(f"⚠️ Scheduler init failed: {e}")
+        print(f"Scheduler init failed: {e}")
     
-    print("✅ PartnerAI is ready.", flush=True)
+    print("PartnerAI is ready.", flush=True)
     app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=True)

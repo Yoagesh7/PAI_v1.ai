@@ -1,4 +1,4 @@
-"""rag_engine_cloud.py — lightweight retrieval helpers for PartnerAI.
+"""rag_engine_cloud.py  lightweight retrieval helpers for PartnerAI.
 
 This version avoids heavy local embedding libraries so it can run in
 serverless environments such as Vercel.
@@ -153,7 +153,7 @@ def ingest_domain_file(domain_type: str, file_path: str) -> int:
         conn.commit()
 
     domain_knowledge_index.size += len(chunks)
-    print(f"📚 Ingested {len(chunks)} chunks from '{file_path}' → domain '{domain_type}'", flush=True)
+    print(f" Ingested {len(chunks)} chunks from '{file_path}'  domain '{domain_type}'", flush=True)
     return len(chunks)
 
 
@@ -182,7 +182,7 @@ def init_rag_system():
     user_memory_index.size = int(user_count or 0)
     domain_knowledge_index.size = int(domain_count or 0)
     print(
-        f"✅ RAG system initialised (memories={user_memory_index.size}, domain={domain_knowledge_index.size})",
+        f" RAG system initialised (memories={user_memory_index.size}, domain={domain_knowledge_index.size})",
         flush=True,
     )
 
@@ -194,7 +194,7 @@ def _truncate_to_words(text: str, max_words: int) -> str:
     words = text.split()
     if len(words) <= max_words:
         return text
-    return " ".join(words[:max_words]) + "…"
+    return " ".join(words[:max_words]) + ""
 
 
 def _domain_from_goal(goal: str) -> str:
@@ -252,4 +252,4 @@ def maybe_extract_memory(user_id: int, user_message: str):
             if SequenceMatcher(None, existing[0].lower(), lower).ratio() > 0.75:
                 return
         save_user_memory(user_id, user_message)
-        print(f"🧠 Saved memory for user {user_id}: {user_message[:60]}…", flush=True)
+        print(f" Saved memory for user {user_id}: {user_message[:60]}", flush=True)

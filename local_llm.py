@@ -14,7 +14,7 @@ OllamaConnectionError = AIConnectionError
 
 
 _OFFLINE_MSG = (
-    "⚠️ **AI service unavailable.**\n\n"
+    " **AI service unavailable.**\n\n"
     "Set the NVIDIA API key in your environment and try again."
 )
 
@@ -133,7 +133,7 @@ import os
 import time
 
 _OFFLINE_MSG = (
-    "⚠️ **AI mentor is offline.**\n\n"
+    " **AI mentor is offline.**\n\n"
     "The local LLM server isn't running. "
     "Please start **start_llama.bat** and try again."
 )
@@ -180,7 +180,7 @@ class RAGSystem:
                 return {'message': {'content': "Error: No response from model."}}
             except requests.exceptions.ConnectionError as e:
                 if attempt < self.max_retries:
-                    print(f"LLM connection failed (attempt {attempt+1}), retrying in {self.retry_delay}s…")
+                    print(f"LLM connection failed (attempt {attempt+1}), retrying in {self.retry_delay}s")
                     time.sleep(self.retry_delay)
                 else:
                     print(f"LLM Connection Error (all retries exhausted): {e}")

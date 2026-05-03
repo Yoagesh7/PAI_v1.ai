@@ -25,14 +25,14 @@ def send_email(to_email, subject, body):
         text = msg.as_string()
         server.sendmail(EMAIL_ADDRESS, to_email, text)
         server.quit()
-        print(f"✅ Email sent to {to_email}", flush=True)
+        print(f" Email sent to {to_email}", flush=True)
         return True
     except Exception as e:
-        print(f"❌ Email failed for {to_email}: {e}", flush=True)
+        print(f" Email failed for {to_email}: {e}", flush=True)
         return False
 
 def main():
-    print("🚀 Starting Welcome Email Blast...")
+    print(" Starting Welcome Email Blast...")
     
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
@@ -58,10 +58,10 @@ def main():
         if email and "@" in email:
             print(f"Preparing email for {name} ({email})...")
             
-            subject = "🚀 Welcome to PartnerAI - Let's Crush Your Goals!"
+            subject = " Welcome to PartnerAI - Let's Crush Your Goals!"
             body = f"""Hi {name}!
             
-Welcome to PartnerAI/PartnerAI! I'm thrilled to be your productivity partner. 🌟
+Welcome to PartnerAI/PartnerAI! I'm thrilled to be your productivity partner. 
 
 I see you're working on: "{goal}".
 I'm ready to help you every step of the way.
@@ -71,7 +71,7 @@ Here's what you can do to get started:
 2. Use Focus Mode to crush your work sessions.
 3. Chat with me anytime for advice or motivation.
 
-Let's make it happen! 💪
+Let's make it happen! 
 
 - Your PartnerAI Mentor
 """
@@ -81,7 +81,7 @@ Let's make it happen! 💪
             # Avoid spamming rate limits
             time.sleep(1.5)
             
-    print(f"\n✨ Done! Sent {count} welcome emails.")
+    print(f"\n Done! Sent {count} welcome emails.")
     conn.close()
 
 if __name__ == "__main__":

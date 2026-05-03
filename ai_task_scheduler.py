@@ -30,15 +30,15 @@ def send_email(to_email, subject, body):
         server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
         server.sendmail(EMAIL_ADDRESS, to_email, msg.as_string())
         server.quit()
-        print(f"✅ Email sent to {to_email}", flush=True)
+        print(f" Email sent to {to_email}", flush=True)
         return True
     except Exception as e:
-        print(f"❌ Email failed to {to_email}: {e}", flush=True)
+        print(f" Email failed to {to_email}: {e}", flush=True)
         return False
 
 def send_morning_reminders():
     """Send morning task reminders to all active users at 8:30 AM"""
-    print("🌅 Running morning reminder job...", flush=True)
+    print(" Running morning reminder job...", flush=True)
     users = get_all_active_users()
     
     import random
@@ -56,19 +56,19 @@ def send_morning_reminders():
             if not tasks:
                 continue  # Skip users with no tasks
             
-            task_list = "\n".join([f"✅ {task['task']}" for task in tasks])
+            task_list = "\n".join([f" {task['task']}" for task in tasks])
             quote = random.choice(motivational_quotes)
             
-            subject = f"🌅 Good Morning {user['name']}! Your Tasks for Today"
+            subject = f" Good Morning {user['name']}! Your Tasks for Today"
             body = f"""Hey {user['name']}!
 
-Hope you're ready for an amazing day! 🚀
+Hope you're ready for an amazing day! 
 
 Here are your AI-recommended tasks for {datetime.now().strftime('%B %d, %Y')}:
 
 {task_list}
 
-💪 {quote}
+ {quote}
 
 Let's crush it today!
 
@@ -80,19 +80,19 @@ Let's crush it today!
         except Exception as e:
             print(f"Error sending morning email to {user['email']}: {e}", flush=True)
     
-    print(f"✅ Morning reminders sent to {len(users)} users", flush=True)
+    print(f" Morning reminders sent to {len(users)} users", flush=True)
 
 def send_incomplete_reminders():
     """Send evening reminders for incomplete tasks at 8:00 PM"""
-    print("⏰ Running incomplete task reminder job...", flush=True)
+    print(" Running incomplete task reminder job...", flush=True)
     users = get_all_active_users()
     sent_count = 0
     
     motivational_messages = [
-        "Don't worry if you didn't finish everything today. Progress, not perfection! 💪",
-        "Remember: Every step forward counts, even if it's small. Keep pushing! 🔥",
-        "It's okay to have tasks carry over. What matters is that you keep showing up! 🌟",
-        "Tomorrow is another opportunity. These tasks will be waiting for you! 🚀"
+        "Don't worry if you didn't finish everything today. Progress, not perfection! ",
+        "Remember: Every step forward counts, even if it's small. Keep pushing! ",
+        "It's okay to have tasks carry over. What matters is that you keep showing up! ",
+        "Tomorrow is another opportunity. These tasks will be waiting for you! "
     ]
     
     for user in users:
@@ -102,10 +102,10 @@ def send_incomplete_reminders():
             if not incomplete:
                 continue  # Only send if there are incomplete tasks
             
-            task_list = "\n".join([f"⚠️ {task['task']}" for task in incomplete])
+            task_list = "\n".join([f" {task['task']}" for task in incomplete])
             motivation = motivational_messages[sent_count % len(motivational_messages)]
             
-            subject = f"⏰ {user['name']}, You Still Have Tasks Pending!"
+            subject = f" {user['name']}, You Still Have Tasks Pending!"
             body = f"""Hey {user['name']},
 
 I noticed you haven't completed all your tasks today:
@@ -116,7 +116,7 @@ I noticed you haven't completed all your tasks today:
 
 These will automatically carry over to tomorrow along with new tasks!
 
-Keep pushing! 💪
+Keep pushing! 
 
 - PartnerAI
 """
@@ -127,16 +127,16 @@ Keep pushing! 💪
         except Exception as e:
             print(f"Error sending incomplete reminder to {user['email']}: {e}", flush=True)
     
-    print(f"✅ Incomplete reminders sent to {sent_count} users", flush=True)
+    print(f" Incomplete reminders sent to {sent_count} users", flush=True)
 
 def run_midnight_rollover():
     """Roll over incomplete tasks at midnight"""
-    print("🌙 Running midnight task rollover...", flush=True)
+    print(" Running midnight task rollover...", flush=True)
     try:
         count = rollover_incomplete_tasks()
-        print(f"✅ Rolled over {count} incomplete tasks to today", flush=True)
+        print(f" Rolled over {count} incomplete tasks to today", flush=True)
     except Exception as e:
-        print(f"❌ Rollover failed: {e}", flush=True)
+        print(f" Rollover failed: {e}", flush=True)
 
 # APScheduler setup
 def init_scheduler(app):
@@ -174,7 +174,7 @@ def init_scheduler(app):
     )
     
     scheduler.start()
-    print("🔄 Scheduler initialized with 3 jobs:", flush=True)
+    print(" Scheduler initialized with 3 jobs:", flush=True)
     print("  - Morning reminders: 8:30 AM", flush=True)
     print("  - Evening reminders: 8:00 PM", flush=True)
     print("  - Midnight rollover: 12:00 AM", flush=True)

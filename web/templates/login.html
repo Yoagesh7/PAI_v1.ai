@@ -243,7 +243,10 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="password">Password</label>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <label for="password">Password</label>
+                        <a href="#" id="forgot-link" onclick="showForgot(event)" style="font-size: var(--text-xs); color: var(--color-primary-600); text-decoration: none; margin-bottom: var(--space-2);">Forgot Password?</a>
+                    </div>
                     <input type="password" id="password" placeholder="Enter your password"
                         autocomplete="current-password" required>
                 </div>
@@ -285,6 +288,7 @@
 
     <script>
         let isLogin = true;
+        let isForgot = false;
         let pendingVerification = false; // used for signup flow
         let pendingLoginVerification = false; // used for login 2FA
         let pendingLoginUsername = null; // canonical username for login OTP
@@ -336,6 +340,7 @@
         function toggleMode(event) {
             event.preventDefault();
             isLogin = !isLogin;
+            isForgot = false;
             pendingVerification = false;
             pendingLoginVerification = false;
             pendingLoginUsername = null;
@@ -354,6 +359,9 @@
             document.getElementById('confirmGroup').style.display = isLogin ? 'none' : 'block';
             document.getElementById('verifyGroup').style.display = 'none';
             document.getElementById('btn-resend').style.display = 'none';
+            document.getElementById('forgot-link').style.display = isLogin ? 'block' : 'none';
+            document.getElementById('username').parentElement.style.display = 'block';
+            document.getElementById('password').parentElement.style.display = 'block';
 
             // Update password autocomplete
             document.getElementById('password').autocomplete = isLogin ? 'current-password' : 'new-password';
@@ -363,6 +371,27 @@
             const userInput = document.getElementById('username');
             userLabel.innerText = "Username";
             userInput.placeholder = isLogin ? "Enter your username" : "Choose a username";
+        }
+
+        function showForgot(event) {
+            if (event) event.preventDefault();
+            isForgot = true;
+            isLogin = false;
+            
+            document.getElementById('title').innerText = "Reset Password";
+            document.getElementById('subtitle').innerText = "Enter your username or email to get a reset code.";
+            document.getElementById('action-btn').innerText = "Send Reset Code";
+            document.getElementById('toggle-msg').innerHTML = '<a href="#" onclick="toggleMode(event)">Back to Sign In</a>';
+            document.getElementById('error').style.display = 'none';
+            
+            document.getElementById('emailGroup').style.display = 'none';
+            document.getElementById('confirmGroup').style.display = 'none';
+            document.getElementById('verifyGroup').style.display = 'none';
+            document.getElementById('password').parentElement.style.display = 'none';
+            document.getElementById('forgot-link').style.display = 'none';
+            document.getElementById('username').parentElement.style.display = 'block';
+            document.getElementById('user-label').innerText = "Username or Email";
+            document.getElementById('username').placeholder = "Enter your username or email";
         }
 
         async function submitAuth(event) {
@@ -407,7 +436,17 @@
 
             let endpoint;
             const payload = { username: user, email: email, password: pass };
-            if (isLogin) {
+            if (isForgot) {
+                if (pendingVerification) {
+                    endpoint = '/api/password/reset/verify';
+                    payload.identifier = user;
+                    payload.code = code;
+                    payload.new_password = pass;
+                } else {
+                    endpoint = '/api/password/reset/request';
+                    payload.identifier = user;
+                }
+            } else if (isLogin) {
                 if (pendingLoginVerification) {
                     endpoint = '/api/login/verify';
                     payload.username = pendingLoginUsername || user;
@@ -481,6 +520,25 @@
                     return;
                 }
 
+                if (isForgot && data.success && !pendingVerification) {
+                    pendingVerification = true;
+                    document.getElementById('verifyGroup').style.display = 'block';
+                    document.getElementById('password').parentElement.style.display = 'block';
+                    document.getElementById('user-label').parentElement.style.display = 'none';
+                    document.getElementById('action-btn').innerText = "Reset Password";
+                    document.getElementById('subtitle').innerText = "Enter the 6-digit code and your new password.";
+                    document.getElementById('password').placeholder = "Enter new password";
+                    document.getElementById('password').value = "";
+                    
+                    err.innerText = data.message || "Reset code sent.";
+                    err.style.display = 'block';
+                    err.style.background = '#eef7ff';
+                    err.style.color = '#1d4ed8';
+                    btn.disabled = false;
+                    btn.innerText = "Reset Password";
+                    return;
+                }
+
                 if (data.success) {
                     // Success! 
                     try {
@@ -508,13 +566,6 @@
                 err.innerText = "Connection error. Please try again.";
                 err.style.display = 'block';
                 btn.disabled = false;
-            }
-        }
-
-            if (!isLogin && pendingSignupPayload) {
-                document.getElementById('username').value = pendingSignupPayload.username;
-                document.getElementById('password').value = pendingSignupPayload.password;
-                document.getElementById('email').value = pendingSignupPayload.email;
             }
         }
 

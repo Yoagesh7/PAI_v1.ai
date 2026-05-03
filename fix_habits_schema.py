@@ -21,7 +21,7 @@ def fix_schema():
         'user_id': 'INTEGER',
         'title': 'TEXT',
         'category': 'TEXT DEFAULT "General"',
-        'icon': 'TEXT DEFAULT "📝"',
+        'icon': 'TEXT DEFAULT ""',
         'frequency': 'TEXT DEFAULT "Daily"',
         'time_of_day': 'TEXT DEFAULT "Anytime"',
         'streak': 'INTEGER DEFAULT 0',

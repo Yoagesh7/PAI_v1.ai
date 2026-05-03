@@ -52,17 +52,17 @@ def verify_report():
     print(f"Report Status: {res.status_code}")
     
     if "Weekly Performance Report" in res.text:
-        print("✅ Report Page Loaded Successfully.")
+        print(" Report Page Loaded Successfully.")
     else:
-        print("❌ Report Page Load Failed.")
+        print(" Report Page Load Failed.")
         
     if "45m" in res.text or "45" in res.text:
-         print("✅ Focus Data found in Report.")
+         print(" Focus Data found in Report.")
     else:
-         print("❌ Focus Data NOT found in Report.")
+         print(" Focus Data NOT found in Report.")
 
     if "Top Strength" in res.text:
-         print("✅ AI Section found.")
+         print(" AI Section found.")
     
 if __name__ == "__main__":
     verify_report()

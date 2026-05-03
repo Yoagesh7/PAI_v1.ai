@@ -3,11 +3,11 @@ def daily_report(name, tasks, career):
     total = len(tasks)
 
     return f"""
-📊 Daily Report – {name}
+ Daily Report  {name}
 
-🎯 Goal: {career}
-✅ Tasks completed: {done}/{total}
-🔥 Consistency: {"Strong" if done == total else "Improving"}
-💡 Insight: Small steps done well
-🚀 Tomorrow: Continue momentum
+ Goal: {career}
+ Tasks completed: {done}/{total}
+ Consistency: {"Strong" if done == total else "Improving"}
+ Insight: Small steps done well
+ Tomorrow: Continue momentum
 """

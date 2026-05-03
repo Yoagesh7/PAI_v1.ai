@@ -22,7 +22,7 @@ def init_habits_db():
                 user_id INTEGER NOT NULL,
                 title TEXT NOT NULL,
                 category TEXT DEFAULT 'General',
-                icon TEXT DEFAULT '📝',
+                icon TEXT DEFAULT '',
                 frequency TEXT DEFAULT 'Daily',
                 time_of_day TEXT DEFAULT 'Anytime',
                 streak INTEGER DEFAULT 0,
@@ -42,7 +42,7 @@ def init_habits_db():
         """)
         conn.commit()
 
-def create_habit(user_id, title, category="General", icon="📝", time_of_day="Anytime"):
+def create_habit(user_id, title, category="General", icon="", time_of_day="Anytime"):
     """Create a new habit."""
     try:
         with get_db() as conn:
@@ -290,8 +290,8 @@ def analyze_habits_ai(user_id):
     evening_count = sum(1 for h in history if 17 <= datetime.strptime(h[2], "%Y-%m-%d %H:%M:%S").hour < 23)
     
     if morning_count > len(history) * 0.5:
-        return "You're a morning achiever! 🌅 You complete most habits before noon. Try stacking your hardest habits then."
+        return "You're a morning achiever!  You complete most habits before noon. Try stacking your hardest habits then."
     elif evening_count > len(history) * 0.5:
-        return "You finish strong! 🌙 You're most consistent in the evenings."
+        return "You finish strong!  You're most consistent in the evenings."
     else:
         return "You have a balanced flow. Consider anchoring habits to specific cues to build stronger automaticity."
