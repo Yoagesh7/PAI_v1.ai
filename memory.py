@@ -10,22 +10,22 @@ def _default_db_path():
     """
     Get the database path. On Vercel, use the project directory.
     /tmp is ephemeral in Vercel serverless; data is wiped between deployments.
-    Instead, store in the project root which persists.
+    Instead, store in the project root which persists within a deployment.
+    
+    NOTE: Vercel is fully serverless. Data in files only persists within a single deployment.
+    For true persistence across deployments, use Vercel KV (Redis) or a hosted database.
     """
     if os.getenv("VERCEL"):
-        # On Vercel, store DB in project root (persists across deployments)
-        project_root = os.path.dirname(os.path.abspath(__file__))
-        db_path = os.path.join(project_root, "partnerai_data.db")
-        # Ensure directory is writable
-        try:
-            with open(db_path, 'a'):
-                pass
-        except (IOError, OSError) as e:
-            print(f"Warning: Cannot write to {db_path}: {e}. Using fallback.", flush=True)
-        return db_path
+        # On Vercel, use /tmp which persists within the current execution
+        # This is better than trying to write to the project root (read-only)
+        tmp_path = "/tmp/partnerai_data.db"
+        return tmp_path
     
     # Local development: use PARTNERAI_DB_PATH env or default to project root
     return os.getenv("PARTNERAI_DB_PATH", os.path.join(os.path.dirname(os.path.abspath(__file__)), "partnerai.db"))
+
+
+DB_NAME = _default_db_path()
 
 
 DB_NAME = _default_db_path()
@@ -349,8 +349,12 @@ def init_db():
         
         conn.commit()
 
-# Initialize DB immediately
-init_db()
+# Initialize DB immediately (with error handling for serverless environments)
+try:
+    init_db()
+    print(f"✅ Database initialized at: {DB_NAME}", flush=True)
+except Exception as e:
+    print(f"⚠️ Warning: DB initialization failed: {e}. Will retry on first query.", flush=True)
 
 
 # --- AUTH ---

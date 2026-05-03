@@ -503,16 +503,46 @@ def productivity_page():
 
 @app.route('/api/health')
 def health_check():
-    return jsonify({'status': 'healthy', 'time': datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
+    is_vercel = bool(os.getenv('VERCEL'))
+    return jsonify({
+        'status': 'healthy',
+        'time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        'environment': 'vercel' if is_vercel else 'local',
+        'session_config': {
+            'permanent_lifetime_days': 30,
+            'cookie_secure': app.config.get('SESSION_COOKIE_SECURE'),
+            'samesite': app.config.get('SESSION_COOKIE_SAMESITE'),
+        }
+    })
 
 
 @app.route('/api/debug/db', methods=['GET'])
 def debug_db():
     """Check database health and list users for debugging."""
     try:
-        from memory import get_db
+        from memory import get_db, DB_NAME
+        
+        # Check if DB file exists
+        if not os.path.exists(DB_NAME):
+            return jsonify({
+                'status': 'no_database',
+                'message': 'Database file does not exist yet. Create an account to initialize it.',
+                'db_path': DB_NAME,
+                'db_exists': False
+            }), 200
+        
         with get_db() as conn:
             cursor = conn.cursor()
+            
+            # Check if users table exists
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")
+            if not cursor.fetchone():
+                return jsonify({
+                    'status': 'no_tables',
+                    'message': 'Database exists but tables not initialized',
+                    'db_path': DB_NAME,
+                }), 200
+            
             cursor.execute("SELECT COUNT(*) FROM users")
             user_count = cursor.fetchone()[0]
             
@@ -522,11 +552,16 @@ def debug_db():
             return jsonify({
                 'status': 'ok',
                 'user_count': user_count,
-                'sample_users': [{'user_id': u[0], 'username': u[1], 'email': u[2]} for u in users]
-            })
+                'db_path': DB_NAME,
+                'sample_users': [{'user_id': u[0], 'username': u[1] or '(no username)', 'email': u[2] or '(no email)'} for u in users]
+            }), 200
     except Exception as e:
-        logging.error(f"DB debug error: {e}")
-        return jsonify({'status': 'error', 'error': str(e)}), 500
+        logging.error(f"DB debug error: {e}", exc_info=True)
+        return jsonify({
+            'status': 'error',
+            'error': str(e),
+            'type': type(e).__name__
+        }), 500
 
 
 @app.route('/api/debug/ai-key')
