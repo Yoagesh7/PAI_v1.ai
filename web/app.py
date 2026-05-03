@@ -448,6 +448,43 @@ def debug_ai_key():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+@app.route('/api/debug/ai-connection')
+def debug_ai_connection():
+    """Perform a lightweight NVIDIA chat-completions request to verify the key and model."""
+    try:
+        import requests
+
+        payload = {
+            'model': getattr(rag_system, 'model', 'meta/llama-3.1-8b-instruct'),
+            'messages': [
+                {'role': 'system', 'content': 'Reply with the single word pong.'},
+                {'role': 'user', 'content': 'ping'},
+            ],
+            'temperature': 0,
+            'max_tokens': 8,
+            'stream': False,
+        }
+        url = f"{getattr(rag_system, 'base_url', 'https://integrate.api.nvidia.com/v1').rstrip('/')}/chat/completions"
+        response = requests.post(url, headers=rag_system._headers(), json=payload, timeout=30)
+
+        detail = response.text[:500]
+        try:
+            data = response.json()
+        except Exception:
+            data = None
+
+        return jsonify({
+            'ok': response.status_code == 200,
+            'status_code': response.status_code,
+            'detail': detail,
+            'model': payload['model'],
+            'base_url': getattr(rag_system, 'base_url', None),
+            'response': data,
+        }), response.status_code
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)}), 500
+
 # --- API ENDPOINTS ---
 
 
