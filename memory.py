@@ -359,20 +359,27 @@ except Exception as e:
 
 # --- AUTH ---
 def create_account(username, password, email):
+    import logging
     username = username.strip() if username else ""
     email = email.strip() if email else ""
+    
+    logging.info(f"✍️ Creating account: username='{username}', email='{email}'")
+    
     with get_db() as conn:
         cursor = conn.cursor()
         # Check if username or email already exists (case-insensitive)
         cursor.execute("SELECT user_id FROM users WHERE LOWER(username)=LOWER(?) OR LOWER(email)=LOWER(?)", (username, email))
-        if cursor.fetchone(): 
+        if cursor.fetchone():
+            logging.warning(f"⚠️ Account already exists: username='{username}' or email='{email}'")
             return None
             
         # Hash password before storing
         hashed = _hash_password(password)
         cursor.execute("INSERT INTO users (username, password, email, name) VALUES (?, ?, ?, ?)", (username, hashed, email, username))
         conn.commit()
-        return cursor.lastrowid
+        user_id = cursor.lastrowid
+        logging.info(f"✅ Account created: user_id={user_id}, username='{username}', email='{email}'")
+        return user_id
 
 def verify_user(username_or_email, password):
     if not username_or_email: return None

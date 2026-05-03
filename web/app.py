@@ -635,6 +635,46 @@ def debug_db():
         }), 500
 
 
+@app.route('/api/debug/user/<email_or_username>', methods=['GET'])
+def debug_user_lookup(email_or_username):
+    """Debug endpoint to check if a user exists and what data we have."""
+    try:
+        from memory import get_db, get_user_by_username
+        
+        # Try to find user
+        user = get_user_by_username(email_or_username)
+        
+        if user:
+            return jsonify({
+                'status': 'found',
+                'user_id': user[0],
+                'username': user[15] if len(user) > 15 else None,
+                'email': user[17] if len(user) > 17 else None,
+                'full_tuple': str(user)
+            }), 200
+        
+        # If not found, list all users for comparison
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT user_id, username, email FROM users")
+            all_users = cursor.fetchall()
+            
+            return jsonify({
+                'status': 'not_found',
+                'searched_for': email_or_username,
+                'all_users': [
+                    {'user_id': u[0], 'username': u[1], 'email': u[2]}
+                    for u in all_users
+                ]
+            }), 200
+    except Exception as e:
+        logging.error(f"User lookup debug error: {e}", exc_info=True)
+        return jsonify({
+            'status': 'error',
+            'error': str(e)
+        }), 500
+
+
 @app.route('/api/debug/ai-key')
 def debug_ai_key():
     """Return whether the NVIDIA API key is present on the running server.
@@ -832,16 +872,21 @@ def signup_verify():
     if not username or not password or not email or not code:
         return jsonify({'error': 'Missing verification details'}), 400
 
+    logging.info(f"📝 Signup verify: username='{username}', email='{email}', code='{code}'")
+
     ok, err = verify_signup_code(username, email, password, code)
     if not ok:
+        logging.warning(f"❌ Code verification failed: {err}")
         return jsonify({'error': err}), 400
 
     user_id = create_account(username, password, email)
     if not user_id:
         clear_signup_verification(username)
+        logging.warning(f"❌ Account creation failed (maybe duplicate): username='{username}'")
         return jsonify({'error': 'Username already exists'}), 400
 
     clear_signup_verification(username)
+    logging.info(f"✅ Signup complete: user_id={user_id}, username='{username}', email='{email}'")
 
     session['user_id'] = user_id
     session['user_name'] = username
@@ -865,15 +910,42 @@ def login():
     if not identifier or not password:
         return jsonify({'error': 'Email/username and password are required.'}), 400
 
+    # Debug: Log what we're looking for
+    logging.info(f"🔍 Login attempt: identifier='{identifier}' (len={len(identifier)})")
+    
     user_row = get_user_by_username(identifier)
     if not user_row:
-        # Debug: Log the lookup failure
-        logging.warning(f"Login lookup failed for identifier: {identifier}")
-        return jsonify({'error': 'Account not found. Please create an account.'}), 404
+        # Debug: Check if user exists with different email format or in different field
+        logging.warning(f"❌ Login lookup failed for identifier: '{identifier}'")
+        
+        # Try to find similar users in database for debugging
+        try:
+            with get_db() as conn:
+                cursor = conn.cursor()
+                
+                # If identifier looks like an email, search explicitly for it
+                if '@' in identifier:
+                    cursor.execute("SELECT user_id, username, email FROM users WHERE LOWER(email)=LOWER(?)", (identifier,))
+                    match = cursor.fetchone()
+                    if match:
+                        logging.info(f"✅ Found email match: {match}")
+                        user_row = get_user_by_username(match[1])  # Get full row using username
+                    else:
+                        logging.warning(f"❌ No users found with email: {identifier}")
+                
+                # Check what users exist in the database
+                cursor.execute("SELECT user_id, username, email FROM users LIMIT 20")
+                existing_users = cursor.fetchall()
+                logging.info(f"📋 Users in database ({len(existing_users)} total): {existing_users}")
+        except Exception as e:
+            logging.error(f"Error checking database: {e}")
+        
+        if not user_row:
+            return jsonify({'error': 'Account not found. Please create an account.'}), 404
 
     user_id = verify_user(identifier, password)
     if not user_id:
-        logging.warning(f"Password verification failed for identifier: {identifier}")
+        logging.warning(f"🔐 Password verification failed for identifier: {identifier}")
         return jsonify({'error': 'Invalid credentials. If you are new, please create an account.'}), 401
 
     # Canonical values from DB (tuple mapping in memory.get_user_by_username)
