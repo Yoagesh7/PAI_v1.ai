@@ -156,7 +156,7 @@
     }
 </style>
 
-<div class="report-container">
+<div id="reportContainer" class="report-container">
     <!-- Header -->
     <div style="text-align: center; margin-bottom: var(--space-8);">
         <h6 class="text-sm font-bold text-secondary"
@@ -251,14 +251,21 @@
         </div>
         <p class="text-secondary loading" id="prediction">Analyzing trends...</p>
     </div>
-</div>
+<div id="loadingState" style="display:none"></div>
 
 <script>
-    // Fetch and display routine analysis
-    fetch('/api/routine-analysis')
-        .then(r => r.json())
-        .then(data => {
-            // Update score circle
+    // Centralized loader and container IDs: #loadingState and #reportContainer
+    async function loadAnalysis() {
+        try {
+            const response = await fetch('/api/routine-analysis-v2');
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('API Error:', response.status, errorText);
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            // Render simple mapping from v2 response to the UI
             const score = data.routine_score || 50;
             const circle = document.getElementById('scoreCircle');
             const circumference = 565;
@@ -266,67 +273,42 @@
             circle.style.strokeDashoffset = offset;
             document.getElementById('scoreValue').textContent = score;
 
-            // Update period
-            if (data.period) {
-                document.getElementById('period').textContent = data.period;
-            }
-
-            // Update metrics
+            if (data.period) document.getElementById('period').textContent = data.period;
             document.getElementById('habitRate').textContent = `${data.habit_completion_rate || 0}%`;
             document.getElementById('focusTime').textContent = `${data.total_focus_minutes || 0}m`;
             document.getElementById('tasksDone').textContent = data.completed_tasks || 0;
             document.getElementById('aiGoals').textContent = `${data.ai_task_completion_rate || 0}%`;
 
-            // Update insights
             document.getElementById('strength').textContent = data.top_strength || "Keep up the great work!";
             document.getElementById('weakness').textContent = data.main_weakness || "Stay consistent!";
             document.getElementById('pattern').textContent = data.productivity_pattern || "Still learning your patterns";
 
-            // Update recommendations
             const recList = document.getElementById('recommendations');
             if (data.recommendations && data.recommendations.length > 0) {
                 recList.innerHTML = data.recommendations.map((rec, i) => `
-                <li class="rec-item">
-                    <div class="rec-number">${i + 1}</div>
-                    <span>${rec}</span>
-                </li>
-            `).join('');
+                    <li class="rec-item">
+                        <div class="rec-number">${i + 1}</div>
+                        <span>${rec}</span>
+                    </li>
+                `).join('');
             } else {
                 recList.innerHTML = `
-                <li class="rec-item">
-                    <div class="rec-number">1</div>
-                    <span>No specific recommendations at this time. Keep up the good work!</span>
-                </li>
-            `;
+                    <li class="rec-item">
+                        <div class="rec-number">1</div>
+                        <span>No specific recommendations at this time. Keep up the good work!</span>
+                    </li>
+                `;
             }
 
-            // Update prediction
             document.getElementById('prediction').textContent = data.prediction || "Keep going!";
-
-            // Remove loading states
             document.querySelectorAll('.loading').forEach(el => el.classList.remove('loading'));
 
-            // Hide loading state and show report container
             document.getElementById('loadingState').style.display = 'none';
             document.getElementById('reportContainer').style.display = 'block';
-        }
 
-    // Fetch and display routine analysis
-    async function loadAnalysis() {
-                try {
-                    const response = await fetch('/api/routine-analysis-v2');
-
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        console.error('API Error:', response.status, errorText);
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-
-                    const data = await response.json();
-                    renderReport(data);
-                } catch (error) {
-                    console.error('Failed to load analysis:', error);
-                    document.getElementById('loadingState').innerHTML = `
+        } catch (error) {
+            console.error('Failed to load analysis:', error);
+            document.getElementById('loadingState').innerHTML = `
                 <div style="text-align: center; padding: 40px; color: #ef4444;">
                     <div style="font-size: 48px; margin-bottom: 20px;">⚠️</div>
                     <h3>Unable to Connect</h3>
@@ -337,10 +319,10 @@
                     <button onclick="location.reload()" class="btn btn-primary">Try Again</button>
                 </div>
             `;
-                    document.getElementById('loadingState').style.display = 'flex'; // Ensure it's visible
-                    document.getElementById('reportContainer').style.display = 'none'; // Ensure report is hidden
-                }
-            }
+            document.getElementById('loadingState').style.display = 'flex';
+            document.getElementById('reportContainer').style.display = 'none';
+        }
+    }
 
     // Initial call to load analysis
     loadAnalysis();
