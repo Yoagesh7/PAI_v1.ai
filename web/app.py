@@ -917,7 +917,7 @@ def admin_login():
     return jsonify({'error': 'Invalid token'}), 401
 
 
-@app.route('/cod7', methods=['GET','POST'])
+@app.route('/cod07', methods=['GET','POST'])
 def hidden_admin_login():
     return admin_login()
 
