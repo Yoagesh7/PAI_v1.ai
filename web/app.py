@@ -215,19 +215,12 @@ def debug_routes():
 
 @app.route('/intro')
 def intro_page():
-    return render_template('landing.html')
-
-
-@app.route('/try-now')
-def try_now():
-    if 'user_id' in session:
-        return redirect('/')
-    return redirect('/login')
+    return render_template('intro.html')
 
 @app.route('/')
 def home():
     if 'user_id' not in session:
-        return render_template('landing.html')
+        return render_template('intro.html')
     
     # Check if user needs onboarding
     user_id = session['user_id']
@@ -1426,6 +1419,8 @@ CONVERSATION RULES (follow naturally, don't state them):
   - Choice question → [OPTIONS: Option A | Option B | Option C]
   - Open question → [OPTIONS: Help me decide | I'm not sure | Skip this]
   Never skip this. Always include 2-4 options.
+- Keep tone warm and motivating; use 1-3 relevant emojis naturally.
+- When giving steps, tips, or plans, prefer short bullet points (•) for clarity.
 - Use plain text. No markdown headers (#, ##). Bold is fine for key words.
 - If they say they're tired, struggling, or failing — acknowledge it first before coaching.
 - Never lecture. Never moralize. Give the next smallest step forward."""
