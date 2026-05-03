@@ -372,12 +372,8 @@ def get_user(user_id):
         row = cursor.fetchone()
         if not row:
             return None
-        keys = [
-            'user_id', 'name', 'career', 'hobbies', 'last_task', 'task_status', 'state',
-            'tasks_completed', 'streak', 'last_active_date', 'daily_topic', 'work_time',
-            'free_time', 'age', 'last_task_date', 'username', 'password', 'email', 'flow_day'
-        ]
-        return dict(zip(keys, row))
+        # Force conversion to tuple for legacy index-based access in app.py
+        return tuple(row)
 
 
 def save_user(user_id, **fields):
@@ -569,12 +565,8 @@ def get_user_by_username(username):
         row = cursor.fetchone()
         if not row:
             return None
-        keys = [
-            'user_id', 'name', 'career', 'hobbies', 'last_task', 'task_status', 'state',
-            'tasks_completed', 'streak', 'last_active_date', 'daily_topic', 'work_time',
-            'free_time', 'age', 'last_task_date', 'username', 'password', 'email', 'flow_day'
-        ]
-        return dict(zip(keys, row))
+        # Force conversion to tuple for legacy index-based access in app.py
+        return tuple(row)
 
 
 def get_flow_day(user_id):
@@ -582,7 +574,8 @@ def get_flow_day(user_id):
     if not user:
         return 0
     try:
-        return int(user.get('flow_day') or 0)
+        # index 18 is flow_day based on the SELECT query in get_user
+        return int(user[18] or 0)
     except Exception:
         return 0
 

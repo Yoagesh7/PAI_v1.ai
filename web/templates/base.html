@@ -15,8 +15,8 @@
     <link rel="stylesheet" href="/static/css/design-system.css">
 
     <!-- App Icon -->
-    <link rel="icon" type="image/svg+xml" href="/static/images/partnerai-logo.svg">
-    <link rel="apple-touch-icon" href="/static/images/partnerai-logo.svg">
+    <link rel="icon" type="image/svg+xml" href="/static/images/logo.png">
+    <link rel="apple-touch-icon" href="/static/images/logo.png">
 
     <!-- PWA manifest -->
     <link rel="manifest" href="/static/manifest.json">
@@ -239,12 +239,9 @@
         .mobile-bottom-nav {
             display: none;
             position: fixed;
-            bottom: 16px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: auto;
-            min-width: 300px;
-            max-width: 94vw;
+            bottom: 20px;
+            left: 12px;
+            right: 12px;
             height: 64px;
             background: rgba(255, 255, 255, 0.92);
             -webkit-backdrop-filter: blur(20px);
@@ -253,9 +250,11 @@
             box-shadow: 0 4px 24px rgba(0, 0, 0, 0.10), 0 1px 4px rgba(0, 0, 0, 0.06);
             border: 1px solid rgba(255,255,255,0.6);
             z-index: var(--z-fixed);
-            padding: 0 10px;
+            padding: 0 8px;
             /* Safe area for notched phones */
             padding-bottom: env(safe-area-inset-bottom, 0px);
+            margin: 0 auto;
+            max-width: 500px;
         }
 
         [data-theme="dark"] .mobile-bottom-nav {
@@ -460,17 +459,21 @@
         }
 
         /* Make popup full-width with margins on very small screens */
-        @media (max-width: 420px) {
+        @media (max-width: 480px) {
             .mobile-more-popup {
-                left: 8px;
-                right: 8px;
-                min-width: auto;
-                width: calc(100% - 16px);
+                position: fixed;
+                bottom: 90px;
+                left: 16px;
+                right: 16px;
+                width: auto;
                 max-width: none;
                 transform-origin: bottom center;
+                margin: 0;
             }
 
-            .mobile-more-popup::after { right: 28px; }
+            .mobile-more-popup::after { 
+                right: 32px; 
+            }
         }
 
         .popup-item {
@@ -527,7 +530,7 @@
         <aside class="left-sidebar" id="sidebar">
             <div class="sidebar-header">
                 <a href="/" class="sidebar-logo">
-                    <img class="logo-icon" src="/static/images/partnerai-logo.svg" alt="PartnerAI">
+                    <img class="logo-icon" src="/static/images/logo.png" alt="PartnerAI">
                     <span>PartnerAI</span>
                 </a>
             </div>

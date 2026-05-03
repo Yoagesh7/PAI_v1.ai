@@ -5,15 +5,12 @@
     <!-- Greeting Header -->
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-8);">
         <div style="display: flex; align-items: center; gap: var(--space-4);">
-            <img src="/static/images/partnerai-logo.svg" alt="PartnerAI" class="avatar avatar-lg" style="padding: 0; background: transparent; object-fit: cover;">
+            <img src="/static/images/logo.png" alt="PartnerAI" class="avatar avatar-lg" style="padding: 0; background: transparent; object-fit: cover;">
             <div>
-                <h1 style="font-size: var(--text-2xl); font-weight: 700; margin: 0; color: var(--color-text-primary);"
-                    id="greeting">
-                    Good evening,
+                <h1 style="font-size: var(--text-xl); font-weight: 700; margin: 0; color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;" id="greeting-container">
+                    <span id="greeting">Good evening,</span> <span id="username-display">User</span>
                 </h1>
-                <p style="font-size: var(--text-base); color: var(--color-text-secondary); margin: 0;" id="username">
-                    User</p>
-                <p style="font-size: var(--text-sm); color: var(--color-text-tertiary); margin: var(--space-1) 0 0 0;">
+                <p style="font-size: var(--text-xs); color: var(--color-text-tertiary); margin: var(--space-1) 0 0 0;">
                     Time to focus on your vision.
                 </p>
             </div>
@@ -284,7 +281,7 @@
         .then(r => r.json())
         .then(data => {
             if (data.username) {
-                document.getElementById('username').textContent = data.username;
+                document.getElementById('username-display').textContent = data.username;
             }
         })
         .catch(() => { });

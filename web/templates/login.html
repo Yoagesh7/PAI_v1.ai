@@ -225,7 +225,7 @@
 <body>
     <div class="login-container">
         <div class="login-card">
-            <img class="brand-logo" src="/static/images/partnerai-logo.svg" alt="PartnerAI logo">
+            <img class="brand-logo" src="/static/images/logo.png" alt="PartnerAI logo">
             <h1 id="title">Welcome Back</h1>
             <p class="subtitle" id="subtitle">Sign in to continue to PartnerAI</p>
 
@@ -256,6 +256,7 @@
                 <div class="form-group" id="verifyGroup" style="display:none;">
                     <label for="verify-code">Verification Code</label>
                     <input type="text" id="verify-code" placeholder="Enter 6-digit code from email" maxlength="6">
+                    <button type="button" class="btn-resend" id="btn-resend" onclick="resendVerificationCode(event)" style="display:none; background: none; border: none; color: var(--color-primary-600); cursor: pointer; padding: 0; margin-top: 8px; font-size: var(--text-sm); font-weight: 500;">Resend Code</button>
                 </div>
 
                 <button type="submit" class="btn-submit" id="action-btn">Sign In</button>
@@ -270,7 +271,7 @@
 
     <div class="install-prompt" id="installPrompt">
         <div class="install-prompt-inner">
-            <img src="/static/images/partnerai-logo.svg" alt="PartnerAI" class="install-prompt-icon">
+            <img src="/static/images/logo.png" alt="PartnerAI" class="install-prompt-icon">
             <div style="flex:1; text-align:left;">
                 <h3>Install PartnerAI</h3>
                 <p>Get quick access from your home screen and use it like an app.</p>
@@ -336,6 +337,7 @@
             document.getElementById('emailGroup').style.display = isLogin ? 'none' : 'block';
             document.getElementById('confirmGroup').style.display = isLogin ? 'none' : 'block';
             document.getElementById('verifyGroup').style.display = 'none';
+            document.getElementById('btn-resend').style.display = 'none';
 
             // Update password autocomplete
             document.getElementById('password').autocomplete = isLogin ? 'current-password' : 'new-password';
@@ -421,6 +423,7 @@
                         pendingSignupPayload = { username: user, password: pass, email: email };
                         document.getElementById('verifyGroup').style.display = 'block';
                         document.getElementById('confirmGroup').style.display = 'none';
+                        document.getElementById('btn-resend').style.display = 'inline-block';
                         document.getElementById('action-btn').innerText = "Verify & Create Account";
                         document.getElementById('subtitle').innerText = "Enter the code sent to your email to finish signup";
                         err.innerText = data.message || "Verification code sent.";
@@ -433,7 +436,8 @@
                 }
 
                 if (data.success) {
-                    window.location.href = '/';
+                    // Redirect to onboarding wizard after signup, otherwise to home
+                    window.location.href = isLogin ? '/' : '/onboarding';
                 } else {
                     err.innerText = data.error || "Authentication failed.";
                     err.style.display = 'block';
@@ -452,6 +456,50 @@
                 document.getElementById('password').value = pendingSignupPayload.password;
                 document.getElementById('email').value = pendingSignupPayload.email;
             }
+        }
+
+        async function resendVerificationCode(event) {
+            event.preventDefault();
+            if (!pendingSignupPayload) return;
+            
+            const btn = document.getElementById('btn-resend');
+            const err = document.getElementById('error');
+            
+            btn.innerText = "Sending...";
+            btn.disabled = true;
+            
+            try {
+                const res = await fetch('/api/signup/resend', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: pendingSignupPayload.username,
+                        password: pendingSignupPayload.password,
+                        email: pendingSignupPayload.email
+                    })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    err.innerText = data.message || "New verification code sent.";
+                    err.style.display = 'block';
+                    err.style.background = '#eef7ff';
+                    err.style.color = '#1d4ed8';
+                } else {
+                    err.innerText = data.error || "Failed to resend code.";
+                    err.style.display = 'block';
+                    err.style.background = 'var(--color-error-bg)';
+                    err.style.color = 'var(--color-error)';
+                }
+            } catch (e) {
+                err.innerText = "Connection error. Please try again.";
+                err.style.display = 'block';
+                err.style.background = 'var(--color-error-bg)';
+                err.style.color = 'var(--color-error)';
+            }
+            
+            btn.innerText = "Resend Code";
+            btn.disabled = false;
         }
     </script>
 </body>

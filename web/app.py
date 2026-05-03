@@ -38,16 +38,17 @@ def send_email(to_email, subject, body):
         msg['Subject'] = subject
         msg.attach(MIMEText(body, 'plain'))
 
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        # Add timeout to prevent hanging
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=10)
         server.starttls()
         server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
         text = msg.as_string()
         server.sendmail(EMAIL_ADDRESS, to_email, text)
         server.quit()
-        print(f"DEBUG: Email sent to {to_email}", flush=True)
+        logging.info(f"Email sent successfully to {to_email}")
         return True
     except Exception as e:
-        print(f"DEBUG: Email failed: {e}", flush=True)
+        logging.error(f"Email failed to {to_email}: {e}")
         return False
 
 # Add parent directory to path to allow importing config
@@ -213,18 +214,22 @@ _rate_buckets = {}
 def rate_limit(key_prefix, limit=10, window=60):
     def decorator(f):
         def wrapped(*args, **kwargs):
-            ident = request.remote_addr or 'unknown'
-            key = f"{key_prefix}:{ident}"
-            now = int(time.time())
-            bucket = _rate_buckets.get(key, {'count': 0, 'start': now})
-            if now - bucket['start'] >= window:
-                bucket = {'count': 0, 'start': now}
-            bucket['count'] += 1
-            _rate_buckets[key] = bucket
-            if bucket['count'] > limit:
-                logging.warning(f"Rate limit exceeded for {ident} on {key_prefix}")
-                return jsonify({'error': 'Too many requests'}), 429
-            return f(*args, **kwargs)
+            try:
+                ident = request.remote_addr or 'unknown'
+                key = f"{key_prefix}:{ident}"
+                now = int(time.time())
+                bucket = _rate_buckets.get(key, {'count': 0, 'start': now})
+                if now - bucket['start'] >= window:
+                    bucket = {'count': 0, 'start': now}
+                bucket['count'] += 1
+                _rate_buckets[key] = bucket
+                if bucket['count'] > limit:
+                    logging.warning(f"Rate limit exceeded for {ident} on {key_prefix}")
+                    return jsonify({'error': 'Too many requests'}), 429
+                return f(*args, **kwargs)
+            except Exception as e:
+                logging.error(f"Error in rate_limit decorator: {e}")
+                return f(*args, **kwargs) # Fallback to executing function without limit
         wrapped.__name__ = f.__name__
         return wrapped
     return decorator
@@ -248,51 +253,53 @@ def debug_routes():
     return "<pre>" + "\n".join(output) + "</pre>"
 
 
+@app.route('/login')
+def login_page():
+    if 'user_id' in session:
+        return redirect('/')
+    return render_template('login.html')
+
 @app.route('/intro')
 def intro_page():
-    return render_template('intro.html')
+    return redirect('/login')
 
 @app.route('/')
 def home():
     if 'user_id' not in session:
-        return render_template('intro.html')
+        return render_template('login.html')
     
     # Check if user needs onboarding
     user_id = session['user_id']
     user = get_user(user_id)
-    # Check Onboarding
-    if user:
-        # Schema Mapping (0-indexed):
-        # 0:user_id, 1:name, 2:goal, 6:state, 11:work_time, 12:free_time, 13:age
-        try:
-            goal = user[2] if len(user) > 2 else None
-            state = (user[6] if len(user) > 6 and user[6] else "").upper()
-            age = user[13] if len(user) > 13 else None
+    
+    if not user:
+        logging.warning(f"No user record for ID {user_id}. Clearing session.")
+        session.clear()
+        return redirect('/login')
+
+    # Extract fields safely
+    try:
+        goal = user[2] if len(user) > 2 else None
+        state = (user[6] if len(user) > 6 and user[6] else "").upper()
+        age = user[13] if len(user) > 13 else None
+        name = user[1] if len(user) > 1 else "User"
             
-            print(f">>> HOME: User {user_id} | State: {state} | Goal: {goal} | Age: {age}", flush=True)
+        logging.info(f"HOME: User {user_id} | State: {state} | Goal: {goal}")
 
-            # Manual bypass for debugging
-            if request.args.get('force_chat') == 'true':
-                return render_template('chat.html', active_page='chat', history=get_chat_history(user_id))
+        # Manual bypass for debugging
+        if request.args.get('force_chat') == 'true':
+            return render_template('chat.html', active_page='chat', history=get_chat_history(user_id))
 
-            # Treat ACTIVE users as ready even if optional fields are missing.
-            # Only send to onboarding for clearly incomplete profiles.
-            needs_onboarding = (state in ("", "ONBOARDING", "WAITING") and not goal)
-
-            if not needs_onboarding:
-                print(f">>> HOME: User {user_id} verified ACTIVE. Loading Home Dashboard.", flush=True)
-                history = get_chat_history(user_id, limit=50)
-                return render_template('home.html', active_page='home', history=history)
-            
-            print(f">>> HOME: User {user_id} failed check. Redirecting to onboarding...", flush=True)
-            return redirect('/onboarding')
-        except Exception as e:
-            print(f">>> HOME ERROR: {e}", flush=True)
-            history = get_chat_history(user_id, limit=50)
-            return render_template('home.html', active_page='home', history=history)
-    else:
-        print(f">>> HOME: No user Record for ID {user_id}. Redirecting...", flush=True)
+        # Treat ACTIVE users as ready
+        if state == "ACTIVE" or goal:
+            return render_template('home.html', active_page='home', history=get_chat_history(user_id, limit=50))
+        
+        # Otherwise onboarding
         return redirect('/onboarding')
+
+    except Exception as e:
+        logging.error(f"Error in home route: {e}")
+        return render_template('home.html', active_page='home', history=get_chat_history(user_id, limit=50))
 
 @app.route('/api/init')
 def api_init_chat():
@@ -318,7 +325,14 @@ def onboarding_page():
     if 'user_id' not in session: return redirect('/login')
     # If they are already active, don't let them back into onboarding unless they want to
     user = get_user(session['user_id'])
-    if user and len(user) > 6 and user[6] == "ACTIVE" and not request.args.get('re_onboard'):
+    
+    user_state = None
+    if isinstance(user, dict):
+        user_state = user.get('state')
+    elif isinstance(user, (list, tuple)):
+        user_state = user[6] if len(user) > 6 else None
+
+    if user_state == "ACTIVE" and not request.args.get('re_onboard'):
          return redirect('/')
     return render_template('onboarding.html')
 @app.route('/api/onboarding/complete', methods=['POST'])
@@ -551,6 +565,7 @@ def signup():
     if not username or not password or not email:
         return jsonify({'error': 'Missing credentials'}), 400
 
+    logging.info(f"Signup attempt: username={username}, email={email}")
     cleanup_expired_signup_verifications()
 
     if username_exists(username):
@@ -559,39 +574,69 @@ def signup():
     if '@' not in email:
         return jsonify({'error': 'Please enter a valid email address.'}), 400
 
-    # Create account immediately so the user can sign in right away
-    user_id = create_account(username, password, email)
-    if not user_id:
-        return jsonify({'error': 'Username already exists'}), 400
-
     # Save a verification record and send code in background (non-blocking)
+    verification_code = f"{random.randint(100000, 999999)}"
+    expires_at = (datetime.now() + timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
+    save_signup_verification(username, password, email, verification_code, expires_at)
+
+    subject = "PartnerAI verification code"
+    body = (
+        f"Hi {username},\n\n"
+        f"Your PartnerAI verification code is: {verification_code}\n"
+        "This code will expire in 10 minutes.\n\n"
+        "If you did not request this, please ignore this email."
+    )
+
+    # Send email synchronously to ensure we catch any SMTP errors during development/debugging
     try:
-        verification_code = f"{random.randint(100000, 999999)}"
-        expires_at = (datetime.now() + timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
-        save_signup_verification(username, password, email, verification_code, expires_at)
-
-        subject = "PartnerAI verification code"
-        body = (
-            f"Hi {username},\n\n"
-            f"Your PartnerAI verification code is: {verification_code}\n"
-            "This code will expire in 10 minutes.\n\n"
-            "If you did not request this, please ignore this email."
-        )
-
-        def send_verify_email():
-            try:
-                send_email(email, subject, body)
-            except Exception as e:
-                print(f"DEBUG: Email send failed: {e}", flush=True)
-
-        threading.Thread(target=send_verify_email, daemon=True).start()
+        success = send_email(email, subject, body)
+        if not success:
+            return jsonify({'error': 'Failed to send verification email. Please check your email address or try again later.'}), 500
     except Exception as e:
-        print(f"DEBUG: Verification background task failed: {e}", flush=True)
+        logging.error(f"Critical failure in signup email: {e}")
+        return jsonify({'error': f'System error during email delivery: {str(e)}'}), 500
 
-    # Log user in immediately
-    session['user_id'] = user_id
-    session['user_name'] = username
-    return jsonify({'success': True, 'requires_verification': True, 'message': 'Account created and logged in. Verification email sent.'})
+    # Do not log user in immediately. They must verify first.
+    return jsonify({'success': True, 'requires_verification': True, 'message': 'Verification email sent. Please check your inbox.'})
+
+@app.route('/api/signup/resend', methods=['POST'])
+@rate_limit('signup_resend', limit=3, window=60)
+def signup_resend():
+    data = request.json
+    username = (data.get('username') or '').strip()
+    email = (data.get('email') or '').strip()
+    if not username or not email:
+        return jsonify({'error': 'Missing details'}), 400
+
+    # Resend code
+    verification_code = f"{random.randint(100000, 999999)}"
+    expires_at = (datetime.now() + timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
+    
+    # We need the password to resend correctly if they haven't verified yet
+    # If password isn't provided, this relies on frontend passing it or skipping it.
+    # But save_signup_verification will overwrite with the same password if we fetch it, or we just trust the client payload
+    password = data.get('password', '')
+    
+    save_signup_verification(username, password, email, verification_code, expires_at)
+
+    subject = "PartnerAI verification code"
+    body = (
+        f"Hi {username},\n\n"
+        f"Your new PartnerAI verification code is: {verification_code}\n"
+        "This code will expire in 10 minutes.\n\n"
+        "If you did not request this, please ignore this email."
+    )
+
+    # Send email synchronously
+    try:
+        success = send_email(email, subject, body)
+        if not success:
+            return jsonify({'error': 'Failed to resend verification email.'}), 500
+    except Exception as e:
+        logging.error(f"Critical failure in resend email: {e}")
+        return jsonify({'error': str(e)}), 500
+
+    return jsonify({'success': True, 'message': 'New verification code sent.'})
 
 
 @app.route('/api/signup/verify', methods=['POST'])
@@ -1117,13 +1162,16 @@ def chat():
     save_chat_message(user_id, 'user', text)
     
     user = get_user(user_id)
+    logging.info(f"DEBUG: chat user object type={type(user)}, content={user}")
+    
     if not user:
-        # Ensure a valid user row exists so tuple index access below never crashes.
+        # Ensure a valid user row exists
         save_user(user_id, name=session.get('user_name', f"User {user_id}"), state="ACTIVE")
         user = get_user(user_id)
+        logging.info(f"DEBUG: after save_user, user type={type(user)}, content={user}")
 
     # --- PARTNER AI LOGIC ---
-    name = user[1] if user else "Friend"
+    name = user[1] if user and len(user) > 1 else "Friend"
     # ... (other user vars extraction if needed by RAG, but RAG handles context)
 
     is_command = text.startswith("/")
@@ -3694,4 +3742,4 @@ if __name__ == '__main__':
         print(f"⚠️ Scheduler init failed: {e}")
     
     print("✅ PartnerAI is ready.", flush=True)
-    app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)
+    app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=True)
