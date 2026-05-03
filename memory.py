@@ -513,6 +513,8 @@ def save_password_reset(username, email, code, expires_at):
         conn.commit()
 
 
+def verify_reset_code(username_or_email, code):
+    """Verify password reset OTP."""
     import logging
     logging.info(f" Verifying reset code for identifier='{username_or_email}', code='{code}'")
     with get_db() as conn:
