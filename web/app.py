@@ -15,7 +15,10 @@ from flask import Flask, request, jsonify, render_template, session, redirect, u
 import logging
 
 # Basic logging configuration
-logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s', filename=os.path.join(ROOT_DIR, 'partnerai.log'))
+log_file = os.path.join(ROOT_DIR, 'partnerai.log')
+if os.getenv("VERCEL"):
+    log_file = os.path.join('/tmp', 'partnerai.log')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s', filename=log_file)
 
 
 # ... (Previous imports) ...
