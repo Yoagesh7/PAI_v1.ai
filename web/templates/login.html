@@ -427,7 +427,29 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                const data = await res.json();
+                
+                // Check for HTTP errors first
+                if (!res.ok && res.status >= 500) {
+                    console.error(`❌ Server error: ${res.status}`);
+                    err.innerText = `Server error (${res.status}). Please try again in a moment.`;
+                    err.style.display = 'block';
+                    btn.disabled = false;
+                    btn.innerText = isLogin ? "Sign In" : "Create Account";
+                    return;
+                }
+                
+                const text = await res.text();
+                // Detect HTML error responses
+                if (!text || text.startsWith('<!')) {
+                    console.error('❌ Server returned HTML instead of JSON');
+                    err.innerText = "Server error. Please try again.";
+                    err.style.display = 'block';
+                    btn.disabled = false;
+                    btn.innerText = isLogin ? "Sign In" : "Create Account";
+                    return;
+                }
+                
+                const data = JSON.parse(text);
 
                 if (data.success && data.requires_verification) {
                     if (data.is_login_redirect) {
@@ -509,6 +531,7 @@
                     btn.disabled = false;
                 }
             } catch (e) {
+                console.error('❌ Auth error:', e);
                 err.innerText = "Connection error. Please try again.";
                 err.style.display = 'block';
                 btn.innerText = isLogin ? "Sign In" : (pendingVerification ? "Verify & Create Account" : "Create Account");
