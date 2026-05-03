@@ -1,0 +1,108 @@
+<html class="dark"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "indigo-deep": "#1a1a2e",
+            "charcoal": "#0f0f12",
+            "lavender-glow": "#e0d7ff",
+          },
+          fontFamily: {
+            "display": ["Inter", "sans-serif"]
+          },
+        },
+      },
+    }
+  </script>
+<style type="text/tailwindcss">
+    @layer utilities {
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 1, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+      }
+      .bg-focus-gradient {
+        background: radial-gradient(circle at center, #1e1b4b 0%, #0f172a 40%, #020617 100%);
+      }
+      .timer-glow {
+        box-shadow: 0 0 40px rgba(224, 215, 255, 0.15);
+      }
+      .lavender-text-glow {
+        text-shadow: 0 0 15px rgba(224, 215, 255, 0.4);
+      }
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-charcoal text-white font-display antialiased">
+<div class="relative flex h-screen w-full flex-col bg-focus-gradient overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-[2px] bg-white/5">
+<div class="h-full bg-lavender-glow/40 w-1/3 shadow-[0_0_10px_rgba(224,215,255,0.3)]"></div>
+</div>
+<div class="pt-16 px-6 flex flex-col items-center">
+<div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
+<span class="material-symbols-outlined text-lavender-glow text-sm">rocket_launch</span>
+<p class="text-white/60 text-[10px] font-semibold uppercase tracking-[0.2em] leading-normal">
+          Deep Work: Pitch Strategy
+        </p>
+</div>
+</div>
+<div class="flex-1 flex flex-col items-center justify-center px-8">
+<h1 class="text-white tracking-tight text-2xl font-medium leading-tight text-center pb-12">
+        Just 25 minutes.<br/>
+<span class="text-white/40 font-light">Stay in the flow.</span>
+</h1>
+<div class="relative group">
+<div class="absolute inset-0 bg-lavender-glow/5 blur-[80px] rounded-full"></div>
+<div class="relative flex gap-6 justify-center items-center">
+<div class="flex flex-col items-center gap-4">
+<div class="flex h-32 w-32 items-center justify-center rounded-[2.5rem] bg-white/[0.03] border border-white/10 backdrop-blur-2xl timer-glow">
+<p class="text-lavender-glow lavender-text-glow text-6xl font-extralight tracking-tighter">25</p>
+</div>
+<p class="text-white/30 text-[9px] font-bold uppercase tracking-[0.3em]">Minutes</p>
+</div>
+<div class="pb-10">
+<p class="text-lavender-glow/20 text-4xl font-extralight">:</p>
+</div>
+<div class="flex flex-col items-center gap-4">
+<div class="flex h-32 w-32 items-center justify-center rounded-[2.5rem] bg-white/[0.03] border border-white/10 backdrop-blur-2xl timer-glow">
+<p class="text-lavender-glow lavender-text-glow text-6xl font-extralight tracking-tighter">00</p>
+</div>
+<p class="text-white/30 text-[9px] font-bold uppercase tracking-[0.3em]">Seconds</p>
+</div>
+</div>
+</div>
+</div>
+<div class="pb-16 px-8 flex flex-col gap-8 items-center">
+<div class="w-full max-w-xs">
+<div class="flex items-center gap-4 px-4 py-3 rounded-2xl bg-white/[0.03] border border-white/5 backdrop-blur-xl">
+<div class="relative size-10 shrink-0">
+<div class="absolute inset-0 bg-lavender-glow/20 blur-md rounded-lg"></div>
+<div class="relative h-full w-full bg-center bg-no-repeat bg-cover rounded-lg border border-white/10" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCcnnyCScGWjdypGWTlVtUXgDyEhm1GONOl_NLBeZsInh84ODpLHVX4xV14ut7YdsmhjIg8oe27FoyKIYuR_rn_5dv370TElU96xhwoTPx4QmcXxDX2QUeSyP6eKnD8e1TXvz89-bHsJQ265owJ7ewdZcuuepw61ecBw7RxJ-CREgjIOiAHyp1MxtT53VjL5ETwkYWwHlaD03GngqeP_poT3AnK1kJnliu7JWKxWiKpCcyuZajxpKBdLgXldIbID-kQnVHatAZ1j4g");'></div>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-white/80 text-xs font-medium truncate">Deep Forest Rain</p>
+<p class="text-white/30 text-[10px] truncate">Binaural Beats</p>
+</div>
+<button class="flex shrink-0 items-center justify-center rounded-full size-8 bg-white/10 text-lavender-glow hover:bg-white/20 transition-all">
+<span class="material-symbols-outlined !text-[18px]">equalizer</span>
+</button>
+</div>
+</div>
+<button class="group flex items-center justify-center gap-2 text-white/20 hover:text-white/50 transition-colors duration-300">
+<span class="text-[10px] font-bold uppercase tracking-[0.2em]">End Session</span>
+<span class="material-symbols-outlined !text-[14px]">close</span>
+</button>
+</div>
+<div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)]"></div>
+</div>
+
+</body></html>

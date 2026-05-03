@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .icon-box {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+    }
+
+    .icon-idea {
+        background: rgba(255, 215, 0, 0.1);
+        color: #FFD700;
+    }
+
+    .icon-task {
+        background: rgba(124, 58, 237, 0.1);
+        color: #7C3AED;
+    }
+
+    .icon-learning {
+        background: rgba(59, 130, 246, 0.1);
+        color: #3B82F6;
+    }
+
+    .icon-default {
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+    }
+
+    .ai-analysis-box {
+        margin-top: 32px;
+        background: linear-gradient(135deg, #2D1B4E, #1A102E);
+        border: 1px solid #4C3A75;
+        border-radius: 16px;
+        padding: 24px;
+        display: none;
+        /* Hidden by default */
+    }
+
+    .ai-tag {
+        background: rgba(167, 139, 250, 0.2);
+        color: #E9D5FF;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        margin-right: 8px;
+    }
+</style>
+
+<div class="page-container" style="max-width: 800px; margin: 0 auto;">
+    <!-- Back Button -->
+    <a href="/workspace"
+        style="display: flex; align-items: center; gap: 8px; color: var(--color-text-secondary); text-decoration: none; margin-bottom: 24px; font-weight: 500;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 12H5" />
+            <path d="M12 19l-7-7 7-7" />
+        </svg>
+        Back to Workspace
+    </a>
+
+    <!-- Main Card -->
+    <div
+        style="background: var(--color-bg-secondary); border-radius: 24px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+
+        <!-- Header -->
+        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 24px;">
+            <div style="display: flex; gap: 12px; align-items: center;">
+                <div
+                    class="icon-box {% if block.type == 'idea' %}icon-idea{% elif block.type == 'task' %}icon-task{% elif block.type == 'learning' %}icon-learning{% else %}icon-default{% endif %}">
+                    {% if block.type == 'idea' %}💡
+                    {% elif block.type == 'task' %}✅
+                    {% elif block.type == 'learning' %}🧠
+                    {% else %}📝{% endif %}
+                </div>
+                <div>
+                    <h1 style="font-size: 32px; font-weight: 700; color: var(--color-text-primary); margin: 0;">{{
+                        block.title }}</h1>
+                    <div style="color: var(--color-text-tertiary); font-size: 14px; margin-top: 4px;">Created on {{
+                        block.created_at[:10] }}</div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button id="analyzeBtn" class="btn btn-sm"
+                    style="background: linear-gradient(135deg, #8B5CF6, #6D28D9); color: white; border: none;"
+                    onclick="analyzeBlock({{ block.id }})">
+                    ✨ Analyze with AI
+                </button>
+                <button class="btn btn-sm" style="background: rgba(239, 68, 68, 0.1); color: #EF4444; border: none;"
+                    onclick="deleteBlock({{ block.id }})">Delete</button>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div style="font-size: 18px; line-height: 1.6; color: var(--color-text-secondary); white-space: pre-wrap;">{{
+            block.content }}</div>
+
+        <!-- AI Analysis Result -->
+        <div id="aiResult" class="ai-analysis-box">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 20px;">🤖</span>
+                    <h3 style="margin: 0; color: #E9D5FF; font-weight: 600;">AI Analysis</h3>
+                </div>
+                <button id="saveAiBtn" class="btn btn-sm"
+                    style="background: rgba(167, 139, 250, 0.2); color: #E9D5FF; border: 1px solid #4C3A75;"
+                    onclick="saveAnalysis()">
+                    💾 Save Results
+                </button>
+            </div>
+
+            <div id="aiSummary" style="color: #D8B4FE; font-style: italic; margin-bottom: 16px;"></div>
+
+            <h4 style="color: #fff; font-size: 14px; margin-bottom: 8px;">Actionable Steps</h4>
+            <ul id="aiActions" style="color: #D8B4FE; padding-left: 20px; margin-bottom: 16px;"></ul>
+
+            <div id="aiTags" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+        </div>
+
+        <!-- Meta/Tags Placeholder -->
+        <div style="margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--color-border-light);">
+            <span
+                style="background: var(--color-bg-tertiary); padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; color: var(--color-text-secondary); text-transform: uppercase;">{{
+                block.type }}</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    const BLOCK_ID = {{ block.id }};
+    let currentAnalysis = null;
+
+    // Initial Load - Check for Saved Analysis
+    window.onload = function () {
+        const metaStr = '{{ block.meta | tojson }}';
+        try {
+            // Need to handle potential double serialization if db stores it as string
+            // but for now assume we can parse it from the template
+            // Actually, best way: just try to parse the raw string if possible in JS or pass safely
+            // Simpler: pass block.meta dict directly if possible, or parse safely
+
+            // Re-fetch block meta properly via API to be safe? 
+            // Or just try to read from rendered template
+            const serverMeta = JSON.parse('{{ block.meta | safe }}');
+
+            if (serverMeta && serverMeta.ai_analysis) {
+                renderAnalysis(serverMeta.ai_analysis);
+                currentAnalysis = serverMeta.ai_analysis;
+                document.getElementById('saveAiBtn').innerText = "✅ Saved";
+                document.getElementById('analyzeBtn').style.display = 'none'; // Optional: hide analyze if done
+            }
+        } catch (e) { console.log("No saved analysis or parse error", e); }
+    };
+
+    function renderAnalysis(data) {
+        document.getElementById('aiSummary').innerText = data.summary;
+        document.getElementById('aiActions').innerHTML = data.actions.map(action => `<li>${action}</li>`).join('');
+        document.getElementById('aiTags').innerHTML = data.tags.map(tag => `<span class="ai-tag">#${tag}</span>`).join('');
+        document.getElementById('aiResult').style.display = 'block';
+    }
+
+    async function analyzeBlock(id) {
+        const btn = document.getElementById('analyzeBtn');
+        const saveBtn = document.getElementById('saveAiBtn');
+
+        // Loading State
+        btn.innerText = "✨ Analyzing...";
+        btn.disabled = true;
+
+        try {
+            const res = await fetch('/api/knowledge/analyze-block', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ block_id: id })
+            });
+            const data = await res.json();
+
+            if (data.error) {
+                alert("AI Analysis failed: " + data.error);
+                return;
+            }
+
+            currentAnalysis = data;
+            renderAnalysis(data);
+
+            // Reset save button state
+            saveBtn.innerText = "💾 Save Results";
+            saveBtn.disabled = false;
+
+        } catch (e) {
+            console.error(e);
+            alert("Failed to analyze block.");
+        } finally {
+            btn.innerText = "✨ Analyze with AI";
+            btn.disabled = false;
+        }
+    }
+
+    async function saveAnalysis() {
+        if (!currentAnalysis) return;
+
+        const btn = document.getElementById('saveAiBtn');
+        btn.innerText = "Saving...";
+
+        // merge into existing meta? 
+        // We'll trust the backend expects 'meta' object
+        // We need to fetch current meta first? Or just update partial?
+        // Our update logic overwrites meta. Ideally we should merge in backend or fetch-merge-save.
+        // For simplicity: We fetch block again to get current meta? Or assumes we have it.
+        // Let's modify Backend update to MERGE if possible? 
+        // No, current backend overwrites.
+        // So we need to: 1. Get current meta 2. Add ai_analysis 3. Send back
+
+        try {
+            // Get fresh copy first to avoid overwriting other stuff
+            const blockRes = await fetch(`/api/blocks/${BLOCK_ID}`);
+            const blockData = await blockRes.json();
+
+            let meta = {};
+            if (blockData.block.meta) {
+                try { meta = JSON.parse(blockData.block.meta); }
+                catch (e) { meta = blockData.block.meta || {}; } // depends on if it's string or obj from API
+            }
+
+            meta.ai_analysis = currentAnalysis;
+
+            await fetch('/api/knowledge/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: BLOCK_ID,
+                    meta: meta
+                })
+            });
+
+            btn.innerText = "✅ Saved";
+
+        } catch (e) {
+            alert("Error saving: " + e);
+            btn.innerText = "💾 Save Results";
+        }
+    }
+
+    async function deleteBlock(id) {
+        if (!confirm('Are you sure?')) return;
+        await fetch('/api/knowledge/' + id, { method: 'DELETE' });
+        window.location.href = '/workspace';
+    }
+</script>
+{% endblock %}

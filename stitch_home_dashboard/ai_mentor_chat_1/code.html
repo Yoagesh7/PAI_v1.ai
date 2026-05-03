@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AI Mentor Chat (Dark)</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "charcoal": "#121214",
+                        "deep-charcoal": "#0a0a0b",
+                        "lavender-bubble": "#2d2a3d",
+                        "indigo-bubble": "#1e1b4b",
+                        "primary-lavender": "#b4a9e3",
+                        "primary-indigo": "#6366f1",
+                        "accent-indigo": "#4338ca"
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            background-color: theme('colors.deep-charcoal');
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .ios-blur {
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="dark:text-zinc-100 min-h-screen flex flex-col max-w-md mx-auto relative border-x border-zinc-900 shadow-2xl overflow-hidden">
+<header class="sticky top-0 z-20 bg-deep-charcoal/80 ios-blur px-4 py-4 flex items-center justify-between border-b border-zinc-800/50">
+<div class="flex items-center gap-3">
+<div class="relative">
+<div class="size-11 rounded-2xl bg-gradient-to-br from-indigo-950 to-charcoal flex items-center justify-center border border-zinc-700/50 shadow-inner overflow-hidden" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDZMnbTvRKzAOwrxjABmYIUTNFY7HQrbsMF3rILoyzNAq6Cc6OECpt1q5EeaSqd6nIcIfA1qWxZ4MM2R8bqqD_TXpNJqtmnl8PPqudju-zN8JVn7b_DyiY512pV71hi_3Y4Ybwne02VMl5s6EPTG8D6QEnWHgstXhKfhQ07ucoLkRRPS9A3bS_qqa92pklnLWecCAB9fHezrkH4eVvLRHrn-Cn-vLIhDqDuHodMSe7HxR9ggnOI4K-xsrG-uuNnhTbsQHw8TNoMgM8'); background-size: cover;">
+</div>
+<div class="absolute -bottom-0.5 -right-0.5 size-3.5 bg-green-500 rounded-full border-2 border-deep-charcoal"></div>
+</div>
+<div class="flex flex-col">
+<h1 class="text-sm font-bold leading-none tracking-tight text-white">Mentor Nexus</h1>
+<div class="flex items-center gap-1.5 mt-1">
+<span class="size-1.5 rounded-full bg-primary-indigo animate-pulse"></span>
+<span class="text-[11px] text-zinc-400 font-medium">Strategic Analysis</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-2 rounded-full bg-zinc-800/40 hover:bg-zinc-800 transition-colors">
+<span class="material-symbols-outlined text-[20px] text-zinc-300">auto_videocam</span>
+</button>
+<button class="p-2 rounded-full bg-zinc-800/40 hover:bg-zinc-800 transition-colors">
+<span class="material-symbols-outlined text-[20px] text-zinc-300">more_horiz</span>
+</button>
+</div>
+</header>
+<main class="flex-1 overflow-y-auto px-4 py-6 space-y-6 hide-scrollbar">
+<div class="flex items-start gap-3">
+<div class="size-8 rounded-lg bg-indigo-950/50 flex items-center justify-center shrink-0 mt-1 border border-indigo-900/30">
+<span class="material-symbols-outlined text-primary-lavender text-sm">terminal</span>
+</div>
+<div class="flex flex-col gap-1.5 max-w-[85%]">
+<div class="bg-lavender-bubble p-4 rounded-2xl rounded-tl-none border border-white/5 shadow-lg">
+<p class="text-[15px] leading-relaxed text-zinc-200">
+                    Your focus on the <span class="text-primary-lavender font-semibold">Seed Round Deck</span> is timely. Data shows founders who clarify the 'Problem' slide in &lt; 30 words increase follow-up rates by 40%.
+                </p>
+<div class="mt-4 pt-3 border-t border-white/5">
+<p class="text-[10px] font-bold text-zinc-500 mb-3 tracking-[0.1em] uppercase">Today's Micro-Goals:</p>
+<ul class="space-y-3 text-[14px]">
+<li class="flex gap-3 items-start">
+<span class="material-symbols-outlined text-[16px] text-primary-lavender mt-0.5">check_circle</span>
+<span class="text-zinc-300">Distill the "Problem" to one sentence</span>
+</li>
+<li class="flex gap-3 items-start">
+<span class="material-symbols-outlined text-[16px] text-primary-lavender mt-0.5">radio_button_unchecked</span>
+<span class="text-zinc-300">Map Q3 burn rate to new roadmap</span>
+</li>
+</ul>
+</div>
+</div>
+<span class="text-[10px] text-zinc-600 ml-1">09:41 AM</span>
+</div>
+</div>
+<div class="flex items-end flex-col gap-1.5">
+<div class="flex flex-col gap-1.5 max-w-[80%] items-end">
+<div class="bg-indigo-bubble text-white p-4 rounded-2xl rounded-br-none border border-white/5 shadow-md">
+<p class="text-[15px] leading-relaxed text-indigo-50">
+                    That makes sense. I'm having trouble making the "Problem" punchy without losing context.
+                </p>
+</div>
+<span class="text-[10px] text-zinc-600 mr-1">09:43 AM</span>
+</div>
+</div>
+<div class="mx-auto w-[92%] bg-gradient-to-br from-indigo-900/20 to-transparent border border-indigo-500/20 p-5 rounded-2xl">
+<div class="flex items-center gap-2 mb-3">
+<span class="material-symbols-outlined text-primary-indigo text-xl">psychology</span>
+<span class="text-xs font-bold text-indigo-400 uppercase tracking-widest">Mentor Insight</span>
+</div>
+<p class="text-[13px] text-zinc-400 leading-relaxed italic">
+            "Don't sell the solution, sell the pain. If they don't feel the itch, they won't buy the scratch."
+        </p>
+</div>
+<div class="flex items-start gap-3">
+<div class="size-8 rounded-lg bg-indigo-950/50 flex items-center justify-center shrink-0 mt-1 border border-indigo-900/30">
+<span class="material-symbols-outlined text-primary-lavender text-sm">terminal</span>
+</div>
+<div class="flex flex-col gap-1.5 max-w-[85%]">
+<div class="bg-lavender-bubble p-4 rounded-2xl rounded-tl-none border border-white/5 shadow-lg">
+<p class="text-[15px] leading-relaxed text-zinc-200">
+                    Let's iterate. Try these commands:
+                </p>
+<div class="mt-3 space-y-2">
+<div class="flex items-center gap-2 px-3 py-2 bg-black/30 rounded-lg border border-white/5">
+<code class="text-primary-lavender font-mono text-sm">/rewrite</code>
+<span class="text-xs text-zinc-500">Concise version</span>
+</div>
+<div class="flex items-center gap-2 px-3 py-2 bg-black/30 rounded-lg border border-white/5">
+<code class="text-primary-lavender font-mono text-sm">/roast</code>
+<span class="text-xs text-zinc-500">Critical feedback</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<footer class="p-4 bg-deep-charcoal border-t border-zinc-800/50 pb-10">
+<div class="flex gap-2 overflow-x-auto hide-scrollbar pb-4">
+<button class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-zinc-900 border border-zinc-800 px-4 transition-all active:scale-95">
+<span class="material-symbols-outlined text-[18px] text-primary-lavender">bolt</span>
+<p class="text-zinc-300 text-xs font-medium">Draft Slide</p>
+</button>
+<button class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-zinc-900 border border-zinc-800 px-4 transition-all active:scale-95">
+<span class="material-symbols-outlined text-[18px] text-primary-lavender">auto_fix_high</span>
+<p class="text-zinc-300 text-xs font-medium">Refine Text</p>
+</button>
+<button class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-zinc-900 border border-zinc-800 px-4 transition-all active:scale-95">
+<span class="material-symbols-outlined text-[18px] text-primary-lavender">history_edu</span>
+<p class="text-zinc-300 text-xs font-medium">Journal</p>
+</button>
+</div>
+<div class="relative flex items-center bg-zinc-900/50 rounded-2xl border border-zinc-800 p-1.5 focus-within:border-indigo-500/50 transition-all duration-300">
+<button class="flex items-center justify-center size-9 text-zinc-500 hover:text-zinc-300 transition-colors">
+<span class="material-symbols-outlined">attach_file</span>
+</button>
+<input class="flex-1 border-none focus:ring-0 bg-transparent text-[15px] placeholder:text-zinc-600 text-zinc-100 py-2" placeholder="Type / to use commands..." type="text"/>
+<button class="size-10 rounded-xl bg-primary-indigo text-white flex items-center justify-center transition-all active:scale-90 shadow-lg shadow-indigo-500/10">
+<span class="material-symbols-outlined text-[20px]">send</span>
+</button>
+</div>
+<div class="mt-3 flex items-center justify-between px-1">
+<div class="flex gap-4">
+<span class="text-[10px] text-zinc-600 font-bold tracking-widest uppercase">/plan</span>
+<span class="text-[10px] text-zinc-600 font-bold tracking-widest uppercase">/focus</span>
+<span class="text-[10px] text-zinc-600 font-bold tracking-widest uppercase">/analyze</span>
+</div>
+<span class="text-[10px] text-zinc-700 font-medium">iOS v2.4</span>
+</div>
+</footer>
+
+</body></html>

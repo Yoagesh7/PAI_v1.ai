@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Knowledge Blocks - Smart Blocks</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#5b498d",
+                        "background-light": "#f9f9fa",
+                        "background-dark": "#18181b",
+                        "card-light": "#ffffff",
+                        "card-dark": "#27272a",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .active-tab {
+            position: relative;
+        }
+        .active-tab::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background-color: #5b498d;
+            border-radius: 3px 3px 0 0;
+        }
+        .connection-line {
+            background-image: radial-gradient(circle, #5b498d 1px, transparent 1px);
+            background-size: 8px 8px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased min-h-screen">
+<!-- Top Navigation Bar -->
+<header class="sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md px-6 pt-6 pb-4">
+<div class="flex items-center justify-between">
+<div>
+<h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Smart Blocks</h1>
+<p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-widest">24 active blocks</p>
+</div>
+<div class="flex items-center gap-3">
+<button class="size-10 flex items-center justify-center rounded-full bg-slate-200/50 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined">search</span>
+</button>
+<div class="size-10 rounded-full bg-cover bg-center border-2 border-white dark:border-slate-700 shadow-sm" data-alt="User profile avatar portrait" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDey4U0w7v4VsTmEy7nzI-ZIvlDGozUCmNFjJdwDEqm7EyBhfpQn73UyQ7QWFatSXQuirjYVm8rkQVmoYEdg2XZ-VxBQ4O0xv4BKji9DpMK5CP6gBJL5ttZscyC8TRadUYD1wBOnb5zRKuzn633gJ9sGsxDG-unZFhW_8UTgWaO_kPIF0q9z-LU-1TJW3adj5cusrJNE0Ce10lzNfpl6xaJW_XyLpJrFREQ4-Z7dPoitEoH21RFfXu8peQSORj_hHfw6BDR-OlH32Q');"></div>
+</div>
+</div>
+</header>
+<!-- Content Tabs -->
+<nav class="px-6 mb-4 overflow-x-auto no-scrollbar">
+<div class="flex items-center gap-6 border-b border-slate-200 dark:border-slate-800">
+<a class="active-tab py-3 text-sm font-bold text-primary dark:text-primary" href="#">All</a>
+<a class="py-3 text-sm font-semibold text-slate-500 hover:text-slate-700 dark:text-slate-400 transition-colors" href="#">Ideas</a>
+<a class="py-3 text-sm font-semibold text-slate-500 hover:text-slate-700 dark:text-slate-400 transition-colors" href="#">Tasks</a>
+<a class="py-3 text-sm font-semibold text-slate-500 hover:text-slate-700 dark:text-slate-400 transition-colors" href="#">Learnings</a>
+<a class="py-3 text-sm font-semibold text-slate-500 hover:text-slate-700 dark:text-slate-400 transition-colors" href="#">Reflections</a>
+</div>
+</nav>
+<main class="px-4 pb-32">
+<!-- AI Insight Banner -->
+<div class="mb-6 mx-2">
+<div class="p-4 rounded-xl border border-primary/20 bg-primary/5 dark:bg-primary/10 flex items-start gap-3">
+<div class="size-8 rounded-lg bg-primary text-white flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-lg">auto_awesome</span>
+</div>
+<div class="flex-1">
+<p class="text-sm font-semibold text-primary dark:text-primary/90">New Insight Found</p>
+<p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">Your "Market Research" block has 3 thematic overlaps with "Next-gen CRM concept".</p>
+</div>
+<button class="text-primary text-xs font-bold uppercase tracking-wider self-center px-3 py-2">Explore</button>
+</div>
+</div>
+<!-- Blocks Grid -->
+<div class="grid grid-cols-2 gap-3">
+<!-- Idea Block -->
+<div class="bg-card-light dark:bg-card-dark p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col gap-3 relative overflow-hidden group">
+<div class="flex items-center justify-between">
+<div class="size-8 rounded-lg bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 flex items-center justify-center">
+<span class="material-symbols-outlined text-lg">lightbulb</span>
+</div>
+<span class="text-[10px] font-bold text-slate-400 uppercase">Idea</span>
+</div>
+<h3 class="font-bold text-sm leading-snug line-clamp-2">Next-gen CRM concept</h3>
+<div class="mt-auto">
+<div class="flex items-center gap-1.5 mb-2">
+<span class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-medium text-slate-500">Strategy</span>
+<span class="text-[10px] text-slate-400">2h ago</span>
+</div>
+<div class="pt-2 border-t border-slate-50 dark:border-slate-800/50">
+<p class="text-[10px] text-primary/80 font-medium italic flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">link</span>
+                            Connect to Market...
+                        </p>
+</div>
+</div>
+</div>
+<!-- Task Block -->
+<div class="bg-card-light dark:bg-card-dark p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col gap-3 group">
+<div class="flex items-center justify-between">
+<div class="size-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-lg">task_alt</span>
+</div>
+<span class="text-[10px] font-bold text-slate-400 uppercase">Task</span>
+</div>
+<h3 class="font-bold text-sm leading-snug">Review investor deck</h3>
+<div class="mt-auto space-y-2">
+<div class="flex items-center justify-between">
+<span class="text-[10px] font-medium text-rose-500">High Priority</span>
+<span class="text-[10px] text-slate-400">Due Today</span>
+</div>
+<div class="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-1/3 rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- Learning Block (Spans 2 columns for emphasis) -->
+<div class="col-span-2 bg-card-light dark:bg-card-dark p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-start gap-4">
+<div class="size-12 rounded-xl bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-2xl">menu_book</span>
+</div>
+<div class="flex-1">
+<div class="flex items-center justify-between mb-1">
+<span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Learning</span>
+<span class="size-2 rounded-full bg-primary animate-pulse"></span>
+</div>
+<h3 class="font-bold text-base leading-tight">First Principles Thinking</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Mental model exploration from Naval's latest podcast session.</p>
+<div class="mt-4 flex flex-wrap gap-2">
+<span class="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900">Logic</span>
+<span class="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900">Naval Podcast</span>
+</div>
+</div>
+</div>
+<!-- Reflection Block -->
+<div class="bg-card-light dark:bg-card-dark p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col gap-3 group">
+<div class="flex items-center justify-between">
+<div class="size-8 rounded-lg bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 flex items-center justify-center">
+<span class="material-symbols-outlined text-lg">edit_note</span>
+</div>
+<span class="text-[10px] font-bold text-slate-400 uppercase">Reflection</span>
+</div>
+<h3 class="font-bold text-sm leading-snug">Weekly Review</h3>
+<div class="mt-auto">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-xs text-primary">sentiment_satisfied</span>
+<span class="text-[10px] font-medium text-slate-500">Mood: Focused</span>
+</div>
+<p class="text-[10px] text-slate-400 line-clamp-2">Good progress on product roadmap. Need more focus on GTM...</p>
+</div>
+</div>
+<!-- Placeholder for Relationship visualization -->
+<div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center text-center gap-2">
+<div class="size-8 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-400">
+<span class="material-symbols-outlined text-lg">add</span>
+</div>
+<span class="text-[10px] font-semibold text-slate-400 uppercase">Add Context</span>
+</div>
+</div>
+<!-- Relationship Line Visualization (Decorative Example) -->
+<div class="mt-8 relative h-16 pointer-events-none">
+<div class="absolute inset-0 flex items-center justify-center opacity-20">
+<div class="w-full h-px connection-line"></div>
+</div>
+<div class="absolute left-1/2 -translate-x-1/2 top-0 bg-white dark:bg-background-dark px-3 py-1 rounded-full border border-slate-200 dark:border-slate-800 text-[10px] font-bold text-slate-400 uppercase">
+                Linked Relationships
+            </div>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<!-- More Idea Block -->
+<div class="bg-card-light dark:bg-card-dark p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<div class="size-8 rounded-lg bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 flex items-center justify-center">
+<span class="material-symbols-outlined text-lg">lightbulb</span>
+</div>
+<span class="text-[10px] font-bold text-slate-400 uppercase">Idea</span>
+</div>
+<h3 class="font-bold text-sm leading-snug">Tokenomics for Mentors</h3>
+<div class="mt-auto">
+<div class="flex items-center gap-1.5">
+<span class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-medium text-slate-500">Finance</span>
+<span class="text-[10px] text-slate-400">Yesterday</span>
+</div>
+</div>
+</div>
+<!-- Task Block -->
+<div class="bg-card-light dark:bg-card-dark p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<div class="size-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-lg">check_circle</span>
+</div>
+<span class="text-[10px] font-bold text-slate-400 uppercase">Done</span>
+</div>
+<h3 class="font-bold text-sm leading-snug text-slate-400 line-through">Pitch deck v1</h3>
+<div class="mt-auto">
+<span class="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">Archived</span>
+</div>
+</div>
+</div>
+</main>
+<!-- FAB and Tab Bar Container -->
+<div class="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-48px)] max-w-md z-[100]">
+<!-- Action Panel Suggestion (Floating) -->
+<div class="mb-4 animate-in fade-in slide-in-from-bottom-4">
+<div class="flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-2xl shadow-xl">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-xl bg-primary text-white flex items-center justify-center">
+<span class="material-symbols-outlined">hub</span>
+</div>
+<div>
+<p class="text-xs font-bold leading-tight">AI Connection</p>
+<p class="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-1">Link 'Next-gen CRM' to 'Market Research'?</p>
+</div>
+</div>
+<button class="bg-primary text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg shadow-primary/20">Link Now</button>
+</div>
+</div>
+<!-- Main Tab Bar -->
+<div class="flex items-center justify-between bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg px-2 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl relative">
+<button class="flex-1 flex flex-col items-center py-1.5 text-primary">
+<span class="material-symbols-outlined">grid_view</span>
+<span class="text-[10px] font-bold mt-1">Blocks</span>
+</button>
+<button class="flex-1 flex flex-col items-center py-1.5 text-slate-400 dark:text-slate-500">
+<span class="material-symbols-outlined">psychology</span>
+<span class="text-[10px] font-bold mt-1">Mentor</span>
+</button>
+<!-- Centered FAB -->
+<div class="relative -top-8 px-2">
+<button class="size-14 bg-primary text-white rounded-2xl shadow-xl shadow-primary/40 flex items-center justify-center active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+</div>
+<button class="flex-1 flex flex-col items-center py-1.5 text-slate-400 dark:text-slate-500">
+<span class="material-symbols-outlined">explore</span>
+<span class="text-[10px] font-bold mt-1">Discover</span>
+</button>
+<button class="flex-1 flex flex-col items-center py-1.5 text-slate-400 dark:text-slate-500">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px] font-bold mt-1">Profile</span>
+</button>
+</div>
+</div>
+</body></html>

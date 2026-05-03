@@ -1,0 +1,265 @@
+{% extends "base.html" %}\n\n{% block head %}\n
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">\n
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.1/marked.min.js"></script>\n
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>\n<style>
+    /* Chat page specific styles */
+    .chat-container {
+        height: calc(100vh - var(--mobile-bottom-nav-height));
+        display: flex;
+        flex-direction: column;
+        background: var(--color-bg-secondary);
+        border-radius: var(--radius-xl);
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+        margin: var(--space-6);
+    }
+
+    .chat-header {
+        padding: var(--space-5) var(--space-6);
+        border-bottom: 1px solid var(--color-border-light);
+        background: var(--color-bg-secondary);
+    }
+
+    .chat-title {
+        font-size: var(--text-xl);
+        font-weight: 600;
+        color: var(--color-text-primary);
+        margin: 0;
+    }
+
+    .chat-subtitle {
+        font-size: var(--text-sm);
+        color: var(--color-text-secondary);
+        margin: var(--space-1) 0 0 0;
+    }
+
+    .messages-area {
+        flex: 1;
+        overflow-y: auto;
+        padding: var(--space-6);
+        background: var(--color-bg-tertiary);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-4);
+    }
+
+    .message {
+        display: flex;
+        gap: var(--space-3);
+        max-width: 80%;
+    }
+
+    .message.user {
+        align-self: flex-end;
+        flex-direction: row-reverse;
+    }
+
+    .message.ai {
+        align-self: flex-start;
+    }
+
+    .message-avatar {
+        flex-shrink: 0;
+    }
+
+    .message-content {
+        background: var(--color-bg-secondary);
+        padding: var(--space-4);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .message.user .message-content {
+        background: var(--color-primary-500);
+        color: white;
+    }
+
+    .message.ai .message-content {
+        background: var(--color-bg-secondary);
+    }
+
+    .message-text {
+        font-size: var(--text-sm);
+        line-height: 1.6;
+        margin: 0;
+    }
+
+    .message-time {
+        font-size: var(--text-xs);
+        color: var(--color-text-muted);
+        margin-top: var(--space-2);
+    }
+
+    .message.user .message-time {
+        color: rgba(255, 255, 255, 0.7);
+    }
+
+    .input-area {
+        padding: var(--space-5) var(--space-6);
+        border-top: 1px solid var(--color-border-light);
+        background: var(--color-bg-secondary);
+    }
+
+    .input-wrapper {
+        display: flex;
+        gap: var(--space-3);
+        align-items: flex-end;
+    }
+
+    .input-field {
+        flex: 1;
+        padding: var(--space-3) var(--space-4);
+        border: 1px solid var(--color-border-default);
+        border-radius: var(--radius-lg);
+        font-size: var(--text-base);
+        font-family: var(--font-sans);
+        resize: none;
+        min-height: 44px;
+        max-height: 120px;
+        line-height: 1.5;
+        transition: all var(--transition-fast);
+    }
+
+    .input-field:focus {
+        outline: none;
+        border-color: var(--color-primary-500);
+        box-shadow: 0 0 0 3px var(--color-primary-50);
+    }
+
+    .send-btn {
+        padding: var(--space-3) var(--space-5);
+        background: var(--color-primary-500);
+        color: white;
+        border: none;
+        border-radius: var(--radius-md);
+        font-weight: 600;
+        cursor: pointer;
+        transition: all var(--transition-base);
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+    }
+
+    .send-btn:hover {
+        background: var(--color-primary-600);
+        transform: translateY(-1px);
+    }
+
+    .send-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    /* Typing indicator */
+    .typing-indicator {
+        display: none;
+        align-items: center;
+        gap: var(--space-2);
+        padding: var(--space-3);
+    }
+
+    .typing-indicator.active {
+        display: flex;
+    }
+
+    .typing-dot {
+        width: 8px;
+        height: 8px;
+        background: var(--color-text-tertiary);
+        border-radius: 50%;
+        animation: typing 1.4s infinite;
+    }
+
+    .typing-dot:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+
+    .typing-dot:nth-child(3) {
+        animation-delay: 0.4s;
+    }
+
+    @keyframes typing {
+
+        0%,
+        60%,
+        100% {
+            transform: translateY(0);
+            opacity: 0.7;
+        }
+
+        30% {
+            transform: translateY(-10px);
+            opacity: 1;
+        }
+    }
+
+    /* Mobile optimizations */
+    @media (max-width: 768px) {
+        .chat-container {
+            margin: 0;
+            border-radius: 0;
+            height: calc(100vh - var(--mobile-bottom-nav-height));
+        }
+
+        .message {
+            max-width: 90%;
+        }
+
+        .messages-area {
+            padding: var(--space-4);
+        }
+    }
+
+    /* Markdown styles */
+    .message-content pre {
+        background: rgba(0, 0, 0, 0.05);
+        padding: var(--space-3);
+        border-radius: var(--radius-md);
+        overflow-x: auto;
+        margin: var(--space-2) 0;
+    }
+
+    .message.user .message-content pre {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .message-content code {
+        font-family: var(--font-mono);
+        font-size: 0.9em;
+    }
+
+    .message-content p {
+        margin: var(--space-2) 0;
+    }
+
+    .message-content p:first-child {
+        margin-top: 0;
+    }
+
+    .message-content p:last-child {
+        margin-bottom: 0;
+    }
+</style>\n{% endblock %}\n\n{% block content %}\n<div class="chat-container">\n <div class="chat-header">\n <h1
+            class="chat-title">PartnerAI Chat</h1>\n <p class="chat-subtitle">Your AI productivity partner</p>\n </div>
+    \n
+    <div class="messages-area" id="messages">\n <!-- Welcome message -->\n <div class="message ai">\n <div
+                class="message-avatar">\n <div class="avatar">AI</div>\n </div>\n <div class="message-content">\n <div
+                    class="message-text">\n <p>Hello! I'm your AI productivity partner. How can I help you today?</p>\n
+                </div>\n </div>\n </div>\n </div>\n
+    <div class="typing-indicator" id="typingIndicator">\n <div class="avatar avatar-sm">AI</div>\n <div
+            class="typing-dot"></div>\n <div class="typing-dot"></div>\n <div class="typing-dot"></div>\n </div>\n
+    <div class="input-area">\n <div class="input-wrapper">\n <textarea \n class="input-field" \n id="messageInput" \n
+                placeholder="Type your message..." \n rows="1" \n onkeydown="handleKeyDown(event)" \n></textarea>\n
+            <button class="send-btn" onclick="sendMessage()" id="sendBtn">\n <svg width="20" height="20"
+                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">\n
+                    <line x1="22" y1="2" x2="11" y2="13" />\n
+                    <polygon points="22 2 15 22 11 13 2 9 22 2" />\n
+                </svg>\n Send\n </button>\n </div>\n </div>\n
+</div>\n\n
+<script>\n    // Auto-resize textarea\n    const textarea = document.getElementById('messageInput');\n    textarea.addEventListener('input', function() {\n        this.style.height = 'auto';\n        this.style.height = Math.min(this.scrollHeight, 120) + 'px';\n    });\n    
+    function handleKeyDown(event) { \n        if (event.key === 'Enter' && !event.shiftKey) { \n            event.preventDefault(); \n            sendMessage(); \n } \n } \n
+    async function sendMessage() {
+    \n        const input = document.getElementById('messageInput'); \n        const message = input.value.trim(); \n        \n        if (!message) return; \n        \n        // Add user message\n        addMessage(message, 'user');\n        input.value = '';\n        input.style.height = 'auto';\n        \n        // Show typing indicator\n        document.getElementById('typingIndicator').classList.add('active');\n        \n        try {\n            const response = await fetch('/api/chat', {\n                method: 'POST',\n                headers: { 'Content-Type': 'application/json' },\n                body: JSON.stringify({ message: message })\n            });\n            \n            const data = await response.json();\n            \n            // Hide typing indicator\n            document.getElementById('typingIndicator').classList.remove('active');\n            \n            if (data.response) {\n                addMessage(data.response, 'ai');\n            }\n        } catch (error) {\n            console.error('Error:', error);\n            document.getElementById('typingIndicator').classList.remove('active');\n            addMessage('Sorry, I encountered an error. Please try again.', 'ai');\n        }\n    }\n    
+        function addMessage(text, type) { \n        const messagesArea = document.getElementById('messages'); \n        const messageDiv = document.createElement('div'); \n        messageDiv.className = `message ${type}`; \n        \n        const avatarDiv = document.createElement('div'); \n        avatarDiv.className = 'message-avatar'; \n        avatarDiv.innerHTML = `<div class="avatar">${type === 'user' ? 'YOU' : 'AI'}</div>`; \n        \n        const contentDiv = document.createElement('div'); \n        contentDiv.className = 'message-content'; \n        \n        const textDiv = document.createElement('div'); \n        textDiv.className = 'message-text'; \n        \n        // Parse markdown if AI message\n        if (type === 'ai') {\n            textDiv.innerHTML = marked.parse(text);\n            // Highlight code blocks\n            textDiv.querySelectorAll('pre code').forEach((block) => {\n                hljs.highlightElement(block);\n            });\n        } else {\n            textDiv.textContent = text;\n        }\n        \n        contentDiv.appendChild(textDiv);\n        messageDiv.appendChild(avatarDiv);\n        messageDiv.appendChild(contentDiv);\n        messagesArea.appendChild(messageDiv);\n        \n        // Scroll to bottom\n        messagesArea.scrollTop = messagesArea.scrollHeight;\n    }\n</script>
+\n{% endblock %}

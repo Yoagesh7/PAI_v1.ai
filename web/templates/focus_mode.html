@@ -1,0 +1,354 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    /* Fullscreen minimalist focus mode */
+    .focus-fullscreen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: var(--color-bg-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 999;
+        overflow-y: auto;
+        /* Allow scrolling on small screens */
+    }
+
+    .focus-center {
+        text-align: center;
+        max-width: 500px;
+        width: 100%;
+        padding: var(--space-6);
+    }
+
+    .timer-ring {
+        position: relative;
+        width: 280px;
+        height: 280px;
+        margin: 0 auto var(--space-8);
+        max-width: 100%;
+        /* Responsive */
+    }
+
+    .timer-svg {
+        transform: rotate(-90deg);
+        width: 100%;
+        height: 100%;
+    }
+
+    .timer-bg {
+        fill: none;
+        stroke: var(--color-border-light);
+        stroke-width: 8;
+    }
+
+    .timer-progress {
+        fill: none;
+        stroke: var(--color-primary-500);
+        stroke-width: 8;
+        stroke-linecap: round;
+        stroke-dasharray: 816;
+        /* 2 * PI * 130 */
+        stroke-dashoffset: 0;
+        transition: stroke-dashoffset 1s linear;
+    }
+
+    .timer-display {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 4rem;
+        font-weight: 700;
+        color: var(--color-text-primary);
+        font-family: var(--font-mono);
+        letter-spacing: -0.05em;
+    }
+
+    .timer-buttons {
+        display: flex;
+        gap: var(--space-4);
+        justify-content: center;
+        margin-bottom: var(--space-6);
+        flex-wrap: wrap;
+    }
+
+    .session-info {
+        color: var(--color-text-secondary);
+        font-size: var(--text-sm);
+        margin-top: var(--space-8);
+    }
+
+    .quick-timers {
+        display: flex;
+        gap: var(--space-3);
+        justify-content: center;
+        margin-bottom: var(--space-6);
+        flex-wrap: wrap;
+    }
+
+    .quick-timer-btn {
+        padding: var(--space-2) var(--space-4);
+        background: var(--color-bg-tertiary);
+        border: 1px solid var(--color-border-default);
+        border-radius: var(--radius-md);
+        color: var(--color-text-secondary);
+        cursor: pointer;
+        transition: all var(--transition-fast);
+        font-size: var(--text-sm);
+        min-width: 80px;
+    }
+
+    .quick-timer-btn:hover,
+    .quick-timer-btn.active {
+        background: var(--color-primary-50);
+        color: var(--color-primary-600);
+        border-color: var(--color-primary-500);
+    }
+
+    /* Custom Input Style */
+    .custom-input-group {
+        display: flex;
+        gap: var(--space-2);
+        justify-content: center;
+        align-items: center;
+        margin-bottom: var(--space-4);
+        display: none;
+        /* Hidden by default */
+    }
+
+    .custom-input-group.show {
+        display: flex;
+    }
+
+    .custom-time-input {
+        width: 80px;
+        padding: var(--space-2);
+        border: 1px solid var(--color-border-default);
+        border-radius: var(--radius-md);
+        background: var(--color-bg-secondary);
+        color: var(--color-text-primary);
+        text-align: center;
+    }
+
+    @media (max-width: 768px) {
+        .timer-ring {
+            width: 240px;
+            height: 240px;
+        }
+
+        .timer-display {
+            font-size: 3rem;
+        }
+
+        .timer-buttons .btn {
+            width: 100%;
+            /* Stack buttons on mobile */
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="focus-fullscreen">
+    <div class="focus-center">
+        <h1 class="text-2xl font-bold mb-6">Focus Mode</h1>
+
+        <!-- Quick Timer Presets -->
+        <div class="quick-timers">
+            <button class="quick-timer-btn" onclick="setPreset(15)">15m</button>
+            <button class="quick-timer-btn active" onclick="setPreset(25)">25m</button>
+            <button class="quick-timer-btn" onclick="setPreset(45)">45m</button>
+            <button class="quick-timer-btn" onclick="toggleCustomInput()">Custom</button>
+        </div>
+
+        <!-- Custom Input (Hidden by default) -->
+        <div class="custom-input-group" id="customInputGroup">
+            <input type="number" id="customMinutes" class="custom-time-input" placeholder="Min" min="1" max="180">
+            <button class="btn btn-sm btn-secondary" onclick="setCustomTime()">Set</button>
+        </div>
+
+        <!-- Timer Circle -->
+        <div class="timer-ring">
+            <svg class="timer-svg" viewBox="0 0 280 280">
+                <circle class="timer-bg" cx="140" cy="140" r="130" />
+                <circle id="timerProgress" class="timer-progress" cx="140" cy="140" r="130" />
+            </svg>
+            <div class="timer-display" id="timerDisplay">25:00</div>
+        </div>
+
+        <!-- Control Buttons -->
+        <div class="timer-buttons">
+            <button class="btn btn-primary" id="startBtn" onclick="toggleTimer()">Start Focus</button>
+            <button class="btn btn-secondary" onclick="resetTimer()">Reset</button>
+        </div>
+
+        <!-- Session Info -->
+        <div class="session-info">
+            <div>Sessions completed today: <span id="sessionCount" class="font-semibold">0</span></div>
+            <div id="sessionMessage" class="text-xs mt-2 text-tertiary">Stay in the flow, champ! 🌊</div>
+        </div>
+
+        <!-- Exit Button -->
+        <div style="margin-top: var(--space-8);">
+            <a href="/productivity" class="text-sm text-tertiary hover:text-primary transition-colors"
+                style="text-decoration: none;">← Back to Dashboard</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    // State
+    let totalTime = 25 * 60; // Total duration in seconds
+    let currentTime = 25 * 60; // Current remaining time
+    let isRunning = false;
+    let timerInterval = null;
+    let totalSessions = parseInt(localStorage.getItem('focusSessions') || '0');
+
+    // DOM Elements
+    const timerDisplay = document.getElementById('timerDisplay');
+    const startBtn = document.getElementById('startBtn');
+    const timerProgress = document.getElementById('timerProgress');
+    const sessionCount = document.getElementById('sessionCount');
+    const customInputGroup = document.getElementById('customInputGroup');
+
+    // Constants
+    const CIRCLE_LENGTH = 816; // 2 * π * 130
+
+    // Init
+    sessionCount.textContent = totalSessions;
+
+    // --- Core Logic ---
+
+    function updateDisplay() {
+        const minutes = Math.floor(currentTime / 60);
+        const seconds = currentTime % 60;
+        timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+        // Update Title for tab visibility
+        if (isRunning) {
+            document.title = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')} - Focus`;
+        } else {
+            document.title = 'PartnerAI - Focus';
+        }
+    }
+
+    function updateProgress() {
+        const progress = currentTime / totalTime;
+        const offset = CIRCLE_LENGTH * (1 - progress);
+        timerProgress.style.strokeDashoffset = offset;
+    }
+
+    function setPreset(minutes) {
+        if (isRunning) return; // Prevent changing while running
+
+        totalTime = minutes * 60;
+        currentTime = totalTime;
+
+        updateDisplay();
+        updateProgress();
+
+        // UI
+        document.querySelectorAll('.quick-timer-btn').forEach(btn => btn.classList.remove('active'));
+        // Find button with specific text if possible, or just remove active
+        // Ideally pass 'this' but for simplicity just highlighting manual click:
+        event.target.classList.add('active');
+
+        customInputGroup.classList.remove('show');
+    }
+
+    function toggleCustomInput() {
+        customInputGroup.classList.toggle('show');
+        document.querySelectorAll('.quick-timer-btn').forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+    }
+
+    function setCustomTime() {
+        const input = document.getElementById('customMinutes');
+        const mins = parseInt(input.value);
+        if (mins && mins > 0) {
+            setPreset(mins);
+            // Re-highlight custom button specifically if needed, but setPreset clears logic. 
+            // Let's just manually fix UI for custom flow:
+            document.querySelectorAll('.quick-timer-btn').forEach(btn => btn.classList.remove('active'));
+            // The "Custom" button is the 4th one (index 3)
+            document.querySelectorAll('.quick-timer-btn')[3].classList.add('active');
+        }
+    }
+
+    function toggleTimer() {
+        if (isRunning) {
+            pauseTimer();
+        } else {
+            startTimer();
+        }
+    }
+
+    function startTimer() {
+        isRunning = true;
+        startBtn.textContent = 'Pause Focus';
+        startBtn.classList.replace('btn-primary', 'btn-secondary'); // Visual feedback
+
+        timerInterval = setInterval(() => {
+            if (currentTime > 0) {
+                currentTime--;
+                updateDisplay();
+                updateProgress();
+            } else {
+                completeSession();
+            }
+        }, 1000);
+    }
+
+    function pauseTimer() {
+        isRunning = false;
+        clearInterval(timerInterval);
+        startBtn.textContent = 'Resume Focus';
+        startBtn.classList.replace('btn-secondary', 'btn-primary');
+    }
+
+    function resetTimer() {
+        pauseTimer();
+        startBtn.textContent = 'Start Focus';
+        // Reset to initial of current preset? Or default 25?
+        // Let's reset to whatever totalTime was set to
+        currentTime = totalTime;
+        updateDisplay();
+        updateProgress();
+    }
+
+    function completeSession() {
+        pauseTimer();
+
+        // Play notification sound
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3'); // Gentle bell
+        audio.play().catch(e => console.log("Audio play failed (user interaction needed first)"));
+
+        totalSessions++;
+        localStorage.setItem('focusSessions', totalSessions);
+        sessionCount.textContent = totalSessions;
+
+        // Save to Backend
+        fetch('/api/focus/complete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                duration: Math.round(totalTime / 60),
+                task: 'Focus Session'
+            })
+        });
+
+        alert("🎉 Session Complete! Take a short break.");
+        resetTimer();
+    }
+
+    // Initialize
+    updateDisplay();
+    updateProgress();
+</script>
+{% endblock %}

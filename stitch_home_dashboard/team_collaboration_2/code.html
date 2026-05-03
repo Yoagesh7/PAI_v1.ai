@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Team Collaboration Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#5b498d",
+              "background-light": "#f9f9fa",
+              "background-dark": "#18181b",
+            },
+            fontFamily: {
+              "display": ["Inter", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+        }
+        .dark .glass-effect {
+            background: rgba(24, 24, 27, 0.7);
+        }
+        .focus-glow {
+            box-shadow: 0 0 15px 2px rgba(91, 73, 141, 0.3);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-display bg-background-light dark:bg-background-dark text-[#131217] dark:text-gray-100 min-h-screen">
+<!-- Top Navigation Bar -->
+<nav class="sticky top-0 z-50 glass-effect border-b border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary cursor-pointer">arrow_back_ios</span>
+<h1 class="text-lg font-bold tracking-tight">Team Collaboration</h1>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-1 bg-primary/10 px-3 py-1 rounded-full">
+<span class="material-symbols-outlined text-[18px] text-primary">auto_awesome</span>
+<span class="text-xs font-semibold text-primary uppercase tracking-wider">Mentorship</span>
+</div>
+<span class="material-symbols-outlined text-gray-500 dark:text-gray-400">more_vert</span>
+</div>
+</nav>
+<main class="p-4 space-y-6 max-w-md mx-auto">
+<!-- Group Progress Card -->
+<section class="bg-white dark:bg-zinc-900 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-zinc-800">
+<div class="flex justify-between items-end mb-4">
+<div>
+<h2 class="text-sm font-medium text-gray-500 dark:text-gray-400">Current Milestone</h2>
+<p class="text-lg font-bold">Launch MVP Beta</p>
+</div>
+<div class="text-right">
+<span class="text-2xl font-bold text-primary">65%</span>
+</div>
+</div>
+<div class="w-full bg-gray-100 dark:bg-zinc-800 rounded-full h-3 overflow-hidden">
+<div class="bg-primary h-full rounded-full transition-all duration-500" style="width: 65%;"></div>
+</div>
+<div class="mt-4 flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+<span class="material-symbols-outlined text-[16px] text-green-500">event_available</span>
+<p>On track to finish by Friday</p>
+</div>
+</section>
+<!-- Team Status Grid -->
+<section>
+<div class="flex items-center justify-between mb-3 px-1">
+<h3 class="text-sm font-bold uppercase tracking-widest text-gray-400">In the flow</h3>
+<span class="text-xs text-primary font-medium">3 active</span>
+</div>
+<div class="grid grid-cols-3 gap-3">
+<!-- Sarah -->
+<div class="flex flex-col items-center p-3 bg-white dark:bg-zinc-900 rounded-xl border border-gray-100 dark:border-zinc-800">
+<div class="relative mb-2">
+<div class="w-14 h-14 rounded-full bg-cover bg-center focus-glow border-2 border-primary" data-alt="Portrait of Sarah with soft lighting" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBJOWU2GL0lK5hlKt2i8qxGvRPiKWXQPH5k6nPFikkVDB_8wr347BNzusJaY_6ecoBK2glnmsihIii7f0bd-qD8ziQe30IKfNr4CDfBMGImUHyc3SUFHGdMEZcdxbVVGpMdVzbNPN25XFQAmJ5pzhuvc7GOvqpEHX4nmPOUwaIjdXCtoBD-Xfa8mKIFW5OUeC-r7Yx-y860WyRAUzoCvh6lIc974XkOiajCtXpdAQrinoVXTI_riB7TB_a1n0NMTsP-FRpX7mbWnb0");'></div>
+<div class="absolute bottom-0 right-0 w-4 h-4 bg-primary rounded-full border-2 border-white dark:border-zinc-900"></div>
+</div>
+<p class="text-xs font-bold truncate w-full text-center">Sarah</p>
+<p class="text-[10px] text-primary font-medium">Focus: 25m</p>
+</div>
+<!-- Alex -->
+<div class="flex flex-col items-center p-3 bg-white dark:bg-zinc-900 rounded-xl border border-gray-100 dark:border-zinc-800">
+<div class="relative mb-2">
+<div class="w-14 h-14 rounded-full bg-cover bg-center" data-alt="Portrait of Alex looking professional" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuANyuJSFEYuIvw64zD2fCeRnMncPeLC1pmhfWq53g6-H7qbRusWhUf_8mdGLZ34xY3vVkgvwPdHbfpY5gVJ0zRfr69i1QBzRFXZOKFFUw6kwCw34UeLqkE9sZRqQjy18N_RMBDHMzj4FdzmjVg5pUrH9zL6mr7AQJBXJzF5SXsQDmnEfs8NAx3xiXQgVenvu83RXVkbe3zbW_Iy9Pf8cIZ6BOZ0OSFDCZHriA0bTbKfFQntgHMUKEQEnVviQR19UmGgO40RnxUu64s");'></div>
+<div class="absolute bottom-0 right-0 w-4 h-4 bg-blue-400 rounded-full border-2 border-white dark:border-zinc-900"></div>
+</div>
+<p class="text-xs font-bold truncate w-full text-center">Alex</p>
+<p class="text-[10px] text-gray-500">Reviewing Docs</p>
+</div>
+<!-- AI Mentor -->
+<div class="flex flex-col items-center p-3 bg-primary/5 dark:bg-primary/20 rounded-xl border border-primary/20">
+<div class="relative mb-2">
+<div class="w-14 h-14 rounded-full bg-primary flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-2xl">psychology</span>
+</div>
+<div class="absolute bottom-0 right-0 w-4 h-4 bg-green-400 rounded-full border-2 border-white dark:border-zinc-900"></div>
+</div>
+<p class="text-xs font-bold truncate w-full text-center">AI Mentor</p>
+<p class="text-[10px] text-primary animate-pulse font-medium">Analyzing...</p>
+</div>
+</div>
+</section>
+<!-- AI Tasks Section -->
+<section>
+<div class="flex items-center justify-between mb-3 px-1">
+<h3 class="text-sm font-bold uppercase tracking-widest text-gray-400">AI Assigned Tasks</h3>
+<span class="material-symbols-outlined text-gray-400 text-sm">info</span>
+</div>
+<div class="space-y-2">
+<!-- Task 1 -->
+<div class="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 rounded-lg border border-gray-100 dark:border-zinc-800 shadow-sm">
+<div class="flex items-center gap-3">
+<div class="w-6 h-6 rounded border-2 border-primary flex items-center justify-center text-white cursor-pointer hover:bg-primary transition-colors">
+<span class="material-symbols-outlined text-[16px]">check</span>
+</div>
+<div>
+<p class="text-sm font-semibold">Refine Value Proposition</p>
+<span class="text-[10px] bg-red-100 dark:bg-red-900/30 text-red-600 px-1.5 py-0.5 rounded font-bold uppercase">High Priority</span>
+</div>
+</div>
+<div class="w-8 h-8 rounded-full bg-cover bg-center border border-gray-200" data-alt="Sarah small thumbnail" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBMw5U590JjZ6yDf15XwN07dTba-f47akJMRhfIF3VfBNxy6NGHNEzoUS7nfuTYDfGQuZ4R0REHOxRRNb7WOwuN2WjSKzlXyzyWW_3cMCG_ve0Kz8t43fh34QoG_XtkNz5Ogj8WJ2rTFSA2hKVamB5GrS21_h1qFW8nWdQgSK0hK7oA93b6itDAN71P5C9eKk0bn0ocbtGHPlfgg5RPt6WTTn3JvSGdPnBWXAltO6CZLVfgULIa2inRVwgJ-Ks0O5qd-6JEbx1qaGw");'></div>
+</div>
+<!-- Task 2 -->
+<div class="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 rounded-lg border border-gray-100 dark:border-zinc-800 shadow-sm opacity-80">
+<div class="flex items-center gap-3">
+<div class="w-6 h-6 rounded border-2 border-gray-300 dark:border-zinc-700 flex items-center justify-center text-white"></div>
+<div>
+<p class="text-sm font-semibold">Sync Mentor Session</p>
+<span class="text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-600 px-1.5 py-0.5 rounded font-bold uppercase">Low Priority</span>
+</div>
+</div>
+<div class="w-8 h-8 rounded-full bg-cover bg-center border border-gray-200" data-alt="Alex small thumbnail" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBO6EYzcxYRbahHtvq0-AJhvFuKI9OhuKC4xlBqGV1MVSOMSiaCDIDKLQfKYw1bTBrVc_LoLNvA5mEcRY7NyczcqI1DqAerZnODLHvDtlhxnqWgSrswUP8Hl6Yt6W2azOBYBfq1DYGYlMHasotQ4QLFUpbJgi2ntnQH46L5CKQPNJglTBbcN9WaJgLdDpSevZhL27aLHqSDpyVNR2YYgAN_8CCsH_zfg19DE3tyHi90QH25qjyeFRZtBEUfnPBy4kZvsOyZ1usNyZ8");'></div>
+</div>
+</div>
+</section>
+<!-- Shared AI Chat Widget -->
+<section class="bg-primary/5 dark:bg-primary/10 rounded-xl p-4 border border-primary/10">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-primary">forum</span>
+<h3 class="text-sm font-bold">Team Mentor Chat</h3>
+</div>
+<div class="space-y-3 mb-4">
+<div class="flex gap-2">
+<div class="w-6 h-6 rounded-full bg-gray-300 bg-cover shrink-0" data-alt="Alex mini avatar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBmd3c_g-vHVu6-hRN1WnQ9x8tbLry-B4Snha5MYDq04KYZyUiIIN4RXXua-p2XtzBQ1ZP_K0Z5NfPpQM63UwWmY4OuhmZ0f7JpnPCHHy-cVOZDCSuGRksIsJcJYFbXrYF8Hms1dNXLs_KBBsdlw34VDuwoNGMdZXZB5g_3R3PSLgtrDTc57R6UUBbMXUQHzDtqLyKJfKt6Tb3BlloyIVELN3yFQGYeNhNsJd8hfkFC1jDUnAAR5zrbOyJFnXeLJoW_v5aZL33uoNk");'></div>
+<div class="bg-white dark:bg-zinc-800 p-2.5 rounded-r-lg rounded-bl-lg text-xs shadow-sm max-w-[80%]">
+                        Sarah, how's the focus session going on the wireframes?
+                    </div>
+</div>
+<div class="flex gap-2 flex-row-reverse">
+<div class="w-6 h-6 rounded-full bg-primary shrink-0 flex items-center justify-center text-[12px] text-white">
+<span class="material-symbols-outlined text-[14px]">psychology</span>
+</div>
+<div class="bg-primary text-white p-3 rounded-l-lg rounded-br-lg text-xs shadow-md max-w-[80%]">
+<p class="font-bold mb-1">Team Mentor Insight</p>
+                        I've noticed a bottleneck in the design phase. Should I reassign the 'Wireframing' task to Alex to speed up the process?
+                    </div>
+</div>
+</div>
+<div class="relative">
+<input class="w-full bg-white dark:bg-zinc-800 border-none rounded-full py-2 px-4 pr-10 text-xs focus:ring-1 focus:ring-primary shadow-inner" placeholder="Reply to team or AI..." type="text"/>
+<button class="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 bg-primary text-white rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-[16px]">send</span>
+</button>
+</div>
+</section>
+</main>
+<!-- Floating Action Button -->
+<button class="fixed bottom-6 right-6 w-14 h-14 bg-primary text-white rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition-transform active:scale-95">
+<span class="material-symbols-outlined text-2xl">add</span>
+</button>
+<!-- Bottom Navigation (iOS Style) -->
+<footer class="fixed bottom-0 left-0 right-0 h-16 glass-effect border-t border-gray-200 dark:border-zinc-800 flex items-center justify-around px-6">
+<span class="material-symbols-outlined text-primary font-bold">dashboard</span>
+<span class="material-symbols-outlined text-gray-400">calendar_month</span>
+<span class="material-symbols-outlined text-gray-400">task_alt</span>
+<span class="material-symbols-outlined text-gray-400">settings</span>
+</footer>
+<div class="h-24"></div> <!-- Spacer for footer -->
+</body></html>

@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="max-width: 1100px; margin: 0 auto; padding: var(--space-8) var(--space-4) var(--space-12);">
+    <section style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--space-8); align-items: center; padding: var(--space-8); background: linear-gradient(135deg, rgba(102,126,234,0.12), rgba(118,75,162,0.12)); border: 1px solid var(--color-border-light); border-radius: var(--radius-2xl);">
+        <div>
+            <div class="badge badge-primary" style="margin-bottom: var(--space-4);">PartnerAI</div>
+            <h1 style="font-size: clamp(2.2rem, 5vw, 4rem); line-height: 1.05; margin: 0 0 var(--space-4); color: var(--color-text-primary); font-weight: 800;">
+                Your personal AI mentor for productivity, habits, and growth.
+            </h1>
+            <p style="font-size: var(--text-lg); color: var(--color-text-secondary); margin: 0 0 var(--space-6); max-width: 640px;">
+                PartnerAI helps you plan your day, track habits, generate tasks, manage focus sessions, and get personalized guidance from an AI assistant that remembers your goals.
+            </p>
+            <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                <a href="/login" class="btn btn-primary">Get Started</a>
+                <a href="#features" class="btn btn-ghost">Explore Features</a>
+            </div>
+        </div>
+        <div class="card" style="padding: var(--space-6); background: var(--color-bg-secondary);">
+            <h2 style="margin-top: 0; color: var(--color-text-primary);">What it does</h2>
+            <ul style="margin: 0; padding-left: var(--space-5); color: var(--color-text-secondary); line-height: 1.8;">
+                <li>Guides you with daily AI coaching</li>
+                <li>Creates habits, tasks, and reminders</li>
+                <li>Supports group goals and teamwork</li>
+                <li>Shows progress and weekly insights</li>
+                <li>Runs on the NVIDIA API for fast cloud AI</li>
+            </ul>
+        </div>
+    </section>
+
+    <section id="features" style="margin-top: var(--space-10);">
+        <h2 style="font-size: var(--text-2xl); margin-bottom: var(--space-6); color: var(--color-text-primary);">Why it is helpful</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-4);">
+            <div class="card">
+                <h3 style="margin-top: 0;">Stay consistent</h3>
+                <p style="margin-bottom: 0; color: var(--color-text-secondary);">Build routines with habit tracking and simple daily actions.</p>
+            </div>
+            <div class="card">
+                <h3 style="margin-top: 0;">Save time</h3>
+                <p style="margin-bottom: 0; color: var(--color-text-secondary);">Get quick answers, task ideas, and weekly guidance in one place.</p>
+            </div>
+            <div class="card">
+                <h3 style="margin-top: 0;">Focus better</h3>
+                <p style="margin-bottom: 0; color: var(--color-text-secondary);">Use focus mode, reminders, and progress views to reduce distraction.</p>
+            </div>
+            <div class="card">
+                <h3 style="margin-top: 0;">Grow smarter</h3>
+                <p style="margin-bottom: 0; color: var(--color-text-secondary);">The assistant learns from your activity to give more relevant support.</p>
+            </div>
+        </div>
+    </section>
+
+    <section style="margin-top: var(--space-10); display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--space-6);">
+        <div class="card">
+            <h3 style="margin-top: 0;">Get started</h3>
+            <ol style="color: var(--color-text-secondary); line-height: 1.8; padding-left: var(--space-5);">
+                <li>Create your account or sign in.</li>
+                <li>Set your goal and preferred schedule.</li>
+                <li>Chat with your mentor and review your dashboard.</li>
+            </ol>
+        </div>
+        <div class="card" style="background: linear-gradient(135deg, rgba(102,126,234,0.18), rgba(118,75,162,0.18));">
+            <h3 style="margin-top: 0;">Ready to begin?</h3>
+            <p style="color: var(--color-text-secondary);">Jump in and let PartnerAI help you organize your life, stay focused, and make steady progress.</p>
+            <a href="/login" class="btn btn-primary">Open the app</a>
+        </div>
+    </section>
+</div>
+{% endblock %}

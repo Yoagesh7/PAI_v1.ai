@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In - PartnerAI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/design-system.css">
+
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #F4F1FA 0%, #FAFBFC 100%);
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 420px;
+            padding: var(--space-4);
+        }
+
+        .login-card {
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border-light);
+            border-radius: var(--radius-xl);
+            padding: var(--space-10) var(--space-8);
+            box-shadow: var(--shadow-xl);
+            text-align: center;
+        }
+
+        .brand-logo {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto var(--space-5);
+            background: var(--color-primary-500);
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: var(--text-2xl);
+            font-weight: 700;
+        }
+
+        h1 {
+            font-size: var(--text-3xl);
+            font-weight: 700;
+            color: var(--color-text-primary);
+            margin: 0 0 var(--space-2) 0;
+        }
+
+        .subtitle {
+            font-size: var(--text-base);
+            color: var(--color-text-secondary);
+            margin: 0 0 var(--space-8) 0;
+        }
+
+        .form-group {
+            margin-bottom: var(--space-4);
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: var(--text-sm);
+            font-weight: 500;
+            color: var(--color-text-secondary);
+            margin-bottom: var(--space-2);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: var(--space-3) var(--space-4);
+            font-size: var(--text-base);
+            color: var(--color-text-primary);
+            background: var(--color-bg-tertiary);
+            border: 1px solid var(--color-border-default);
+            border-radius: var(--radius-md);
+            transition: all var(--transition-fast);
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--color-primary-500);
+            background: var(--color-bg-secondary);
+            box-shadow: 0 0 0 3px var(--color-primary-50);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: var(--space-4) var(--space-6);
+            background: var(--color-primary-500);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: var(--text-base);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-base);
+            margin-top: var(--space- 4);
+            font-family: inherit;
+        }
+
+        .btn-submit:hover {
+            background: var(--color-primary-600);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        .toggle-mode {
+            margin-top: var(--space-6);
+            font-size: var(--text-sm);
+            color: var(--color-text-secondary);
+        }
+
+        .toggle-mode a {
+            color: var(--color-primary-600);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .toggle-mode a:hover {
+            text-decoration: underline;
+        }
+
+        .error-msg {
+            display: none;
+            padding: var(--space-3) var(--space-4);
+            background: var(--color-error-bg);
+            color: var(--color-error);
+            border-radius: var(--radius-md);
+            font-size: var(--text-sm);
+            margin-bottom: var(--space-4);
+            text-align: left;
+        }
+
+        @media (max-width: 480px) {
+            .login-card {
+                padding: var(--space-8) var(--space-6);
+            }
+
+            h1 {
+                font-size: var(--text-2xl);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="brand-logo">PA</div>
+            <h1 id="title">Welcome Back</h1>
+            <p class="subtitle" id="subtitle">Sign in to continue to PartnerAI</p>
+
+            <div class="error-msg" id="error"></div>
+
+            <form onsubmit="submitAuth(event)">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" placeholder="Enter your username" autocomplete="username" required>
+                </div>
+
+                <div class="form-group" id="emailGroup" style="display:none;">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" placeholder="Enter your email" autocomplete="email">
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" placeholder="Enter your password"
+                        autocomplete="current-password" required>
+                </div>
+
+                <div class="form-group" id="confirmGroup" style="display:none;">
+                    <label for="confirm-pass">Confirm Password</label>
+                    <input type="password" id="confirm-pass" placeholder="Confirm your password">
+                </div>
+
+                <button type="submit" class="btn-submit" id="action-btn">Sign In</button>
+            </form>
+
+            <div class="toggle-mode">
+                <span id="toggle-msg">New to PartnerAI? <a href="#" onclick="toggleMode(event)">Create
+                        Account</a></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isLogin = true;
+
+        function toggleMode(event) {
+            event.preventDefault();
+            isLogin = !isLogin;
+
+            document.getElementById('title').innerText = isLogin ? "Welcome Back" : "Create Account";
+            document.getElementById('subtitle').innerText = isLogin ? "Sign in to continue to PartnerAI" : "Join PartnerAI to get started";
+            document.getElementById('action-btn').innerText = isLogin ? "Sign In" : "Create Account";
+            document.getElementById('toggle-msg').innerHTML = isLogin
+                ? 'New to PartnerAI? <a href="#" onclick="toggleMode(event)">Create Account</a>'
+                : 'Already have an account? <a href="#" onclick="toggleMode(event)">Sign In</a>';
+            document.getElementById('error').style.display = 'none';
+
+            // Toggle fields
+            document.getElementById('emailGroup').style.display = isLogin ? 'none' : 'block';
+            document.getElementById('confirmGroup').style.display = isLogin ? 'none' : 'block';
+
+            // Update password autocomplete
+            document.getElementById('password').autocomplete = isLogin ? 'current-password' : 'new-password';
+        }
+
+        async function submitAuth(event) {
+            event.preventDefault();
+
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+            const email = document.getElementById('email').value;
+            const confirm = document.getElementById('confirm-pass').value;
+
+            const btn = document.getElementById('action-btn');
+            const err = document.getElementById('error');
+
+            if (!user || !pass) {
+                err.innerText = "Please fill in all fields.";
+                err.style.display = 'block';
+                return;
+            }
+
+            if (!isLogin) {
+                if (!email) {
+                    err.innerText = "Email is required for signup.";
+                    err.style.display = 'block';
+                    return;
+                }
+                if (pass !== confirm) {
+                    err.innerText = "Passwords do not match!";
+                    err.style.display = 'block';
+                    return;
+                }
+            }
+
+            btn.innerText = "Processing...";
+            btn.disabled = true;
+            err.style.display = 'none';
+
+            const endpoint = isLogin ? '/api/login' : '/api/signup';
+            const payload = { username: user, password: pass };
+            if (!isLogin) payload.email = email;
+
+            try {
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    window.location.href = '/';
+                } else {
+                    err.innerText = data.error || "Authentication failed.";
+                    err.style.display = 'block';
+                    btn.innerText = isLogin ? "Sign In" : "Create Account";
+                    btn.disabled = false;
+                }
+            } catch (e) {
+                err.innerText = "Connection error. Please try again.";
+                err.style.display = 'block';
+                btn.innerText = isLogin ? "Sign In" : "Create Account";
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+
+</html>

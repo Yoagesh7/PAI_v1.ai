@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Team Collaboration Dashboard - Dark</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#a855f7","charcoal": "#121214",
+              "card-dark": "#1c1c1e",
+              "accent-purple": "#bf80ff",
+            },
+            fontFamily: {
+              "display": ["Inter", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style type="text/tailwindcss">
+        .glass-effect {
+            background: rgba(18, 18, 20, 0.8);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+        }
+        .ios-shadow {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+        .neon-glow {
+            box-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
+        }
+        body {
+          min-height: 100dvh;
+          background-color: theme('colors.charcoal');
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-display text-gray-100 antialiased">
+<nav class="sticky top-0 z-50 glass-effect border-b border-white/5 px-4 py-3 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-accent-purple cursor-pointer">chevron_left</span>
+<h1 class="text-lg font-semibold tracking-tight">Team Hub</h1>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-1.5 bg-primary/20 px-3 py-1 rounded-full border border-primary/30">
+<span class="material-symbols-outlined text-[16px] text-accent-purple">bolt</span>
+<span class="text-[10px] font-bold text-accent-purple uppercase tracking-tighter">AI Mentor</span>
+</div>
+<span class="material-symbols-outlined text-gray-400">more_horiz</span>
+</div>
+</nav>
+<main class="p-4 space-y-6 max-w-md mx-auto pb-24">
+<section class="bg-card-dark p-5 rounded-2xl border border-white/5 ios-shadow">
+<div class="flex justify-between items-end mb-4">
+<div>
+<h2 class="text-[11px] font-bold uppercase tracking-widest text-gray-500 mb-1">Group Goal Progress</h2>
+<p class="text-lg font-bold">Q4 Founder Launch</p>
+</div>
+<div class="text-right">
+<span class="text-2xl font-bold text-accent-purple">72%</span>
+</div>
+</div>
+<div class="w-full bg-charcoal rounded-full h-2.5 overflow-hidden border border-white/5">
+<div class="bg-gradient-to-r from-primary to-accent-purple h-full rounded-full transition-all duration-700 neon-glow" style="width: 72%;"></div>
+</div>
+<div class="mt-4 flex items-center gap-2 text-xs text-gray-400">
+<span class="material-symbols-outlined text-[16px] text-primary">auto_mode</span>
+<p>AI optimized: 3 tasks ahead of schedule</p>
+</div>
+</section>
+<section>
+<div class="flex items-center justify-between mb-3 px-1">
+<h3 class="text-[11px] font-bold uppercase tracking-widest text-gray-500">Live Status</h3>
+<span class="flex items-center gap-1 text-[10px] text-primary font-bold">
+<span class="w-1.5 h-1.5 bg-primary rounded-full animate-pulse"></span>
+                4 ONLINE
+            </span>
+</div>
+<div class="flex gap-4 overflow-x-auto pb-2 no-scrollbar">
+<div class="flex-shrink-0 flex flex-col items-center gap-2">
+<div class="relative">
+<div class="w-16 h-16 rounded-full p-0.5 bg-gradient-to-tr from-primary to-transparent">
+<div class="w-full h-full rounded-full bg-cover bg-center border-2 border-charcoal" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBJOWU2GL0lK5hlKt2i8qxGvRPiKWXQPH5k6nPFikkVDB_8wr347BNzusJaY_6ecoBK2glnmsihIii7f0bd-qD8ziQe30IKfNr4CDfBMGImUHyc3SUFHGdMEZcdxbVVGpMdVzbNPN25XFQAmJ5pzhuvc7GOvqpEHX4nmPOUwaIjdXCtoBD-Xfa8mKIFW5OUeC-r7Yx-y860WyRAUzoCvh6lIc974XkOiajCtXpdAQrinoVXTI_riB7TB_a1n0NMTsP-FRpX7mbWnb0");'></div>
+</div>
+<div class="absolute bottom-0 right-0 w-4 h-4 bg-primary rounded-full border-2 border-charcoal"></div>
+</div>
+<div class="text-center">
+<p class="text-[11px] font-bold">Sarah</p>
+<p class="text-[9px] text-accent-purple">In Focus</p>
+</div>
+</div>
+<div class="flex-shrink-0 flex flex-col items-center gap-2">
+<div class="relative">
+<div class="w-16 h-16 rounded-full p-0.5 border border-white/10">
+<div class="w-full h-full rounded-full bg-cover bg-center border-2 border-charcoal" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuANyuJSFEYuIvw64zD2fCeRnMncPeLC1pmhfWq53g6-H7qbRusWhUf_8mdGLZ34xY3vVkgvwPdHbfpY5gVJ0zRfr69i1QBzRFXZOKFFUw6kwCw34UeLqkE9sZRqQjy18N_RMBDHMzj4FdzmjVg5pUrH9zL6mr7AQJBXJzF5SXsQDmnEfs8NAx3xiXQgVenvu83RXVkbe3zbW_Iy9Pf8cIZ6BOZ0OSFDCZHriA0bTbKfFQntgHMUKEQEnVviQR19UmGgO40RnxUu64s");'></div>
+</div>
+<div class="absolute bottom-0 right-0 w-4 h-4 bg-gray-600 rounded-full border-2 border-charcoal"></div>
+</div>
+<div class="text-center">
+<p class="text-[11px] font-bold">Alex</p>
+<p class="text-[9px] text-gray-500">Away</p>
+</div>
+</div>
+<div class="flex-shrink-0 flex flex-col items-center gap-2">
+<div class="relative">
+<div class="w-16 h-16 rounded-full p-0.5 bg-accent-purple/30">
+<div class="w-full h-full rounded-full bg-primary flex items-center justify-center border-2 border-charcoal">
+<span class="material-symbols-outlined text-white text-2xl">neurology</span>
+</div>
+</div>
+<div class="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-charcoal"></div>
+</div>
+<div class="text-center">
+<p class="text-[11px] font-bold">Mentor AI</p>
+<p class="text-[9px] text-primary animate-pulse">Monitoring</p>
+</div>
+</div>
+</div>
+</section>
+<section class="bg-card-dark rounded-2xl border border-white/5 overflow-hidden ios-shadow">
+<div class="p-4 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">bubble_chart</span>
+<h3 class="text-xs font-bold uppercase tracking-wider">Shared Sync</h3>
+</div>
+<span class="text-[10px] text-gray-500">2:45 PM</span>
+</div>
+<div class="p-4 space-y-4 max-h-[220px] overflow-y-auto">
+<div class="flex gap-2">
+<div class="w-7 h-7 rounded-full bg-cover shrink-0" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBmd3c_g-vHVu6-hRN1WnQ9x8tbLry-B4Snha5MYDq04KYZyUiIIN4RXXua-p2XtzBQ1ZP_K0Z5NfPpQM63UwWmY4OuhmZ0f7JpnPCHHy-cVOZDCSuGRksIsJcJYFbXrYF8Hms1dNXLs_KBBsdlw34VDuwoNGMdZXZB5g_3R3PSLgtrDTc57R6UUBbMXUQHzDtqLyKJfKt6Tb3BlloyIVELN3yFQGYeNhNsJd8hfkFC1jDUnAAR5zrbOyJFnXeLJoW_v5aZL33uoNk");'></div>
+<div class="bg-charcoal border border-white/5 p-3 rounded-2xl rounded-tl-none text-xs leading-relaxed max-w-[85%]">
+                    Alex, did you get the chance to update the pitch deck?
+                </div>
+</div>
+<div class="flex gap-2 flex-row-reverse">
+<div class="w-7 h-7 rounded-full bg-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[14px] text-white">smart_toy</span>
+</div>
+<div class="bg-primary/20 border border-primary/30 p-3 rounded-2xl rounded-tr-none text-xs leading-relaxed max-w-[85%] text-accent-purple">
+<p class="font-bold mb-1 flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">auto_awesome</span> Mentor Insight</p>
+                    Alex is away but I’ve prioritized the market analysis for him. Sarah, focus on the 'Solution' slide.
+                </div>
+</div>
+</div>
+<div class="p-3 bg-charcoal/50 border-t border-white/5">
+<div class="relative">
+<input class="w-full bg-charcoal border border-white/10 rounded-full py-2.5 px-4 pr-12 text-[11px] focus:ring-1 focus:ring-primary focus:border-primary placeholder-gray-600" placeholder="Type a message or ask AI..." type="text"/>
+<button class="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center shadow-lg">
+<span class="material-symbols-outlined text-[18px]">arrow_upward</span>
+</button>
+</div>
+</div>
+</section>
+<section>
+<div class="flex items-center justify-between mb-3 px-1">
+<h3 class="text-[11px] font-bold uppercase tracking-widest text-gray-500">AI Task Queue</h3>
+<span class="material-symbols-outlined text-gray-600 text-sm">filter_list</span>
+</div>
+<div class="space-y-3">
+<div class="flex items-center justify-between p-4 bg-card-dark rounded-xl border border-white/5 ios-shadow">
+<div class="flex items-center gap-3">
+<div class="w-5 h-5 rounded-full border border-primary/50 flex items-center justify-center cursor-pointer">
+<div class="w-2.5 h-2.5 bg-primary rounded-full scale-0 transition-transform"></div>
+</div>
+<div>
+<p class="text-sm font-medium">Refine Value Proposition</p>
+<div class="flex items-center gap-2 mt-1">
+<span class="text-[9px] bg-primary/10 text-primary px-1.5 py-0.5 rounded border border-primary/20 font-bold uppercase">Critical</span>
+<span class="text-[9px] text-gray-500">Sarah</span>
+</div>
+</div>
+</div>
+<div class="w-8 h-8 rounded-full bg-cover bg-center border border-white/10" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBMw5U590JjZ6yDf15XwN07dTba-f47akJMRhfIF3VfBNxy6NGHNEzoUS7nfuTYDfGQuZ4R0REHOxRRNb7WOwuN2WjSKzlXyzyWW_3cMCG_ve0Kz8t43fh34QoG_XtkNz5Ogj8WJ2rTFSA2hKVamB5GrS21_h1qFW8nWdQgSK0hK7oA93b6itDAN71P5C9eKk0bn0ocbtGHPlfgg5RPt6WTTn3JvSGdPnBWXAltO6CZLVfgULIa2inRVwgJ-Ks0O5qd-6JEbx1qaGw");'></div>
+</div>
+<div class="flex items-center justify-between p-4 bg-card-dark rounded-xl border border-white/5 ios-shadow">
+<div class="flex items-center gap-3">
+<div class="w-5 h-5 rounded-full border border-white/10 flex items-center justify-center"></div>
+<div>
+<p class="text-sm font-medium text-gray-300">Competitor Audit</p>
+<div class="flex items-center gap-2 mt-1">
+<span class="text-[9px] bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded border border-white/5 font-bold uppercase">Next</span>
+<span class="text-[9px] text-gray-500">Alex</span>
+</div>
+</div>
+</div>
+<div class="w-8 h-8 rounded-full bg-cover bg-center border border-white/10 grayscale opacity-50" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBO6EYzcxYRbahHtvq0-AJhvFuKI9OhuKC4xlBqGV1MVSOMSiaCDIDKLQfKYw1bTBrVc_LoLNvA5mEcRY7NyczcqI1DqAerZnODLHvDtlhxnqWgSrswUP8Hl6Yt6W2azOBYBfq1DYGYlMHasotQ4QLFUpbJgi2ntnQH46L5CKQPNJglTBbcN9WaJgLdDpSevZhL27aLHqSDpyVNR2YYgAN_8CCsH_zfg19DE3tyHi90QH25qjyeFRZtBEUfnPBy4kZvsOyZ1usNyZ8");'></div>
+</div>
+</div>
+</section>
+</main>
+<button class="fixed bottom-20 right-6 w-14 h-14 bg-gradient-to-tr from-primary to-accent-purple text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-105 transition-transform active:scale-95 z-50 neon-glow">
+<span class="material-symbols-outlined text-2xl">add</span>
+</button>
+<footer class="fixed bottom-0 left-0 right-0 h-20 glass-effect border-t border-white/5 flex items-start justify-around pt-3 px-6 pb-6">
+<div class="flex flex-col items-center gap-1">
+<span class="material-symbols-outlined text-primary font-variation-fill-1">grid_view</span>
+<span class="text-[10px] text-primary font-medium">Team</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<span class="material-symbols-outlined text-gray-500">bubble_chart</span>
+<span class="text-[10px] text-gray-500">Insights</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<span class="material-symbols-outlined text-gray-500">check_circle</span>
+<span class="text-[10px] text-gray-500">Focus</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<span class="material-symbols-outlined text-gray-500">account_circle</span>
+<span class="text-[10px] text-gray-500">Profile</span>
+</div>
+</footer>
+<style>.no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+    .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+    .font-variation-fill-1 {
+        font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+</style>
+
+</body></html>

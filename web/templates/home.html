@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-container" style="max-width: 600px; padding-top: var(--space-8);">
+    <!-- Greeting Header -->
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-8);">
+        <div style="display: flex; align-items: center; gap: var(--space-4);">
+            <div class="avatar avatar-lg" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <span style="font-size: var(--text-xl);">PA</span>
+            </div>
+            <div>
+                <h1 style="font-size: var(--text-2xl); font-weight: 700; margin: 0; color: var(--color-text-primary);"
+                    id="greeting">
+                    Good evening,
+                </h1>
+                <p style="font-size: var(--text-base); color: var(--color-text-secondary); margin: 0;" id="username">
+                    User</p>
+                <p style="font-size: var(--text-sm); color: var(--color-text-tertiary); margin: var(--space-1) 0 0 0;">
+                    Time to focus on your vision.
+                </p>
+            </div>
+        </div>
+        <div class="badge badge-primary" style="display: flex; align-items: center; gap: var(--space-2);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z" />
+            </svg>
+            <span>14-day flow</span>
+        </div>
+    </div>
+
+    <!-- Today's Focus Card -->
+    <div class="card"
+        style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; margin-bottom: var(--space-6); padding: var(--space-8);"
+        id="focusCard">
+        <div class="badge" style="background: rgba(255,255,255,0.2); color: white; margin-bottom: var(--space-4);">
+            TODAY'S FOCUS
+        </div>
+        <h2 style="font-size: var(--text-2xl); font-weight: 700; color: white; margin: 0 0 var(--space-3) 0;"
+            id="focusTitle">
+            Complete the Series A pitch deck
+        </h2>
+        <p style="color: rgba(255,255,255,0.8); font-size: var(--text-sm); margin: 0 0 var(--space-6) 0; font-style: italic;"
+            id="focusSubtitle">
+            Finish the market analysis slide.
+        </p>
+        <button class="btn"
+            style="background: rgba(255,255,255,0.95); color: var(--color-primary-600); font-weight: 600; display: inline-flex; align-items: center; gap: var(--space-2);"
+            onclick="startFocus()">
+            Start
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="5" y1="12" x2="19" y2="12" />
+                <polyline points="12 5 19 12 12 19" />
+            </svg>
+        </button>
+    </div>
+
+    <!-- AI Recommended Tasks -->
+    <div style="margin-bottom: var(--space-6);">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4);">
+            <h3
+                style="font-size: var(--text-lg); font-weight: 600; color: var(--color-text-primary); margin: 0; display: flex; align-items: center; gap: var(--space-2);">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"
+                    style="color: var(--color-primary-500);">
+                    <path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z" />
+                </svg>
+                AI Recommended
+            </h3>
+            <button class="btn btn-ghost btn-sm" style="color: var(--color-text-tertiary); font-size: var(--text-sm);"
+                onclick="clearAllTasks()">
+                Clear All
+            </button>
+        </div>
+
+        <div id="taskList" style="display: flex; flex-direction: column; gap: var(--space-3);">
+            <!-- Tasks will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Talk to Mentor Button -->
+    <button class="btn btn-primary"
+        style="width: 100%; padding: var(--space-4); font-size: var(--text-base); display: flex; align-items: center; justify-content: center; gap: var(--space-3);"
+        onclick="window.location.href='/chat'">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+        </svg>
+        Talk to your Mentor
+    </button>
+</div>
+
+<style>
+    /* Draggable task items */
+    .task-item {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        padding: var(--space-4);
+        background: var(--color-bg-secondary);
+        border: 1px solid var(--color-border-light);
+        border-radius: var(--radius-lg);
+        transition: all var(--transition-fast);
+        cursor: move;
+    }
+
+    .task-item:hover {
+        border-color: var(--color-border-default);
+        box-shadow: var(--shadow-sm);
+        transform: translateY(-1px);
+    }
+
+    .task-item.dragging {
+        opacity: 0.5;
+    }
+
+    .task-checkbox {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        border: 2px solid var(--color-border-medium);
+        cursor: pointer;
+        transition: all var(--transition-fast);
+        flex-shrink: 0;
+    }
+
+    .task-checkbox.checked {
+        background: var(--color-primary-500);
+        border-color: var(--color-primary-500);
+        position: relative;
+    }
+
+    .task-checkbox.checked::after {
+        content: '✓';
+        color: white;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 14px;
+    }
+
+    .task-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .task-title {
+        font-size: var(--text-base);
+        font-weight: 500;
+        color: var(--color-text-primary);
+        margin: 0 0 var(--space-1) 0;
+    }
+
+    .task-time {
+        font-size: var(--text-xs);
+        color: var(--color-text-tertiary);
+        margin: 0;
+    }
+
+    .drag-handle {
+        color: var(--color-text-muted);
+        cursor: grab;
+        padding: var(--space-2);
+    }
+
+    .drag-handle:active {
+        cursor: grabbing;
+    }
+
+    @media (max-width: 768px) {
+        .page-container {
+            padding-top: var(--space-4) !important;
+        }
+    }
+</style>
+
+<script>
+    // Set greeting based on time
+    function setGreeting() {
+        const hour = new Date().getHours();
+        const greetingEl = document.getElementById('greeting');
+
+        if (hour < 12) {
+            greetingEl.textContent = 'Good morning,';
+        } else if (hour < 18) {
+            greetingEl.textContent = 'Good afternoon,';
+        } else {
+            greetingEl.textContent = 'Good evening,';
+        }
+    }
+
+    function loadTasks() {
+        const taskList = document.getElementById('taskList');
+        taskList.innerHTML = '<div style="padding:20px; text-align:center; color:var(--color-text-tertiary);">Loading tasks...</div>';
+
+        fetch('/api/ai-tasks')
+            .then(r => r.json())
+            .then(data => {
+                const tasks = data.tasks || [];
+                if (tasks.length === 0) {
+                    showEmptyState();
+                } else {
+                    renderTasks(tasks);
+                }
+            })
+            .catch(err => {
+                console.error("Error loading tasks:", err);
+                taskList.innerHTML = '<div style="color:red; padding:20px;">Failed to load tasks.</div>';
+            });
+    }
+
+    function showEmptyState() {
+        const taskList = document.getElementById('taskList');
+        taskList.innerHTML = `
+            <div style="text-align:center; padding: 32px 16px; color: var(--color-text-tertiary);">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 12px; opacity: 0.5;">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                <p style="margin:0 0 8px 0; font-size: var(--text-base); font-weight: 500; color: var(--color-text-secondary);">No tasks yet</p>
+                <p style="margin:0 0 16px 0; font-size: var(--text-sm);">Chat with your Mentor — they'll recommend tasks based on your conversation.</p>
+                <button class="btn btn-primary btn-sm" onclick="window.location.href='/chat'" style="display:inline-flex; align-items:center; gap:6px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    Start a Chat
+                </button>
+            </div>
+        `;
+    }
+
+    function renderTasks(tasks) {
+        const taskList = document.getElementById('taskList');
+        taskList.innerHTML = '';
+
+        tasks.forEach((task, index) => {
+            const taskEl = document.createElement('div');
+            taskEl.className = 'task-item';
+            // taskEl.draggable = true; // Disable drag for now as order is fixed by AI
+            // taskEl.dataset.index = index;
+
+            const isCompleted = task.status === 'completed' || task.is_completed; // Handle both formats if needed
+
+            taskEl.innerHTML = `
+            <div class="task-checkbox ${isCompleted ? 'checked' : ''}" onclick="toggleTask(${task.id})"></div>
+            <div class="task-info">
+                <p class="task-title" style="${isCompleted ? 'text-decoration: line-through; color: var(--color-text-tertiary);' : ''}">${task.task}</p>
+                <p class="task-time">AI Recommended</p>
+            </div>
+            `;
+            taskList.appendChild(taskEl);
+        });
+    }
+
+    function toggleTask(id) {
+        fetch('/api/ai-tasks/complete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ task_id: id })
+        })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    loadTasks(); // Reload to reflect state
+                }
+            });
+    }
+
+    function startFocus() {
+        window.location.href = '/focus';
+    }
+
+    function clearAllTasks() {
+        if (!confirm('Clear all tasks for today?')) return;
+        fetch('/api/ai-tasks/clear', { method: 'POST' })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) loadTasks();
+            })
+            .catch(() => alert('Failed to clear tasks.'));
+    }
+
+    // Initialize
+    setGreeting();
+    loadTasks();
+
+    // Load user info if available
+    fetch('/api/user')
+        .then(r => r.json())
+        .then(data => {
+            if (data.username) {
+                document.getElementById('username').textContent = data.username;
+            }
+        })
+        .catch(() => { });
+</script>
+{% endblock %}

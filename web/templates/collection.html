@@ -1,0 +1,332 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    :root {
+        --focus-bg-primary: rgba(15, 15, 20, 0.95);
+        --focus-glass-border: rgba(124, 108, 231, 0.2);
+        --accent-glow: rgba(108, 92, 231, 0.4);
+    }
+
+    body {
+        background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #16213e 100%);
+        min-height: 100vh;
+        color: white;
+    }
+
+    .collection-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 40px;
+    }
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 40px;
+        flex-wrap: wrap;
+        /* Allow wrapping */
+        gap: 20px;
+    }
+
+    @media (max-width: 768px) {
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            /* Smaller font on mobile */
+        }
+    }
+
+    .page-title {
+        font-size: 2.5rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #fff 0%, #a29bfe 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .back-btn {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 10px 20px;
+        border-radius: 30px;
+        color: white;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .back-btn:hover {
+        background: rgba(108, 92, 231, 0.3);
+        border-color: rgba(108, 92, 231, 0.5);
+        transform: translateX(-5px);
+    }
+
+    /* GRID LAYOUT */
+    .cards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 25px;
+        padding-bottom: 50px;
+    }
+
+    /* PREMIUM CARD STYLE */
+    .landscape-card-premium {
+        position: relative;
+        flex-shrink: 0;
+        width: 280px;
+        height: 360px;
+        scroll-snap-align: center;
+        transform-style: preserve-3d;
+        /* CRITICAL: Remove 'transform' from transition to prevent conflict with JS loop */
+        transition: filter 0.2s ease, z-index 0s;
+        will-change: transform, filter;
+        /* OPTIMIZATION HINT */
+        cursor: pointer;
+        /* Initial state before JS takes over */
+        transform: scale(0.9);
+    }
+
+    .card-inner {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        text-align: center;
+        transition: transform 0.6s;
+        transform-style: preserve-3d;
+        border-radius: 24px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .landscape-card-premium:hover .card-inner {
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(124, 108, 231, 0.1);
+    }
+
+    .landscape-card-premium.flipped .card-inner {
+        transform: rotateY(180deg);
+    }
+
+    .card-front,
+    .card-back {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
+        border-radius: 24px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        /* Push front content to bottom */
+        background: linear-gradient(145deg, rgba(30, 30, 35, 0.95) 0%, rgba(20, 20, 25, 0.90) 100%);
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .card-back {
+        transform: rotateY(180deg);
+        background: linear-gradient(145deg, #1a1a2e 0%, #16213e 100%);
+        padding: 20px;
+        color: white;
+        justify-content: center;
+        /* Center back content */
+        align-items: center;
+        text-align: center;
+    }
+
+    /* GLASS OVERLAY (Reference Style) */
+    .premium-card-overlay {
+        width: 100%;
+        background: rgba(10, 10, 15, 0.65);
+        /* Dark Glass */
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        padding: 15px;
+        border-top: 1px solid rgba(255, 255, 255, 0.15);
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        /* Left Align */
+        transform: translateY(0);
+        transition: transform 0.3s ease;
+    }
+
+    .landscape-card-premium:hover .premium-card-overlay {
+        background: rgba(10, 10, 15, 0.75);
+    }
+
+    .premium-card-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: white;
+        margin-bottom: 2px;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    .premium-card-sub {
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.7);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: 500;
+        margin-bottom: 8px;
+    }
+
+    .premium-card-meta-front {
+        font-size: 0.7rem;
+        color: rgba(255, 255, 255, 0.5);
+        font-style: italic;
+    }
+
+    /* CARD BACK REFINEMENTS */
+    .card-back-quote-icon {
+        font-size: 3rem;
+        color: rgba(255, 255, 255, 0.1);
+        font-family: serif;
+        line-height: 1;
+        margin-bottom: -15px;
+    }
+
+    .card-back-title {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #d1d8e0;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin-bottom: 12px;
+        border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+        padding-bottom: 4px;
+        display: inline-block;
+    }
+
+    .card-back-text {
+        font-family: 'Georgia', 'Times New Roman', serif;
+        font-size: 1rem;
+        line-height: 1.5;
+        font-style: italic;
+        color: rgba(255, 255, 255, 0.95);
+        padding: 0 5px;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+    }
+
+    @keyframes cardFadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .empty-state {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 100px;
+        color: rgba(255, 255, 255, 0.3);
+        font-size: 1.2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="collection-container">
+    <div class="page-header">
+        <h1 class="page-title">My Collection</h1>
+        <a href="/focus_mode" class="back-btn">⬅ Back to Focus</a>
+    </div>
+
+    <div class="cards-grid" id="fullCollectionGrid">
+        <div class="empty-state">Loading your treasures...</div>
+    </div>
+</div>
+
+<script>
+    // --- LANDSCAPE DATA (Duplicated for standalone page) ---
+    const landscapes = {
+        'Santorini': { subtitle: 'Greece', emoji: '🏛️', fact: 'The island’s unique shape is the result of a massive volcanic eruption around 1600 BC.', image: '/static/images/landscapes/Santorini%C2%A0(Greece).png' },
+        'Aurora': { subtitle: 'Iceland', emoji: '🌌', fact: 'Auroras make sounds! Observers have described them as hissing or crackling noises.', image: '/static/images/landscapes/Aurora (Iceland).jpg' },
+        'Sahara': { subtitle: 'Africa', emoji: '🏜️', fact: 'The Sahara is the largest hot desert in the world, roughly the size of the United States.', image: '/static/images/landscapes/Sahara (Africa).webp' },
+        'Amazon': { subtitle: 'Brazil', emoji: '🌿', fact: 'The Amazon Rainforest produces about 20% of the earth’s oxygen.', image: '/static/images/landscapes/Amazon (Brazil).webp' },
+        'Fuji': { subtitle: 'Japan', emoji: '🗻', fact: 'Mount Fuji is actually three volcanoes sitting on top of one another.', image: '/static/images/landscapes/Fuji (Japan).webp' },
+        'Alps': { subtitle: 'Switzerland', emoji: '🏔️', fact: 'The Alps were formed about 44 million years ago as the African and Eurasian tectonic plates collided.', image: '/static/images/landscapes/Alps (Switzerland).jpg' },
+        'Lavender': { subtitle: 'Provence', emoji: '🌸', fact: 'Lavender comes from the same family as mint and is known to reduce stress and anxiety.', image: '/static/images/landscapes/Lavender%C2%A0(Provence).png' },
+        'Maldives': { subtitle: 'Indian Ocean', emoji: '🏝️', fact: 'The Maldives is the lowest country in the world, with an average ground level of 1.5 meters.', image: '/static/images/landscapes/Maldives (Indian Ocean).png' },
+        'Tuscany': { subtitle: 'Italy', emoji: '🍇', fact: 'Tuscany is regarded as the birthplace of the Italian Renaissance.', image: '/static/images/landscapes/Tuscany%C2%A0(Italy).png' },
+        'Patagonia': { subtitle: 'Argentina', emoji: '🧊', fact: 'Patagonia is home to the Perito Moreno Glacier, one of the few glaciers in the world that is still growing.', image: '/static/images/landscapes/Patagonia%C2%A0(Argentina).png' }
+    };
+
+    // Fallback if needed for raw strings
+    const landscapes_fixed = {
+        'Santorini': { subtitle: 'Greece', emoji: '🏛️', fact: 'The island’s unique shape is the result of a massive volcanic eruption around 1600 BC.', image: 'Santorini (Greece).png' },
+        'Aurora': { subtitle: 'Iceland', emoji: '🌌', fact: 'Auroras make sounds! Observers have described them as hissing or crackling noises.', image: 'Aurora (Iceland).jpg' },
+        'Sahara': { subtitle: 'Africa', emoji: '🏜️', fact: 'The Sahara is the largest hot desert in the world, roughly the size of the United States.', image: 'Sahara (Africa).webp' },
+        'Amazon': { subtitle: 'Brazil', emoji: '🌿', fact: 'The Amazon Rainforest produces about 20% of the earth’s oxygen.', image: 'Amazon (Brazil).webp' },
+        'Fuji': { subtitle: 'Japan', emoji: '🗻', fact: 'Mount Fuji is actually three volcanoes sitting on top of one another.', image: 'Fuji (Japan).webp' },
+        'Alps': { subtitle: 'Switzerland', emoji: '🏔️', fact: 'The Alps were formed about 44 million years ago as the African and Eurasian tectonic plates collided.', image: 'Alps (Switzerland).jpg' },
+        'Lavender': { subtitle: 'Provence', emoji: '🌸', fact: 'Lavender comes from the same family as mint and is known to reduce stress and anxiety.', image: 'Lavender (Provence).png' },
+        'Maldives': { subtitle: 'Indian Ocean', emoji: '🏝️', fact: 'The Maldives is the lowest country in the world, with an average ground level of 1.5 meters.', image: 'Maldives (Indian Ocean).png' },
+        'Tuscany': { subtitle: 'Italy', emoji: '🍇', fact: 'Tuscany is regarded as the birthplace of the Italian Renaissance.', image: 'Tuscany (Italy).png' },
+        'Patagonia': { subtitle: 'Argentina', emoji: '🧊', fact: 'Patagonia is home to the Perito Moreno Glacier, one of the few glaciers in the world that is still growing.', image: 'Patagonia (Argentina).png' }
+    };
+
+    // Load Cards
+    fetch('/api/rewards')
+        .then(res => res.json())
+        .then(data => {
+            const grid = document.getElementById('fullCollectionGrid');
+            grid.innerHTML = ''; // Clear loading
+
+            if (data.length === 0) {
+                grid.innerHTML = '<div class="empty-state">No cards collected yet. Complete focus sessions to earn them!</div>';
+                return;
+            }
+
+            data.reverse().forEach((item, index) => {
+                const landscape = landscapes_fixed[item.type] || landscapes_fixed['Santorini'];
+                const emoji = landscape.emoji;
+                const fact = landscape.fact;
+                const imagePath = `/static/images/landscapes/${landscape.image}`;
+
+                const card = document.createElement('div');
+                card.className = 'landscape-card-premium';
+                card.style.animationDelay = `${index * 0.05}s`;
+                card.onclick = function () { this.classList.toggle('flipped'); };
+
+                card.innerHTML = `
+                    <div class="card-inner">
+                        <div class="card-front" style="background-image: url('${imagePath}'); background-size: cover; background-position: center;">
+                            <div class="premium-card-overlay">
+                                <div class="premium-card-title">${item.type}</div>
+                                <div class="premium-card-sub">${landscape.subtitle}</div>
+                                <div class="premium-card-meta-front">${new Date(item.date).toLocaleDateString()} • ${item.duration || 25}m</div>
+                            </div>
+                        </div>
+                        <div class="card-back" style="background-image: linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.95)), url('${imagePath}'); background-size: cover; background-position: center;">
+                            <div class="card-back-content">
+                                <div class="card-back-quote-icon">❝</div>
+                                <div class="card-back-title">Did You Know?</div>
+                                <div class="card-back-text">${fact}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                grid.appendChild(card);
+            });
+        });
+</script>
+{% endblock %}

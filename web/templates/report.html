@@ -1,0 +1,349 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .report-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: var(--space-6);
+    }
+
+    /* Routine Score Circle */
+    .score-circle {
+        position: relative;
+        width: 200px;
+        height: 200px;
+        margin: 0 auto;
+    }
+
+    .score-circle svg {
+        transform: rotate(-90deg);
+    }
+
+    .score-value {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 48px;
+        font-weight: 800;
+        color: var(--color-text-primary);
+    }
+
+    .score-label {
+        text-align: center;
+        margin-top: var(--space-2);
+        color: var(--color-text-tertiary);
+        font-size: var(--text-sm);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    /* Metrics Grid */
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: var(--space-4);
+        margin: var(--space-8) 0;
+    }
+
+    .metric-card {
+        background: var(--color-bg-secondary);
+        border: 1px solid var(--color-border-light);
+        border-radius: var(--radius-card);
+        padding: var(--space-5);
+        text-align: center;
+    }
+
+    .metric-value {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--color-primary-500);
+        margin: var(--space-2) 0;
+    }
+
+    .metric-label {
+        font-size: var(--text-xs);
+        color: var(--color-text-tertiary);
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    /* Insight Cards */
+    .insight-card {
+        background: var(--color-bg-secondary);
+        border: 1px solid var(--color-border-light);
+        border-radius: var(--radius-card);
+        padding: var(--space-6);
+        margin-bottom: var(--space-4);
+    }
+
+    .insight-header {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        margin-bottom: var(--space-3);
+    }
+
+    .insight-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+    }
+
+    .insight-title {
+        font-weight: 700;
+        font-size: var(--text-lg);
+        color: var(--color-text-primary);
+    }
+
+    .insight-text {
+        color: var(--color-text-secondary);
+        line-height: 1.6;
+    }
+
+    /* Recommendations */
+    .rec-list {
+        list-style: none;
+        padding: 0;
+    }
+
+    .rec-item {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--space-3);
+        padding: var(--space-4);
+        background: var(--color-bg-tertiary);
+        border-radius: var(--radius-md);
+        margin-bottom: var(--space-3);
+    }
+
+    .rec-number {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: var(--color-primary-500);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: var(--text-xs);
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+
+    /* Loading Animation */
+    @keyframes pulse {
+
+        0%,
+        100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0.5;
+        }
+    }
+
+    .loading {
+        animation: pulse 1.5s ease-in-out infinite;
+        color: var(--color-text-tertiary);
+    }
+</style>
+
+<div class="report-container">
+    <!-- Header -->
+    <div style="text-align: center; margin-bottom: var(--space-8);">
+        <h6 class="text-sm font-bold text-secondary"
+            style="text-transform: uppercase; letter-spacing: 1px; margin-bottom: var(--space-2);">AI Routine Analysis
+        </h6>
+        <h1 class="text-4xl font-bold text-primary" style="margin-bottom: var(--space-2);">Your Productivity Report</h1>
+        <p id="period" class="text-secondary">Last 7 Days</p>
+    </div>
+
+    <!-- Routine Score -->
+    <div class="card" style="text-align: center; margin-bottom: var(--space-8); padding: var(--space-8);">
+        <div class="score-circle">
+            <svg width="200" height="200">
+                <circle cx="100" cy="100" r="90" fill="none" stroke="var(--color-bg-tertiary)" stroke-width="12" />
+                <circle id="scoreCircle" cx="100" cy="100" r="90" fill="none" stroke="var(--color-primary-500)"
+                    stroke-width="12" stroke-linecap="round" stroke-dasharray="565" stroke-dashoffset="565" />
+            </svg>
+            <div class="score-value" id="scoreValue">--</div>
+        </div>
+        <div class="score-label">Routine Score</div>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="metrics-grid" id="metricsGrid">
+        <div class="metric-card">
+            <div class="metric-label">Habits</div>
+            <div class="metric-value loading" id="habitRate">--%</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Focus Time</div>
+            <div class="metric-value loading" id="focusTime">--m</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Tasks Done</div>
+            <div class="metric-value loading" id="tasksDone">--</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">AI Goals</div>
+            <div class="metric-value loading" id="aiGoals">--%</div>
+        </div>
+    </div>
+
+    <!-- AI Insights -->
+    <div style="margin-bottom: var(--space-6);">
+        <h2 class="text-2xl font-bold mb-4">AI Insights</h2>
+
+        <!-- Strength -->
+        <div class="insight-card">
+            <div class="insight-header">
+                <div class="insight-icon" style="background: rgba(16, 185, 129, 0.1);">💪</div>
+                <h3 class="insight-title">Top Strength</h3>
+            </div>
+            <p class="insight-text loading" id="strength">Analyzing your performance...</p>
+        </div>
+
+        <!-- Weakness -->
+        <div class="insight-card">
+            <div class="insight-header">
+                <div class="insight-icon" style="background: rgba(245, 158, 11, 0.1);">⚠️</div>
+                <h3 class="insight-title">Growth Area</h3>
+            </div>
+            <p class="insight-text loading" id="weakness">Identifying improvement areas...</p>
+        </div>
+
+        <!-- Pattern -->
+        <div class="insight-card">
+            <div class="insight-header">
+                <div class="insight-icon" style="background: rgba(99, 102, 241, 0.1);">⏰</div>
+                <h3 class="insight-title">Productivity Pattern</h3>
+            </div>
+            <p class="insight-text loading" id="pattern">Detecting your peak hours...</p>
+        </div>
+    </div>
+
+    <!-- Recommendations -->
+    <div class="card" style="margin-bottom: var(--space-6);">
+        <h2 class="text-2xl font-bold mb-4">📋 Recommendations</h2>
+        <ul class="rec-list" id="recommendations">
+            <li class="rec-item loading">
+                <div class="rec-number">1</div>
+                <span>Loading recommendations...</span>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Prediction -->
+    <div class="card"
+        style="background: linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-bg-secondary) 100%); border: none;">
+        <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3);">
+            <span style="font-size: 24px;">🔮</span>
+            <h2 class="text-xl font-bold">Prediction</h2>
+        </div>
+        <p class="text-secondary loading" id="prediction">Analyzing trends...</p>
+    </div>
+</div>
+
+<script>
+    // Fetch and display routine analysis
+    fetch('/api/routine-analysis')
+        .then(r => r.json())
+        .then(data => {
+            // Update score circle
+            const score = data.routine_score || 50;
+            const circle = document.getElementById('scoreCircle');
+            const circumference = 565;
+            const offset = circumference - (score / 100) * circumference;
+            circle.style.strokeDashoffset = offset;
+            document.getElementById('scoreValue').textContent = score;
+
+            // Update period
+            if (data.period) {
+                document.getElementById('period').textContent = data.period;
+            }
+
+            // Update metrics
+            document.getElementById('habitRate').textContent = `${data.habit_completion_rate || 0}%`;
+            document.getElementById('focusTime').textContent = `${data.total_focus_minutes || 0}m`;
+            document.getElementById('tasksDone').textContent = data.completed_tasks || 0;
+            document.getElementById('aiGoals').textContent = `${data.ai_task_completion_rate || 0}%`;
+
+            // Update insights
+            document.getElementById('strength').textContent = data.top_strength || "Keep up the great work!";
+            document.getElementById('weakness').textContent = data.main_weakness || "Stay consistent!";
+            document.getElementById('pattern').textContent = data.productivity_pattern || "Still learning your patterns";
+
+            // Update recommendations
+            const recList = document.getElementById('recommendations');
+            if (data.recommendations && data.recommendations.length > 0) {
+                recList.innerHTML = data.recommendations.map((rec, i) => `
+                <li class="rec-item">
+                    <div class="rec-number">${i + 1}</div>
+                    <span>${rec}</span>
+                </li>
+            `).join('');
+            } else {
+                recList.innerHTML = `
+                <li class="rec-item">
+                    <div class="rec-number">1</div>
+                    <span>No specific recommendations at this time. Keep up the good work!</span>
+                </li>
+            `;
+            }
+
+            // Update prediction
+            document.getElementById('prediction').textContent = data.prediction || "Keep going!";
+
+            // Remove loading states
+            document.querySelectorAll('.loading').forEach(el => el.classList.remove('loading'));
+
+            // Hide loading state and show report container
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('reportContainer').style.display = 'block';
+        }
+
+    // Fetch and display routine analysis
+    async function loadAnalysis() {
+                try {
+                    const response = await fetch('/api/routine-analysis-v2');
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('API Error:', response.status, errorText);
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    renderReport(data);
+                } catch (error) {
+                    console.error('Failed to load analysis:', error);
+                    document.getElementById('loadingState').innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #ef4444;">
+                    <div style="font-size: 48px; margin-bottom: 20px;">⚠️</div>
+                    <h3>Unable to Connect</h3>
+                    <p style="color: #888; margin-bottom: 20px;">
+                        Could not load your routine analysis.<br>
+                        Error: ${error.message}
+                    </p>
+                    <button onclick="location.reload()" class="btn btn-primary">Try Again</button>
+                </div>
+            `;
+                    document.getElementById('loadingState').style.display = 'flex'; // Ensure it's visible
+                    document.getElementById('reportContainer').style.display = 'none'; // Ensure report is hidden
+                }
+            }
+
+    // Initial call to load analysis
+    loadAnalysis();
+</script>
+{% endblock %}
+```

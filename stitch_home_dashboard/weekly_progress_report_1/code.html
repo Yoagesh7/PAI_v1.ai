@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Weekly Progress Report</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#5b498d",
+                        "background-light": "#f9f9fa",
+                        "background-dark": "#18181b",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-[#131217] dark:text-gray-100 antialiased overflow-x-hidden">
+<div class="relative flex min-h-screen w-full flex-col max-w-[430px] mx-auto bg-background-light dark:bg-background-dark shadow-2xl shadow-black/5">
+<!-- TopAppBar -->
+<div class="sticky top-0 z-20 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md px-4 py-4 flex items-center justify-between">
+<div class="size-10 flex items-center justify-center rounded-full bg-white dark:bg-zinc-800 shadow-sm">
+<span class="material-symbols-outlined text-lg">arrow_back_ios_new</span>
+</div>
+<div class="flex flex-col items-center">
+<h2 class="text-sm font-bold uppercase tracking-widest text-primary">Weekly Report</h2>
+<p class="text-[11px] font-medium opacity-50">OCT 12 - OCT 18</p>
+</div>
+<div class="size-10 flex items-center justify-center rounded-full bg-white dark:bg-zinc-800 shadow-sm">
+<span class="material-symbols-outlined text-lg">share</span>
+</div>
+</div>
+<main class="flex-1 px-4 pb-32">
+<!-- Main Progress Score -->
+<div class="mt-6 mb-10 flex flex-col items-center justify-center text-center">
+<div class="relative flex items-center justify-center w-48 h-48">
+<!-- Progress Ring (SVG) -->
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-primary/10 dark:text-primary/5" cx="96" cy="96" fill="transparent" r="88" stroke="currentColor" stroke-width="8"></circle>
+<circle class="text-primary" cx="96" cy="96" fill="transparent" r="88" stroke="currentColor" stroke-dasharray="553" stroke-dashoffset="88" stroke-linecap="round" stroke-width="8"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="text-6xl font-bold tracking-tighter">84</span>
+<span class="text-xs font-bold text-primary tracking-widest uppercase">Growth Score</span>
+</div>
+</div>
+<div class="mt-4 inline-flex items-center gap-1 bg-[#078843]/10 text-[#078843] px-3 py-1 rounded-full text-xs font-bold">
+<span class="material-symbols-outlined text-sm">trending_up</span>
+<span>+5% FROM LAST WEEK</span>
+</div>
+<p class="mt-4 text-sm text-[#6c6482] dark:text-zinc-400 font-medium max-w-[280px]">
+                    Your focus is exceptional. You’ve maintained a "Flow State" for 12% longer than your average.
+                </p>
+</div>
+<!-- Daily Activity Section -->
+<div class="bg-white dark:bg-zinc-900 rounded-xl p-6 border border-zinc-100 dark:border-zinc-800 shadow-sm mb-6">
+<div class="flex items-center justify-between mb-6">
+<h3 class="text-lg font-bold">Deep Work Hours</h3>
+<div class="flex items-center gap-1 text-xs font-semibold opacity-50">
+<span class="material-symbols-outlined text-sm">schedule</span>
+<span>42h Total</span>
+</div>
+</div>
+<div class="grid grid-cols-7 gap-3 h-32 items-end">
+<!-- Monday -->
+<div class="flex flex-col items-center gap-2">
+<div class="w-full bg-primary/20 dark:bg-primary/10 rounded-t-full" style="height: 45%;"></div>
+<span class="text-[10px] font-bold opacity-40">M</span>
+</div>
+<!-- Tuesday -->
+<div class="flex flex-col items-center gap-2">
+<div class="w-full bg-primary/20 dark:bg-primary/10 rounded-t-full" style="height: 90%;"></div>
+<span class="text-[10px] font-bold opacity-40">T</span>
+</div>
+<!-- Wednesday -->
+<div class="flex flex-col items-center gap-2">
+<div class="w-full bg-primary rounded-t-full" style="height: 75%;"></div>
+<span class="text-[10px] font-bold text-primary">W</span>
+</div>
+<!-- Thursday -->
+<div class="flex flex-col items-center gap-2">
+<div class="w-full bg-primary/20 dark:bg-primary/10 rounded-t-full" style="height: 15%;"></div>
+<span class="text-[10px] font-bold opacity-40">T</span>
+</div>
+<!-- Friday -->
+<div class="flex flex-col items-center gap-2">
+<div class="w-full bg-primary/20 dark:bg-primary/10 rounded-t-full" style="height: 60%;"></div>
+<span class="text-[10px] font-bold opacity-40">F</span>
+</div>
+<!-- Saturday -->
+<div class="flex flex-col items-center gap-2">
+<div class="w-full border-2 border-dashed border-primary/20 dark:border-primary/10 rounded-t-full h-8"></div>
+<span class="text-[10px] font-bold opacity-40">S</span>
+</div>
+<!-- Sunday -->
+<div class="flex flex-col items-center gap-2">
+<div class="w-full bg-primary/20 dark:bg-primary/10 rounded-t-full" style="height: 25%;"></div>
+<span class="text-[10px] font-bold opacity-40">S</span>
+</div>
+</div>
+</div>
+<!-- Insights Grid -->
+<div class="grid grid-cols-2 gap-4 mb-8">
+<div class="bg-white dark:bg-zinc-900 rounded-xl p-5 border-l-4 border-green-500 shadow-sm">
+<div class="flex items-center gap-2 mb-3">
+<span class="material-symbols-outlined text-green-500 text-xl">auto_awesome</span>
+<h4 class="text-xs font-bold uppercase tracking-wider opacity-60">Strengths</h4>
+</div>
+<ul class="space-y-3">
+<li class="text-xs leading-relaxed font-medium">Consistent early morning starts (7:30 AM average).</li>
+<li class="text-xs leading-relaxed font-medium">High task completion in 'Product' category.</li>
+</ul>
+</div>
+<div class="bg-white dark:bg-zinc-900 rounded-xl p-5 border-l-4 border-amber-500 shadow-sm">
+<div class="flex items-center gap-2 mb-3">
+<span class="material-symbols-outlined text-amber-500 text-xl">explore</span>
+<h4 class="text-xs font-bold uppercase tracking-wider opacity-60">Opportunities</h4>
+</div>
+<ul class="space-y-3">
+<li class="text-xs leading-relaxed font-medium">Reduce late-night blue light exposure after 10 PM.</li>
+<li class="text-xs leading-relaxed font-medium">Incorporate 15m of movement between focus blocks.</li>
+</ul>
+</div>
+</div>
+<!-- Mentor Message Section -->
+<div class="bg-primary/5 dark:bg-primary/10 rounded-xl p-8 relative overflow-hidden border border-primary/10">
+<div class="absolute -top-12 -right-12 w-48 h-48 bg-primary/5 rounded-full blur-3xl"></div>
+<div class="flex items-center gap-3 mb-6">
+<div class="w-12 h-12 rounded-full bg-gradient-to-tr from-primary to-indigo-400 flex items-center justify-center text-white shadow-lg overflow-hidden">
+<span class="material-symbols-outlined text-2xl">neurology</span>
+</div>
+<div>
+<h4 class="text-sm font-bold">Your Mentor</h4>
+<p class="text-[10px] uppercase tracking-widest opacity-50 font-bold">Reflective Analysis</p>
+</div>
+</div>
+<div class="space-y-4 text-sm leading-relaxed text-[#131217]/80 dark:text-zinc-300 italic font-medium">
+<p>
+                        "This week, you've shown a remarkable ability to prioritize the 'Critical Few' over the 'Trivial Many.' Your Tuesday and Wednesday sessions represent a peak state of cognitive endurance that most founders struggle to achieve."
+                    </p>
+<p>
+                        "However, I noticed your recovery metrics dipping on Thursday. Remember: sustainable excellence is a marathon, not a sprint. The slight decline in Deep Work was your brain's natural request for rest."
+                    </p>
+<p>
+                        "For the coming week, let's focus on 'The Ritual of Disengagement.' Try setting a hard-stop at 7 PM. Use that space to let your subconscious solve the complex architecture problems while you recharge. You're building something significant; treat your mind with the reverence it deserves."
+                    </p>
+</div>
+<div class="mt-8 pt-6 border-t border-primary/10 flex items-center justify-between">
+<span class="text-[11px] font-bold uppercase tracking-widest opacity-40">End of Report</span>
+<div class="flex items-center gap-1">
+<div class="w-1 h-1 rounded-full bg-primary"></div>
+<div class="w-1 h-1 rounded-full bg-primary/50"></div>
+<div class="w-1 h-1 rounded-full bg-primary/30"></div>
+</div>
+</div>
+</div>
+</main>
+<!-- Fixed Bottom CTA -->
+<div class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] p-6 bg-gradient-to-t from-background-light dark:from-background-dark via-background-light/95 dark:via-background-dark/95 to-transparent z-30">
+<button class="w-full bg-primary text-white h-14 rounded-xl font-bold flex items-center justify-center gap-3 shadow-xl shadow-primary/20 active:scale-95 transition-transform">
+<span class="material-symbols-outlined">forum</span>
+                Discuss with Mentor
+            </button>
+</div>
+</div>
+</body></html>

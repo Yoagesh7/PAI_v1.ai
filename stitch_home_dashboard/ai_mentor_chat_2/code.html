@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AI Mentor Chat</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#5b498d",
+                        "background-light": "#faf9fb",
+                        "background-dark": "#18181b",
+                        "mentor-bubble": "#ffffff",
+                        "user-bubble": "#5b498d",
+                        "accent-lavender": "#ecebef",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .message-shadow {
+            box-shadow: 0 2px 8px -2px rgba(0,0,0,0.05);
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-[#131217] dark:text-zinc-100 min-h-screen flex flex-col max-w-md mx-auto relative border-x border-gray-100 dark:border-zinc-800">
+<!-- Top Navigation Bar -->
+<header class="sticky top-0 z-20 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b border-gray-100 dark:border-zinc-800">
+<div class="flex items-center gap-3">
+<div class="relative">
+<div class="size-10 rounded-full bg-gradient-to-tr from-[#5b498d] to-[#a8a3d8] flex items-center justify-center border-2 border-white dark:border-zinc-900 shadow-sm overflow-hidden" data-alt="Abstract geometric mentor avatar with purple gradients" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDZMnbTvRKzAOwrxjABmYIUTNFY7HQrbsMF3rILoyzNAq6Cc6OECpt1q5EeaSqd6nIcIfA1qWxZ4MM2R8bqqD_TXpNJqtmnl8PPqudju-zN8JVn7b_DyiY512pV71hi_3Y4Ybwne02VMl5s6EPTG8D6QEnWHgstXhKfhQ07ucoLkRRPS9A3bS_qqa92pklnLWecCAB9fHezrkH4eVvLRHrn-Cn-vLIhDqDuHodMSe7HxR9ggnOI4K-xsrG-uuNnhTbsQHw8TNoMgM8'); background-size: cover;">
+</div>
+<div class="absolute bottom-0 right-0 size-3 bg-green-500 rounded-full border-2 border-white dark:border-zinc-900"></div>
+</div>
+<div class="flex flex-col">
+<h1 class="text-sm font-bold leading-none tracking-tight">Nexus AI</h1>
+<span class="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium">Listening to your goals...</span>
+</div>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-2 rounded-full hover:bg-zinc-200/50 dark:hover:bg-zinc-800 transition-colors">
+<span class="material-symbols-outlined text-xl">settings_suggest</span>
+</button>
+<button class="p-2 rounded-full hover:bg-zinc-200/50 dark:hover:bg-zinc-800 transition-colors">
+<span class="material-symbols-outlined text-xl">info</span>
+</button>
+</div>
+</header>
+<!-- Chat Stream -->
+<main class="flex-1 overflow-y-auto px-4 py-6 space-y-6">
+<!-- Mentor Message -->
+<div class="flex items-start gap-3">
+<div class="size-8 rounded-full bg-accent-lavender dark:bg-zinc-800 flex items-center justify-center shrink-0 mt-1" data-alt="Small avatar icon">
+<span class="material-symbols-outlined text-primary text-sm">auto_awesome</span>
+</div>
+<div class="flex flex-col gap-1.5 max-w-[85%]">
+<span class="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider ml-1">Nexus</span>
+<div class="bg-mentor-bubble dark:bg-zinc-800 p-4 rounded-xl rounded-tl-none message-shadow border border-zinc-100 dark:border-zinc-700/50">
+<p class="text-[15px] leading-relaxed">
+                        Good morning! I've analyzed your progress on the <span class="text-primary font-semibold">Q3 Roadmap</span>. You're 12% ahead of schedule on the MVP build. 🚀
+                    </p>
+<div class="mt-4 pt-3 border-t border-zinc-50 dark:border-zinc-700/50">
+<p class="text-xs font-bold text-zinc-400 mb-2">PRIORITY FOCUS FOR TODAY:</p>
+<ul class="space-y-2 text-[14px]">
+<li class="flex gap-2">
+<span class="text-primary">•</span>
+<span>Finalize investor pitch deck slides 4-7</span>
+</li>
+<li class="flex gap-2">
+<span class="text-primary">•</span>
+<span>Review user feedback on the onboarding flow</span>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<!-- User Message -->
+<div class="flex items-end flex-col gap-1.5">
+<div class="flex flex-col gap-1.5 max-w-[80%] items-end">
+<span class="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mr-1">You</span>
+<div class="bg-primary text-white p-4 rounded-xl rounded-br-none shadow-sm">
+<p class="text-[15px] leading-relaxed">
+                        Thanks, Nexus. Can we deep dive into the deck? I'm struggling with the 'Problem' slide. It feels too wordy.
+                    </p>
+</div>
+</div>
+</div>
+<!-- Insight Card Component -->
+<div class="mx-auto w-[90%] bg-indigo-50/50 dark:bg-primary/10 border border-primary/20 p-4 rounded-xl">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-primary text-lg">lightbulb</span>
+<span class="text-sm font-bold text-primary">Mentorship Tip</span>
+</div>
+<p class="text-sm text-zinc-700 dark:text-zinc-300 leading-normal italic">
+                "The most powerful problems are stated in one sentence. Try the 'One Pain, One Person' rule for your slide."
+            </p>
+</div>
+<!-- Mentor Message -->
+<div class="flex items-start gap-3">
+<div class="size-8 rounded-full bg-accent-lavender dark:bg-zinc-800 flex items-center justify-center shrink-0 mt-1" data-alt="Small avatar icon">
+<span class="material-symbols-outlined text-primary text-sm">auto_awesome</span>
+</div>
+<div class="flex flex-col gap-1.5 max-w-[85%]">
+<span class="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider ml-1">Nexus</span>
+<div class="bg-mentor-bubble dark:bg-zinc-800 p-4 rounded-xl rounded-tl-none message-shadow border border-zinc-100 dark:border-zinc-700/50">
+<p class="text-[15px] leading-relaxed">
+                        I'd love to help with that. Let's use a structured approach. Use <code class="bg-accent-lavender dark:bg-zinc-700 px-1 rounded text-primary font-mono text-sm">/plan</code> to outline the slide structure or <code class="bg-accent-lavender dark:bg-zinc-700 px-1 rounded text-primary font-mono text-sm">/focus</code> to start a 25-min session. 🧘
+                    </p>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Controls -->
+<footer class="p-4 bg-background-light dark:bg-background-dark border-t border-gray-100 dark:border-zinc-800 pb-8">
+<!-- Quick Action Chips -->
+<div class="flex gap-2 overflow-x-auto hide-scrollbar pb-4">
+<button class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-accent-lavender dark:bg-zinc-800 px-4 transition-all active:scale-95">
+<span class="material-symbols-outlined text-[18px]">summarize</span>
+<p class="text-zinc-800 dark:text-zinc-200 text-xs font-semibold">Summarize goals</p>
+</button>
+<button class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-accent-lavender dark:bg-zinc-800 px-4 transition-all active:scale-95">
+<span class="material-symbols-outlined text-[18px]">rocket_launch</span>
+<p class="text-zinc-800 dark:text-zinc-200 text-xs font-semibold">Next steps?</p>
+</button>
+<button class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-accent-lavender dark:bg-zinc-800 px-4 transition-all active:scale-95">
+<span class="material-symbols-outlined text-[18px]">self_improvement</span>
+<p class="text-zinc-800 dark:text-zinc-200 text-xs font-semibold">Reflection</p>
+</button>
+</div>
+<!-- Input Area -->
+<div class="relative flex items-center bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-700 p-1.5 shadow-sm">
+<div class="flex items-center justify-center size-9 text-zinc-400">
+<span class="material-symbols-outlined">add</span>
+</div>
+<input class="flex-1 border-none focus:ring-0 bg-transparent text-sm placeholder:text-zinc-400 dark:text-white" placeholder="Type / to use commands..." type="text"/>
+<button class="size-10 rounded-xl bg-primary text-white flex items-center justify-center transition-all active:scale-90 shadow-md">
+<span class="material-symbols-outlined text-[22px]">arrow_upward</span>
+</button>
+</div>
+<!-- Command Hint -->
+<div class="mt-2 flex justify-center">
+<p class="text-[10px] text-zinc-400 dark:text-zinc-600 font-medium tracking-wide flex items-center gap-1 uppercase">
+<span class="material-symbols-outlined text-xs">terminal</span> Commands: /plan /focus /reflect /notes
+            </p>
+</div>
+</footer>
+</body></html>

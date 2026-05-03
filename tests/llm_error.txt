@@ -1,0 +1,1 @@
+I'm having trouble thinking right now. (Connection Error: HTTPConnectionPool(host='127.0.0.1', port=8080): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError("HTTPConnection(host='127.0.0.1', port=8080): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it")))

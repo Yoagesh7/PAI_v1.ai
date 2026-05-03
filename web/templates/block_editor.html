@@ -1,0 +1,992 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+/* =====================================================
+   BLOCK EDITOR — Notion-like Page Editor
+   ===================================================== */
+
+/* -- Dark theme (matches app design-system) -- */
+[data-theme="dark"] {
+  --ed-bg:         #121212;
+  --ed-surface:    #1E1E24;
+  --ed-border:     rgba(255,255,255,0.07);
+  --ed-title-c:    #F7F8FA;
+  --ed-body-c:     #A0AEC0;
+  --ed-muted:      #555555;
+  --ed-ph:         #404040;
+  --ed-accent:     #8B78CC;
+  --ed-glow:       rgba(139,120,204,0.18);
+  --ed-bar-bg:     rgba(18,18,18,0.96);
+  --ed-btn-bg:     rgba(255,255,255,0.06);
+  --ed-btn-hov:    rgba(255,255,255,0.1);
+  --ed-btn-brd:    rgba(255,255,255,0.1);
+  --ed-ai-bg:      rgba(139,120,204,0.08);
+  --ed-ai-brd:     rgba(139,120,204,0.2);
+  --ed-ai-txt:     #c4b5fd;
+  --ed-sav-ok:     rgba(34,197,94,0.15);
+  --ed-sav-ok-t:   #4ade80;
+  --ed-tag-bg:     rgba(255,255,255,0.06);
+  --ed-tag-t:      #A0AEC0;
+  --ed-shadow:     rgba(0,0,0,0.5);
+}
+/* -- Light theme -- */
+[data-theme="light"] {
+  --ed-bg:         #f2f2f7;
+  --ed-surface:    #ffffff;
+  --ed-border:     rgba(0,0,0,0.07);
+  --ed-title-c:    #18182c;
+  --ed-body-c:     #38384e;
+  --ed-muted:      #aaaabc;
+  --ed-ph:         #bbbbcc;
+  --ed-accent:     #7C3AED;
+  --ed-glow:       rgba(124,58,237,0.12);
+  --ed-bar-bg:     rgba(248,248,255,0.96);
+  --ed-btn-bg:     rgba(0,0,0,0.04);
+  --ed-btn-hov:    rgba(0,0,0,0.08);
+  --ed-btn-brd:    rgba(0,0,0,0.1);
+  --ed-ai-bg:      rgba(124,58,237,0.06);
+  --ed-ai-brd:     rgba(124,58,237,0.18);
+  --ed-ai-txt:     #7C3AED;
+  --ed-sav-ok:     rgba(22,163,74,0.12);
+  --ed-sav-ok-t:   #16a34a;
+  --ed-tag-bg:     rgba(0,0,0,0.05);
+  --ed-tag-t:      #66667a;
+  --ed-shadow:     rgba(0,0,0,0.12);
+}
+
+/* -- Type colours -- */
+.tp-idea       { --tc:#FBBF24; --tb:rgba(251,191,36,.15); }
+.tp-task       { --tc:#A78BFA; --tb:rgba(139,92,246,.15); }
+.tp-learning   { --tc:#60A5FA; --tb:rgba(59,130,246,.15);  }
+.tp-reflection { --tc:#F472B6; --tb:rgba(236,72,153,.15);  }
+.tp-read       { --tc:#4ADE80; --tb:rgba(34,197,94,.15);   }
+[data-theme="light"] .tp-idea       { --tc:#D97706; }
+[data-theme="light"] .tp-task       { --tc:#7C3AED; }
+[data-theme="light"] .tp-learning   { --tc:#2563EB; }
+[data-theme="light"] .tp-reflection { --tc:#DB2777; }
+[data-theme="light"] .tp-read       { --tc:#16A34A; }
+
+/* -- Reset / base -- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* -- Page -- */
+.ed-page {
+  min-height: 100vh;
+  background: var(--ed-bg);
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 120px;
+}
+
+/* ════════════════════════════════════════════════
+   TOP BAR
+   ════════════════════════════════════════════════ */
+.ed-topbar {
+  position: sticky; top: 0; z-index: 60;
+  background: var(--ed-bar-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--ed-border);
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px;
+}
+
+/* Back button */
+.ed-back {
+  display: flex; align-items: center; gap: 6px;
+  color: var(--ed-muted); text-decoration: none;
+  font-size: 14px; font-weight: 500;
+  padding: 6px 10px; border-radius: 10px;
+  background: var(--ed-btn-bg); border: 1px solid var(--ed-btn-brd);
+  transition: all .2s; flex-shrink: 0; white-space: nowrap;
+}
+.ed-back:hover { background: var(--ed-btn-hov); color: var(--ed-title-c); }
+
+/* Type pill selector */
+.ed-type-pill {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 20px;
+  background: var(--tb, rgba(139,92,246,.12));
+  border: 1px solid var(--tc, var(--ed-accent));
+  color: var(--tc, var(--ed-accent));
+  font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all .2s;
+  position: relative; flex-shrink: 0;
+}
+.ed-type-pill:hover { opacity: .82; }
+
+/* Type dropdown */
+.ed-type-drop {
+  position: absolute; top: calc(100% + 8px); left: 0;
+  background: var(--ed-surface);
+  border: 1px solid var(--ed-border);
+  border-radius: 14px; padding: 6px;
+  box-shadow: 0 12px 40px var(--ed-shadow);
+  display: none; z-index: 200; min-width: 150px;
+}
+.ed-type-drop.open { display: block; }
+.ed-type-opt {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 12px; border-radius: 9px;
+  cursor: pointer; font-size: 13px; font-weight: 500;
+  color: var(--ed-body-c); transition: background .15s;
+}
+.ed-type-opt:hover { background: var(--ed-btn-hov); }
+.ed-type-opt.sel { color: var(--ed-accent); background: var(--ed-ai-bg); }
+
+/* Spacer + right controls */
+.ed-topbar-mid { flex: 1; min-width: 0; }
+.ed-topbar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+/* Save status indicator */
+.ed-save-status {
+  font-size: 12px; font-weight: 500;
+  padding: 4px 10px; border-radius: 10px;
+  transition: all .3s; white-space: nowrap;
+  color: var(--ed-muted); background: transparent;
+}
+.ed-save-status.saved {
+  background: var(--ed-sav-ok);
+  color: var(--ed-sav-ok-t);
+}
+.ed-save-status.saving { color: var(--ed-accent); }
+.ed-save-status.unsaved { color: var(--ed-muted); }
+
+/* Top-bar action button */
+.ed-tb-btn {
+  display: flex; align-items: center; gap: 5px;
+  padding: 7px 13px; border-radius: 10px;
+  border: 1px solid var(--ed-btn-brd);
+  background: var(--ed-btn-bg);
+  color: var(--ed-body-c); font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: all .2s; white-space: nowrap;
+}
+.ed-tb-btn:hover { background: var(--ed-btn-hov); border-color: var(--ed-accent); color: var(--ed-accent); }
+.ed-tb-btn.danger:hover { border-color: #EF4444; color: #EF4444; }
+.ed-tb-btn.primary {
+  background: linear-gradient(135deg, var(--ed-accent), #6D28D9);
+  border-color: transparent; color: #fff;
+}
+.ed-tb-btn.primary:hover { opacity: .88; }
+
+/* ════════════════════════════════════════════════
+   MAIN EDITOR
+   ════════════════════════════════════════════════ */
+.ed-main {
+  max-width: 740px; width: 100%; margin: 0 auto;
+  padding: 32px 24px 0;
+  display: flex; flex-direction: column; gap: 0;
+}
+
+/* Emoji / type icon */
+.ed-emoji-wrap {
+  margin-bottom: 20px;
+}
+.ed-emoji {
+  font-size: 52px; line-height: 1; cursor: pointer;
+  display: inline-block; transition: transform .2s;
+  user-select: none;
+}
+.ed-emoji:hover { transform: scale(1.1) rotate(-5deg); }
+
+/* Title input */
+.ed-title {
+  width: 100%; background: transparent; border: none; outline: none;
+  font-size: clamp(24px, 5vw, 34px); font-weight: 700;
+  color: var(--ed-title-c); line-height: 1.25;
+  font-family: inherit;
+  padding: 0; margin-bottom: 6px;
+  resize: none; overflow: hidden;
+}
+.ed-title::placeholder { color: var(--ed-ph); }
+
+/* Divider */
+.ed-divider {
+  height: 1px; background: var(--ed-border);
+  margin: 16px 0;
+}
+
+/* Body editor */
+.ed-body {
+  width: 100%; background: transparent; border: none; outline: none;
+  font-size: 16px; line-height: 1.75;
+  color: var(--ed-body-c); font-family: inherit;
+  padding: 0; resize: none; min-height: 260px;
+  overflow: hidden;
+}
+.ed-body::placeholder { color: var(--ed-ph); }
+
+/* ════════════════════════════════════════════════
+   TAGS ROW
+   ════════════════════════════════════════════════ */
+.ed-tags-row {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 7px;
+  margin-top: 24px;
+  padding-top: 16px; border-top: 1px solid var(--ed-border);
+}
+.ed-tag-lbl { font-size: 12px; color: var(--ed-muted); font-weight: 500; }
+.ed-tag-item {
+  display: flex; align-items: center; gap: 4px;
+  background: var(--ed-tag-bg); color: var(--ed-tag-t);
+  font-size: 12px; font-weight: 500;
+  padding: 3px 10px; border-radius: 20px;
+  border: 1px solid var(--ed-border);
+}
+.ed-tag-del {
+  background: none; border: none; cursor: pointer;
+  color: var(--ed-muted); font-size: 14px; padding: 0;
+  line-height: 1; transition: color .15s;
+}
+.ed-tag-del:hover { color: #EF4444; }
+.ed-tag-input {
+  background: none; border: none; outline: none;
+  font-size: 12px; font-weight: 500; color: var(--ed-body-c);
+  font-family: inherit; width: 80px; min-width: 60px;
+}
+.ed-tag-input::placeholder { color: var(--ed-muted); }
+
+/* ════════════════════════════════════════════════
+   AI ASSIST PANEL
+   ════════════════════════════════════════════════ */
+.ed-ai-wrap {
+  max-width: 740px; width: 100%; margin: 0 auto;
+  padding: 20px 24px 0;
+}
+
+.ed-ai-toggle {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%;
+  padding: 12px 16px; border-radius: 14px;
+  background: var(--ed-ai-bg); border: 1px solid var(--ed-ai-brd);
+  color: var(--ed-ai-txt); font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: all .2s; text-align: left;
+}
+.ed-ai-toggle:hover { border-color: var(--ed-accent); }
+.ed-ai-toggle .chevron {
+  margin-left: auto; transition: transform .25s;
+}
+.ed-ai-toggle.open .chevron { transform: rotate(180deg); }
+
+.ed-ai-panel {
+  display: none;
+  background: var(--ed-ai-bg); border: 1px solid var(--ed-ai-brd);
+  border-top: none; border-radius: 0 0 14px 14px;
+  padding: 16px;
+}
+.ed-ai-panel.open { display: block; }
+
+/* AI action buttons */
+.ed-ai-actions {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px;
+}
+.ed-ai-btn {
+  padding: 7px 14px; border-radius: 10px;
+  border: 1px solid var(--ed-ai-brd); background: transparent;
+  color: var(--ed-ai-txt); font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: all .18s; display: flex; align-items: center; gap: 5px;
+}
+.ed-ai-btn:hover { background: rgba(139,92,246,.12); border-color: var(--ed-accent); color: var(--ed-accent); }
+.ed-ai-btn:disabled { opacity: .45; cursor: not-allowed; }
+.ed-ai-btn.active { background: var(--ed-accent); border-color: transparent; color: #fff; }
+
+/* AI output */
+.ed-ai-out {
+  display: none;
+  background: var(--ed-surface); border: 1px solid var(--ed-border);
+  border-radius: 10px; padding: 14px;
+  font-size: 14px; line-height: 1.65;
+  color: var(--ed-body-c); position: relative;
+}
+.ed-ai-out.visible { display: block; }
+.ed-ai-out-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.ed-ai-out-ttl { font-size: 12px; font-weight: 700; color: var(--ed-accent); text-transform: uppercase; letter-spacing: .5px; }
+.ed-ai-copy {
+  padding: 4px 10px; border-radius: 8px; cursor: pointer;
+  background: none; border: 1px solid var(--ed-border);
+  font-size: 11px; color: var(--ed-muted); transition: all .15s;
+}
+.ed-ai-copy:hover { border-color: var(--ed-accent); color: var(--ed-accent); }
+.ed-ai-apply {
+  margin-top: 10px; width: 100%;
+  padding: 9px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--ed-accent), #6D28D9);
+  border: none; color: #fff; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: opacity .15s;
+}
+.ed-ai-apply:hover { opacity: .88; }
+.ai-spin { animation: spin .8s linear infinite; display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Skeleton / loading ─────────────────────────── */
+.ed-loading {
+  display: none;
+  max-width: 740px; margin: 40px auto; padding: 0 24px;
+}
+.skel-line {
+  height: 14px; border-radius: 7px; margin-bottom: 10px;
+  background: linear-gradient(90deg,var(--ed-btn-bg) 0%,var(--ed-ai-bg) 50%,var(--ed-btn-bg) 100%);
+  background-size: 200% 100%; animation: shimmer 1.6s infinite;
+}
+.skel-line.h30 { height: 30px; }
+.skel-line.h48 { height: 48px; }
+.skel-line.w50 { width: 50%; }
+.skel-line.w70 { width: 70%; }
+.skel-line.w90 { width: 90%; }
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+/* ── Bottom save bar (mobile) ────────────────────── */
+.ed-save-bar {
+  display: none;
+  position: fixed; bottom: calc(90px + env(safe-area-inset-bottom,0px));
+  left: 12px; right: 12px;
+  background: linear-gradient(135deg, var(--ed-accent), #6D28D9);
+  color: #fff; font-size: 16px; font-weight: 700;
+  padding: 14px; border-radius: 16px; border: none;
+  cursor: pointer; z-index: 1300;
+  box-shadow: 0 8px 24px rgba(109,40,217,.4);
+  transition: opacity .15s;
+}
+.ed-save-bar:active { opacity: .88; }
+
+/* -- Responsive: Mobile (≤768px — matches base.html) -- */
+@media (max-width: 768px) {
+
+  .ed-page { padding-bottom: 150px; }
+
+  /* ─── Topbar: compact, single row ─── */
+  .ed-topbar {
+    padding: 8px 12px; gap: 6px;
+    flex-wrap: nowrap;
+  }
+  .ed-back {
+    padding: 8px 10px; font-size: 13px; border-radius: 10px;
+    min-height: 36px;
+  }
+  .ed-back-lbl { display: none; }
+  .ed-type-pill {
+    padding: 6px 10px; font-size: 12px; border-radius: 14px;
+    min-height: 34px;
+  }
+  .ed-type-drop {
+    left: -40px; min-width: 160px; border-radius: 12px;
+  }
+  .ed-type-opt {
+    padding: 11px 14px; font-size: 14px; border-radius: 10px;
+    min-height: 42px;
+  }
+  .ed-topbar-right { gap: 6px; }
+  .ed-save-status { font-size: 11px; padding: 3px 8px; }
+
+  /* Hide desktop save, use floating bar */
+  .ed-topbar-right .ed-tb-btn.primary { display: none; }
+  .ed-tb-btn { padding: 7px 10px; font-size: 12px; min-height: 34px; }
+
+  /* ─── Main editor: full-width ─── */
+  .ed-main { padding: 16px 16px 0; }
+  .ed-emoji-wrap { margin-bottom: 12px; }
+  .ed-emoji { font-size: 38px; }
+
+  .ed-title {
+    font-size: 22px; line-height: 1.3;
+    min-height: 40px;
+  }
+
+  .ed-divider { margin: 10px 0; }
+
+  .ed-body {
+    font-size: 15px; line-height: 1.7; min-height: 180px;
+  }
+
+  /* ─── Tags ─── */
+  .ed-tags-row {
+    margin-top: 16px; padding-top: 12px; gap: 6px;
+  }
+  .ed-tag-item {
+    padding: 5px 12px; font-size: 12px;
+    min-height: 28px; border-radius: 14px;
+  }
+  .ed-tag-del { font-size: 16px; padding: 2px 4px; }
+  .ed-tag-input {
+    font-size: 12px; width: 80px;
+    min-height: 28px; padding: 4px 0;
+  }
+
+  /* ─── AI panel ─── */
+  .ed-ai-wrap { padding: 14px 16px 0; }
+  .ed-ai-toggle {
+    padding: 11px 14px; border-radius: 12px; font-size: 14px;
+    min-height: 44px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .ed-ai-panel { padding: 12px; border-radius: 0 0 12px 12px; }
+  .ed-ai-actions {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    gap: 6px; margin-bottom: 12px;
+    scrollbar-width: none; -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+  }
+  .ed-ai-actions::-webkit-scrollbar { display: none; }
+  .ed-ai-btn {
+    padding: 8px 12px; font-size: 12px; border-radius: 10px;
+    flex-shrink: 0; min-height: 36px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .ed-ai-out { padding: 12px; border-radius: 10px; font-size: 14px; }
+  .ed-ai-apply {
+    padding: 12px; border-radius: 12px; font-size: 14px;
+    min-height: 44px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* ─── Floating save bar ─── */
+  .ed-save-bar {
+    display: block;
+    padding: 13px;
+    border-radius: 16px;
+    font-size: 15px;
+    bottom: calc(96px + env(safe-area-inset-bottom,0px));
+    left: 14px; right: 14px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .ed-save-bar:active { transform: scale(.97); opacity: .88; }
+}
+
+/* -- Extra-small screens (iPhone SE etc.) -- */
+@media (max-width: 375px) {
+  .ed-topbar { padding: 6px 8px; }
+  .ed-main { padding: 12px 12px 0; }
+  .ed-ai-wrap { padding: 12px 12px 0; }
+  .ed-emoji { font-size: 32px; }
+  .ed-title { font-size: 20px; }
+  .ed-body { font-size: 14px; min-height: 160px; }
+  .ed-type-pill { padding: 5px 8px; font-size: 11px; }
+  .ed-save-bar { left: 10px; right: 10px; padding: 11px; font-size: 14px; }
+}
+</style>
+
+<div class="ed-page">
+
+  <!-- ════════════════════════════════════════════
+       TOP BAR
+       ════════════════════════════════════════════ -->
+  <div class="ed-topbar">
+
+    <!-- Back -->
+    <a href="/workspace" class="ed-back">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/>
+      </svg>
+      <span class="ed-back-lbl">Workspace</span>
+    </a>
+
+    <!-- Type selector pill -->
+    <div class="ed-type-pill tp-idea" id="typePill" onclick="toggleTypeDrop()">
+      <span id="typeEmoji">💡</span>
+      <span id="typeLabel">Idea</span>
+      <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M6 9l6 6 6-6"/>
+      </svg>
+      <!-- Type dropdown -->
+      <div class="ed-type-drop" id="typeDrop" onclick="event.stopPropagation()">
+        <div class="ed-type-opt" onclick="setType('idea')">💡 Idea</div>
+        <div class="ed-type-opt" onclick="setType('task')">✅ Task</div>
+        <div class="ed-type-opt" onclick="setType('learning')">🧠 Learning</div>
+        <div class="ed-type-opt" onclick="setType('reflection')">🪞 Reflection</div>
+        <div class="ed-type-opt" onclick="setType('read')">📖 Read</div>
+      </div>
+    </div>
+
+    <div class="ed-topbar-mid"></div>
+
+    <!-- Right controls -->
+    <div class="ed-topbar-right">
+      <span class="ed-save-status" id="saveStatus">All changes saved</span>
+      <button class="ed-tb-btn primary" id="saveBtn" onclick="saveBlock()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+          <polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+        </svg>
+        Save
+      </button>
+      <button class="ed-tb-btn danger" id="deleteBtn" onclick="deleteBlock()" style="display:none">
+        🗑️
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading skeleton (shown while fetching existing block) -->
+  <div class="ed-loading" id="edLoading">
+    <div class="skel-line h48 w50" style="margin-bottom:24px"></div>
+    <div class="skel-line h30 w90"></div>
+    <div class="skel-line w70" style="margin-top:10px"></div>
+    <div class="skel-line w90"></div>
+    <div class="skel-line w50"></div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       MAIN EDITOR
+       ════════════════════════════════════════════ -->
+  <div class="ed-main" id="edMain">
+
+    <!-- Emoji icon -->
+    <div class="ed-emoji-wrap">
+      <span class="ed-emoji" id="blockEmoji" title="Click type pill to change">💡</span>
+    </div>
+
+    <!-- Title -->
+    <textarea class="ed-title" id="blockTitle"
+      placeholder="Untitled" rows="1"
+      oninput="autoResize(this); markUnsaved()"
+      onkeydown="titleKeydown(event)"></textarea>
+
+    <div class="ed-divider"></div>
+
+    <!-- Body -->
+    <textarea class="ed-body" id="blockBody"
+      placeholder="Start writing… or press / for AI assist"
+      oninput="autoResize(this); markUnsaved()"
+      onkeydown="bodyKeydown(event)"></textarea>
+
+    <!-- Tags -->
+    <div class="ed-tags-row" id="tagsRow">
+      <span class="ed-tag-lbl">🏷️ Tags:</span>
+      <div id="tagsContainer"></div>
+      <input class="ed-tag-input" id="tagInput" placeholder="+ add tag"
+             onkeydown="tagKeydown(event)" />
+    </div>
+
+    <!-- Meta -->
+    <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--ed-border);
+                display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+      <span id="metaDate" style="font-size:12px; color:var(--ed-muted)"></span>
+      <span id="metaChars" style="font-size:12px; color:var(--ed-muted)">0 characters</span>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       AI ASSIST PANEL
+       ════════════════════════════════════════════ -->
+  <div class="ed-ai-wrap">
+
+    <button class="ed-ai-toggle" id="aiToggleBtn" onclick="toggleAIPanel()">
+      <span>✨</span>
+      <span>AI Assist</span>
+      <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2.5">
+        <path d="M6 9l6 6 6-6"/>
+      </svg>
+    </button>
+
+    <div class="ed-ai-panel" id="aiPanel">
+      <div class="ed-ai-actions">
+        <button class="ed-ai-btn" onclick="runAI('improve')">✍️ Improve</button>
+        <button class="ed-ai-btn" onclick="runAI('summarize')">📋 Summarize</button>
+        <button class="ed-ai-btn" onclick="runAI('expand')">🔭 Expand</button>
+        <button class="ed-ai-btn" onclick="runAI('actions')">⚡ Action Items</button>
+        <button class="ed-ai-btn" onclick="runAI('tags')">🏷️ Suggest Tags</button>
+      </div>
+
+      <!-- AI Output -->
+      <div class="ed-ai-out" id="aiOut">
+        <div class="ed-ai-out-hdr">
+          <span class="ed-ai-out-ttl" id="aiOutLabel">AI Output</span>
+          <button class="ed-ai-copy" onclick="copyAIOut()">Copy</button>
+        </div>
+        <div id="aiOutText" style="white-space:pre-wrap;"></div>
+        <button class="ed-ai-apply" id="aiApplyBtn" onclick="applyAIOut()" style="display:none">
+          ↩ Apply to document
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /ed-page -->
+
+<!-- Mobile save bar -->
+<button class="ed-save-bar" onclick="saveBlock()">💾 Save Block</button>
+
+<script>
+/* ═══════════════════════════════════════════════════
+   BLOCK EDITOR — JS
+   ═══════════════════════════════════════════════════ */
+
+/* ── Initial data from server ─────────────────── */
+const EXISTING_BLOCK = {% if block %}{{ block | tojson }}{% else %}null{% endif %};
+
+/* ── State ────────────────────────────────────── */
+let blockId       = EXISTING_BLOCK ? EXISTING_BLOCK.id : null;
+let currentType   = 'idea';
+let tags          = [];
+let isDirty       = false;
+let saveTimer     = null;
+let aiOutContent  = '';
+let aiOutMode     = '';
+
+const typeMap = {
+  idea:       { emoji:'💡', label:'Idea' },
+  task:       { emoji:'✅', label:'Task' },
+  learning:   { emoji:'🧠', label:'Learning' },
+  reflection: { emoji:'🪞', label:'Reflection' },
+  read:       { emoji:'📖', label:'Read' },
+};
+
+/* ── Bootstrap ────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+  if (EXISTING_BLOCK) {
+    populateEditor(EXISTING_BLOCK);
+    document.getElementById('deleteBtn').style.display = 'flex';
+    setSaveStatus('saved', '✅ All saved');
+  } else {
+    setSaveStatus('unsaved', 'Unsaved');
+    setType('idea');
+  }
+  autoResize(document.getElementById('blockTitle'));
+  autoResize(document.getElementById('blockBody'));
+  updateCharCount();
+  document.getElementById('blockTitle').focus();
+});
+
+/* ── Populate existing block ──────────────────── */
+function populateEditor(b) {
+  document.getElementById('blockTitle').value = b.title || '';
+  document.getElementById('blockBody').value  = b.content || '';
+  setType(b.type || 'idea');
+
+  // Tags
+  let rawTags = b.tags || [];
+  if (typeof rawTags === 'string') {
+    try { rawTags = JSON.parse(rawTags); } catch { rawTags = rawTags.split(',').filter(Boolean); }
+  }
+  tags = Array.isArray(rawTags) ? rawTags : [];
+  renderTags();
+
+  // Date meta
+  if (b.created_at) {
+    const d = new Date(b.created_at);
+    document.getElementById('metaDate').textContent =
+      'Created ' + d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  }
+}
+
+/* ── Type selector ────────────────────────────── */
+function toggleTypeDrop() {
+  document.getElementById('typeDrop').classList.toggle('open');
+  document.getElementById('typePill').classList.toggle('open');
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.ed-type-pill')) {
+    document.getElementById('typeDrop').classList.remove('open');
+    document.getElementById('typePill').classList.remove('open');
+  }
+});
+
+function setType(type) {
+  if (!typeMap[type]) return;
+  currentType = type;
+  const info = typeMap[type];
+
+  // Update pill
+  const pill = document.getElementById('typePill');
+  pill.className = `ed-type-pill tp-${type}`;
+  document.getElementById('typeEmoji').textContent = info.emoji;
+  document.getElementById('typeLabel').textContent = info.label;
+
+  // Update emoji
+  document.getElementById('blockEmoji').textContent = info.emoji;
+
+  // Update selected option highlight
+  document.querySelectorAll('.ed-type-opt').forEach((o, i) => {
+    o.classList.toggle('sel', o.textContent.trim().toLowerCase().includes(type));
+  });
+
+  document.getElementById('typeDrop').classList.remove('open');
+  document.getElementById('typePill').classList.remove('open');
+  markUnsaved();
+}
+
+/* ── Auto-grow textareas ──────────────────────── */
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
+/* ── Keyboard shortcuts ───────────────────────── */
+function titleKeydown(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    document.getElementById('blockBody').focus();
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+    e.preventDefault(); saveBlock();
+  }
+}
+
+function bodyKeydown(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+    e.preventDefault(); saveBlock();
+  }
+  if (e.key === '/' && document.getElementById('blockBody').value === '') {
+    e.preventDefault();
+    openAIPanel();
+  }
+}
+
+/* ── Tags ─────────────────────────────────────── */
+function tagKeydown(e) {
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    const val = e.target.value.trim().replace(/,/g,'');
+    if (val && !tags.includes(val)) {
+      tags.push(val);
+      renderTags();
+      markUnsaved();
+    }
+    e.target.value = '';
+  }
+  if (e.key === 'Backspace' && e.target.value === '' && tags.length) {
+    tags.pop();
+    renderTags();
+    markUnsaved();
+  }
+}
+
+function removeTag(i) {
+  tags.splice(i, 1);
+  renderTags();
+  markUnsaved();
+}
+
+function renderTags() {
+  document.getElementById('tagsContainer').innerHTML = tags.map((t,i) =>
+    `<span class="ed-tag-item">${esc(t)}
+       <button class="ed-tag-del" onclick="removeTag(${i})">&times;</button>
+     </span>`).join('');
+}
+
+/* ── Save status ──────────────────────────────── */
+function setSaveStatus(state, text) {
+  const el = document.getElementById('saveStatus');
+  el.className = `ed-save-status ${state}`;
+  el.textContent = text;
+}
+
+function markUnsaved() {
+  if (!isDirty) {
+    isDirty = true;
+    setSaveStatus('unsaved', '● Unsaved');
+  }
+  updateCharCount();
+  // Auto-save debounce (2.5s)
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => saveBlock(true), 2500);
+}
+
+function updateCharCount() {
+  const n = (document.getElementById('blockBody').value || '').length;
+  document.getElementById('metaChars').textContent = n.toLocaleString() + ' characters';
+}
+
+/* ── Save ─────────────────────────────────────── */
+async function saveBlock(isAuto = false) {
+  const title   = document.getElementById('blockTitle').value.trim();
+  const content = document.getElementById('blockBody').value;
+
+  if (!title && !content) {
+    if (!isAuto) setSaveStatus('unsaved', '● Title required');
+    return;
+  }
+
+  setSaveStatus('saving', '⟳ Saving…');
+
+  const payload = {
+    title:   title || 'Untitled',
+    content: content,
+    type:    currentType,
+    tags:    tags,
+  };
+
+  try {
+    if (blockId) {
+      // Update existing
+      await fetch('/api/knowledge/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: blockId, ...payload }),
+      });
+    } else {
+      // Create new
+      const res  = await fetch('/api/knowledge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      blockId = data.id;
+      // Update URL without reload
+      if (blockId) history.replaceState({}, '', `/workspace/${blockId}/edit`);
+      document.getElementById('deleteBtn').style.display = 'flex';
+    }
+
+    isDirty = false;
+    setSaveStatus('saved', '✅ Saved');
+    if (!isAuto) flashSaveSuccess();
+
+  } catch (e) {
+    console.error('Save error:', e);
+    setSaveStatus('unsaved', '✗ Save failed');
+  }
+}
+
+function flashSaveSuccess() {
+  const btn = document.getElementById('saveBtn');
+  const orig = btn.innerHTML;
+  btn.innerHTML = '✅ Saved';
+  btn.disabled = true;
+  setTimeout(() => { btn.innerHTML = orig; btn.disabled = false; }, 1600);
+}
+
+/* ── Delete ───────────────────────────────────── */
+async function deleteBlock() {
+  if (!blockId) { history.back(); return; }
+  if (!confirm('Delete this block permanently?')) return;
+  await fetch('/api/knowledge/' + blockId, { method: 'DELETE' });
+  location.href = '/workspace';
+}
+
+/* ════════════════════════════════════════════════
+   AI ASSIST
+   ════════════════════════════════════════════════ */
+function toggleAIPanel() {
+  const btn   = document.getElementById('aiToggleBtn');
+  const panel = document.getElementById('aiPanel');
+  btn.classList.toggle('open');
+  panel.classList.toggle('open');
+}
+
+function openAIPanel() {
+  document.getElementById('aiToggleBtn').classList.add('open');
+  document.getElementById('aiPanel').classList.add('open');
+  document.getElementById('aiPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+async function runAI(mode) {
+  const title   = document.getElementById('blockTitle').value.trim();
+  const content = document.getElementById('blockBody').value.trim();
+
+  if (!content && !title) {
+    showAIOut('ai-hint', '✏️ Write something first, then use AI to improve it.');
+    return;
+  }
+
+  const modeLabels = {
+    improve:  '✍️ Improved Version',
+    summarize:'📋 Summary',
+    expand:   '🔭 Expanded',
+    actions:  '⚡ Action Items',
+    tags:     '🏷️ Suggested Tags',
+  };
+
+  // Disable all AI buttons while running
+  document.querySelectorAll('.ed-ai-btn').forEach(b => b.disabled = true);
+  showAIOut('loading', '<span class="ai-spin">⟳</span> AI is thinking…');
+  document.getElementById('aiApplyBtn').style.display = 'none';
+
+  try {
+    const res = await fetch('/api/knowledge/ai-assist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, content, mode }),
+    });
+    const data = await res.json();
+
+    if (data.error) throw new Error(data.error);
+
+    aiOutContent = data.result || '';
+    aiOutMode    = mode;
+
+    document.getElementById('aiOutLabel').textContent = modeLabels[mode] || 'AI Output';
+    showAIOut('result', aiOutContent.replace(/\n/g, '<br>'));
+
+    // Show apply button for content modes
+    if (['improve', 'expand', 'actions'].includes(mode)) {
+      document.getElementById('aiApplyBtn').style.display = 'block';
+    } else if (mode === 'tags') {
+      // For tags mode show apply as "Add tags"
+      document.getElementById('aiApplyBtn').textContent = '+ Add these tags';
+      document.getElementById('aiApplyBtn').style.display = 'block';
+    }
+
+  } catch (err) {
+    showAIOut('error', '⚠️ AI unavailable. Make sure the LLM server is running.');
+    console.error('AI error:', err);
+  } finally {
+    document.querySelectorAll('.ed-ai-btn').forEach(b => b.disabled = false);
+  }
+}
+
+function showAIOut(type, html) {
+  const out = document.getElementById('aiOut');
+  const txt = document.getElementById('aiOutText');
+  out.classList.add('visible');
+  txt.innerHTML = html;
+}
+
+function applyAIOut() {
+  if (!aiOutContent) return;
+  if (aiOutMode === 'tags') {
+    // Parse tags from comma-separated list
+    const newTags = aiOutContent.split(/[,\n]/)
+      .map(t => t.trim().replace(/^#/, '').replace(/['"]/g, ''))
+      .filter(t => t && !tags.includes(t))
+      .slice(0, 8);
+    tags.push(...newTags);
+    renderTags();
+    markUnsaved();
+    document.getElementById('aiApplyBtn').textContent = '✅ Tags added';
+    setTimeout(() => {
+      document.getElementById('aiApplyBtn').textContent = '+ Add these tags';
+    }, 2000);
+  } else {
+    // Replace body content
+    const body = document.getElementById('blockBody');
+    body.value = aiOutContent;
+    autoResize(body);
+    markUnsaved();
+    document.getElementById('aiApplyBtn').textContent = '✅ Applied';
+    setTimeout(() => {
+      document.getElementById('aiApplyBtn').textContent = '↩ Apply to document';
+    }, 2000);
+  }
+}
+
+function copyAIOut() {
+  if (!aiOutContent) return;
+  navigator.clipboard.writeText(aiOutContent).then(() => {
+    const btn = document.querySelector('.ed-ai-copy');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 1800);
+  });
+}
+
+/* ── Helpers ──────────────────────────────────── */
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// Prevent accidental navigation when unsaved
+window.addEventListener('beforeunload', e => {
+  if (isDirty) { e.preventDefault(); e.returnValue = ''; }
+});
+</script>
+{% endblock %}

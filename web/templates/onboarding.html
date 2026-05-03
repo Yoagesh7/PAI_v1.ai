@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PartnerAI - Welcome Home</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Poppins:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --primary: #5B8DEF;
+            --primary-glow: rgba(91, 141, 239, 0.3);
+            --bg: #0f0f11;
+            --glass: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text: #e6e6e6;
+            --text-dim: #9499a0;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            height: 100vh;
+            height: 100dvh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* Ambient background */
+        .ambient {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.4;
+            animation: move 20s infinite alternate ease-in-out;
+        }
+
+        .b1 {
+            width: 500px;
+            height: 500px;
+            background: var(--primary);
+            top: -10%;
+            left: -10%;
+        }
+
+        .b2 {
+            width: 400px;
+            height: 400px;
+            background: #6c5ce7;
+            bottom: -5%;
+            right: -5%;
+            animation-delay: -5s;
+        }
+
+        @keyframes move {
+            from {
+                transform: translate(0, 0) scale(1);
+            }
+
+            to {
+                transform: translate(100px, 50px) scale(1.1);
+            }
+        }
+
+        .container {
+            width: 440px;
+            max-width: 90%;
+            padding: 40px;
+            background: var(--glass);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid var(--glass-border);
+            border-radius: 32px;
+            box-shadow: 0 20px 80px rgba(0, 0, 0, 0.4);
+            position: relative;
+            text-align: center;
+        }
+
+        h1 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0 0 10px 0;
+            background: linear-gradient(135deg, #fff 0%, #a29bfe 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p.subtitle {
+            font-size: 0.95rem;
+            color: var(--text-dim);
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        .step {
+            display: none;
+            flex-direction: column;
+            animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .step.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Input Styles */
+        .input-group {
+            text-align: left;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+            margin-left: 12px;
+        }
+
+        input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 16px 20px;
+            color: white;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(0, 0, 0, 0.4);
+            box-shadow: 0 0 0 4px var(--primary-glow);
+        }
+
+        /* Tutorial Grid */
+        .features {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            padding: 16px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            text-align: left;
+            transition: transform 0.2s;
+        }
+
+        .feature-card:hover {
+            transform: scale(1.02);
+        }
+
+        .icon-box {
+            width: 44px;
+            height: 44px;
+            background: var(--primary-glow);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .feature-info h4 {
+            margin: 0;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .feature-info p {
+            margin: 4px 0 0 0;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+        }
+
+        /* Buttons */
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 18px;
+            border-radius: 18px;
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: 'Poppins', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px var(--primary-glow);
+            filter: brightness(1.1);
+        }
+
+        .btn:active {
+            transform: translateY(-1px);
+        }
+
+        .btn.secondary {
+            background: transparent;
+            border: 1px solid var(--glass-border);
+            margin-top: 10px;
+            font-size: 0.9rem;
+            padding: 14px;
+        }
+
+        .btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Progress Bar */
+        .progress-steps {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            margin-bottom: 32px;
+        }
+
+        .p-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--glass-border);
+            transition: all 0.4s ease;
+        }
+
+        .p-dot.active {
+            width: 24px;
+            background: var(--primary);
+        }
+
+        /* Summary Card */
+        .summary-card {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 20px;
+            padding: 20px;
+            text-align: left;
+            margin-bottom: 24px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .summary-item {
+            margin-bottom: 12px;
+        }
+
+        .summary-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .s-label {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+        }
+
+        .s-val {
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        /* Loading */
+        .loader {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 0.8s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="ambient">
+        <div class="blob b1"></div>
+        <div class="blob b2"></div>
+    </div>
+
+    <div class="container">
+        <div class="progress-steps">
+            <div class="p-dot active" data-step="1"></div>
+            <div class="p-dot" data-step="2"></div>
+            <div class="p-dot" data-step="3"></div>
+            <div class="p-dot" data-step="4"></div>
+            <div class="p-dot" data-step="5"></div>
+        </div>
+
+        <!-- STEP 1: Introduction -->
+        <div class="step active" id="step1">
+            <h1>PartnerAI 🤖</h1>
+            <p class="subtitle">Welcome. I'm your long-term growth partner. Let's build your AI brain together.</p>
+            <div class="features">
+                <div class="feature-card">
+                    <div class="icon-box">🧠</div>
+                    <div class="feature-info">
+                        <h4>Long-term Memory</h4>
+                        <p>I remember your goals and past wins.</p>
+                    </div>
+                </div>
+                <div class="feature-card">
+                    <div class="icon-box">⚡</div>
+                    <div class="feature-info">
+                        <h4>Action Oriented</h4>
+                        <p>I turn chat into daily actionable tasks.</p>
+                    </div>
+                </div>
+            </div>
+            <button class="btn" onclick="nextStep(2)">Begin Evolution 🚀</button>
+        </div>
+
+        <!-- STEP 2: Identity -->
+        <div class="step" id="step2">
+            <h1>The Architect 👤</h1>
+            <p class="subtitle">Tell me who I'm working with today.</p>
+
+            <div class="input-group">
+                <label>Your Name</label>
+                <input type="text" id="name" placeholder="E.g. Alex" autocomplete="off">
+            </div>
+
+            <div class="input-group">
+                <label>Your Age</label>
+                <input type="number" id="age" placeholder="E.g. 24" autocomplete="off">
+            </div>
+
+            <button class="btn" onclick="validateStep2()">Set Identity ➡️</button>
+        </div>
+
+        <!-- STEP 3: Goals -->
+        <div class="step" id="step3">
+            <h1>The Mission 🎯</h1>
+            <p class="subtitle">What is the #1 thing we are building?</p>
+
+            <div class="input-group">
+                <label>Current Big Goal</label>
+                <input type="text" id="goal" placeholder="E.g. Master Python Backend" autocomplete="off">
+            </div>
+
+            <div class="input-group">
+                <label>Typical Workflow</label>
+                <input type="text" id="work_time" placeholder="E.g. 9 AM - 6 PM" autocomplete="off">
+            </div>
+
+            <div class="input-group">
+                <label>Peak Focus Time</label>
+                <input type="text" id="free_time" placeholder="E.g. 8 PM - 10 PM" autocomplete="off">
+            </div>
+
+            <button class="btn" onclick="validateStep3()">Lock Objective 🎯</button>
+        </div>
+
+        <!-- STEP 4: Features Tour -->
+        <div class="step" id="step4">
+            <h1>System Tour 🛠️</h1>
+            <p class="subtitle">A quick briefing on your new capabilities.</p>
+
+            <div class="features">
+                <div class="feature-card">
+                    <div class="icon-box">📅</div>
+                    <div class="feature-info">
+                        <h4>Daily Protocol</h4>
+                        <p>Type <b>/daily</b> for a fresh system plan.</p>
+                    </div>
+                </div>
+                <div class="feature-card">
+                    <div class="icon-box">🌸</div>
+                    <div class="feature-info">
+                        <h4>Focus Zones</h4>
+                        <p>Earn flowers in deep-work Focus Mode.</p>
+                    </div>
+                </div>
+                <div class="feature-card">
+                    <div class="icon-box">📊</div>
+                    <div class="feature-info">
+                        <h4>Factual Reports</h4>
+                        <p>Ask "what is X" for high-scan tech Intel.</p>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn" onclick="nextStep(5)">Understood 👊</button>
+        </div>
+
+        <!-- STEP 5: Confirmation -->
+        <div class="step" id="step5">
+            <h1>Final Sync 🚀</h1>
+            <p class="subtitle">Review your profile before arrival.</p>
+
+            <div class="summary-card">
+                <div class="summary-item">
+                    <div class="s-label">Partner</div>
+                    <div class="s-val" id="sum_name">-</div>
+                </div>
+                <div class="summary-item">
+                    <div class="s-label">Objective</div>
+                    <div class="s-val" id="sum_goal">-</div>
+                </div>
+                <div class="summary-item">
+                    <div class="s-label">Environment</div>
+                    <div class="s-val" id="sum_time">-</div>
+                </div>
+            </div>
+
+            <button class="btn" id="finishBtn" onclick="finishSetup()">
+                <span>Initialize AI Brain</span>
+                <div class="loader"></div>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+
+        function updateDots(step) {
+            document.querySelectorAll('.p-dot').forEach(dot => {
+                if (parseInt(dot.dataset.step) <= step) dot.classList.add('active');
+                else dot.classList.remove('active');
+            });
+        }
+
+        function nextStep(step) {
+            document.getElementById(`step${currentStep}`).classList.remove('active');
+            currentStep = step;
+            document.getElementById(`step${currentStep}`).classList.add('active');
+            updateDots(step);
+
+            if (step === 5) {
+                document.getElementById('sum_name').innerText = document.getElementById('name').value;
+                document.getElementById('sum_goal').innerText = document.getElementById('goal').value;
+                document.getElementById('sum_time').innerText = document.getElementById('free_time').value;
+            }
+        }
+
+        function validateStep2() {
+            const n = document.getElementById('name').value;
+            const a = document.getElementById('age').value;
+            if (!n || !a) {
+                alert("Please introduce yourself first!");
+                return;
+            }
+            nextStep(3);
+        }
+
+        function validateStep3() {
+            const g = document.getElementById('goal').value;
+            const w = document.getElementById('work_time').value;
+            const f = document.getElementById('free_time').value;
+            if (!g || !w || !f) {
+                alert("The mission needs full parameters to run.");
+                return;
+            }
+            nextStep(4);
+        }
+
+        async function finishSetup() {
+            const btn = document.getElementById('finishBtn');
+            const span = btn.querySelector('span');
+            const loader = btn.querySelector('.loader');
+
+            span.innerText = "Syncing...";
+            loader.style.display = "block";
+            btn.disabled = true;
+
+            const data = {
+                name: document.getElementById('name').value,
+                age: document.getElementById('age').value,
+                goal: document.getElementById('goal').value,
+                work_time: document.getElementById('work_time').value,
+                free_time: document.getElementById('free_time').value
+            };
+
+            try {
+                const res = await fetch('/api/onboarding/complete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (res.ok) {
+                    window.location.href = '/';
+                } else {
+                    throw new Error("Sync failed");
+                }
+            } catch (e) {
+                alert("Connection lost. Resetting sync...");
+                btn.disabled = false;
+                span.innerText = "Initialize AI Brain";
+                loader.style.display = "none";
+            }
+        }
+    </script>
+</body>
+
+</html>

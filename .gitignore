@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.env
+
+# Database
+*.db
+partnerai.db
+
+# Secrets
+config.py
+
+# Logs
+*.log

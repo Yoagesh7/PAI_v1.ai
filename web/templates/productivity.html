@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-container" style="max-width: 800px; margin: 0 auto; padding: var(--space-6);">
+    <style>
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .page-container {
+                padding: 16px !important;
+            }
+
+            .dashboard-grid {
+                gap: 12px !important;
+                grid-template-columns: 1fr !important;
+            }
+
+            .card {
+                padding: 16px !important;
+                border-radius: 20px !important;
+            }
+
+            .text-4xl {
+                font-size: 28px !important;
+            }
+
+            .focus-timer-container {
+                width: 180px !important;
+                height: 180px !important;
+            }
+
+            .focus-timer-text {
+                font-size: 32px !important;
+            }
+
+            .btn-enter-zone {
+                padding: 14px 24px !important;
+                width: 100% !important;
+                font-size: 16px !important;
+            }
+        }
+    </style>
+
+    <style>
+        .btn-icon-sm {
+            background: none;
+            border: none;
+            color: var(--color-text-primary);
+            font-size: 24px;
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .btn-icon-sm:hover {
+            background: var(--color-bg-tertiary);
+            color: var(--color-primary);
+        }
+
+        /* New Task Styling */
+        .task-item {
+            transition: all 0.2s;
+            padding: 4px;
+            border-radius: 4px;
+        }
+
+        .task-item:hover {
+            background: var(--color-bg-tertiary);
+        }
+
+        .task-text {
+            line-height: 1.4;
+        }
+    </style>
+    <div class="page-header" style="margin-bottom: var(--space-8);">
+        <p class="text-secondary text-lg" style="margin-bottom: var(--space-1);">Welcome back,</p>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h1 class="text-4xl font-bold" style="color: var(--color-text-primary); margin: 0;">Productivity Dashboard
+            </h1>
+
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div
+                    style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 6px;">
+                    <span>🔥</span>
+                    <span id="flowCount">Flow: 0</span>
+                </div>
+
+                <button class="btn btn-secondary btn-icon" onclick="window.location.href='/settings'"
+                    style="border-radius: 50%; width: 40px; height: 40px; padding: 0;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+
+        <!-- Focus Zone (Full Width) -->
+        <div class="card"
+            style="grid-column: 1 / -1; border-radius: 30px; padding: var(--space-8); display: flex; flex-direction: column; align-items: center; position: relative; overflow: hidden;">
+            <div style="position: absolute; top: 20px; left: 24px; display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 20px;">🧘</span>
+                <span class="font-bold text-lg">Focus Zone</span>
+            </div>
+            <div style="position: absolute; top: 20px; right: 24px; color: var(--color-text-tertiary);">•••</div>
+
+            <!-- Simplified Focus Icon -->
+            <div style="margin: var(--space-8) 0; display: flex; align-items: center; justify-content: center;">
+                <div style="font-size: 120px; filter: drop-shadow(0 8px 24px rgba(122, 102, 194, 0.4));">
+                    🧠
+                </div>
+            </div>
+
+            <!-- Action Button -->
+            <button id="startTimerBtn" class="btn btn-primary btn-enter-zone" onclick="startFocusSession()" style="
+                background: linear-gradient(135deg, #7A66C2 0%, #5B4B8A 100%);
+                padding: 16px 48px;
+                border-radius: 20px;
+                font-size: 18px;
+                font-weight: 600;
+                box-shadow: 0 10px 20px -5px rgba(91, 75, 138, 0.4);
+                margin-bottom: var(--space-4);
+                width: 100%;
+                max-width: 300px;
+            ">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
+                    <path d="M8 5v14l11-7z" />
+                </svg>
+                Enter Zone
+            </button>
+
+            <div class="text-sm text-tertiary" style="margin-top: var(--space-2);">Timer • Lofi • Ambience</div>
+        </div>
+
+
+        <!-- AI Recommended Tasks -->
+        <!-- AI News (Replaces AI Recommended) -->
+        <div class="card"
+            style="border-radius: 24px; padding: var(--space-6); display: flex; flex-direction: column; gap: 16px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 24px;">📰</span>
+                <h3 class="font-bold text-lg">Top News</h3>
+            </div>
+            <div id="aiNewsList" style="display: flex; flex-direction: column; gap: 12px;">
+                <div style="text-align: center; color: var(--color-text-tertiary);">Loading headlines for your goal...
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Notes -->
+        <div class="card" style="grid-column: 1 / -1; border-radius: 24px; padding: var(--space-6);">
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="color: var(--color-warning);">✏️</span>
+                    <h3 class="font-bold text-lg">Quick Notes</h3>
+                </div>
+                <div
+                    style="display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--color-success); font-weight: 600;">
+                    <div style="width: 6px; height: 6px; background: currentColor; border-radius: 50%;"></div>
+                    AUTO-SAVING
+                </div>
+            </div>
+            <textarea id="userNotes" class="input"
+                style="background: var(--color-bg-tertiary); border: none; min-height: 120px; padding: var(--space-4); border-radius: 16px; resize: none;"
+                placeholder="Brain dump your thoughts here..."></textarea>
+        </div>
+
+        <!-- Daily Read -->
+        <div class="card"
+            style="grid-column: 1 / -1; border-radius: 24px; padding: var(--space-6); background: var(--color-primary-50); border: none;">
+            <div style="display: flex; gap: 16px;">
+                <div style="font-size: 24px; color: var(--color-primary-600);">📖</div>
+                <div>
+                    <h3 class="font-bold text-primary" style="margin-bottom: 4px; color: var(--color-primary-700);">
+                        Daily Read</h3>
+                    <div id="dailyQuote" style="font-style: italic; color: var(--color-primary-600); font-size: 14px;">
+                        "The best way to predict the future is to create it."
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    // Load Data
+    fetch('/api/daily').then(r => r.json()).then(tasks => {
+        const list = document.getElementById('taskList');
+        if (tasks && tasks.length) {
+            list.innerHTML = tasks.slice(0, 3).map(t => `<div style="margin-bottom:4px;">${t.is_completed ? '✅' : '⚪'} ${t.task}</div>`).join('');
+            document.getElementById('taskBadge').textContent = `${tasks.filter(t => t.is_completed).length}/${tasks.length}`;
+        } else if (tasks && tasks.length === 0) {
+            // list.innerHTML = 'No missions yet.'; // list element might not exist on this page, this might be legacy code from dashboard?
+        }
+    });
+
+    fetch('/api/news').then(r => r.json()).then(news => {
+        const div = document.getElementById('newsPreview');
+        if (div && news.length) {
+            div.innerHTML = news.slice(0, 2).map(n => `<div style="margin-bottom:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${n.title}</div>`).join('');
+        }
+    });
+
+    // Load Flow Count
+    fetch('/api/user/flow').then(r => r.json()).then(data => {
+        const flowEl = document.getElementById('flowCount');
+        if (flowEl) flowEl.textContent = `Flow: ${data.flow_day || 0}`;
+    });
+
+    // Focus Timer Logic
+    let focusDuration = 25; // minutes
+
+    function adjustTime(amount) {
+        focusDuration += amount;
+        if (focusDuration < 5) focusDuration = 5;
+        if (focusDuration > 120) focusDuration = 120;
+
+        // Update Display
+        const disp = document.getElementById('timerDisplay');
+        if (disp) disp.textContent = `${focusDuration}:00`;
+
+        // Update SVG Progress (visual feedback)
+        // const circle = document.getElementById('timerProgress');
+        // Let's keep specific UI logic minimal if elements don't exist
+    }
+
+    function startFocusSession() {
+        // Save duration to localStorage to be picked up by focus_mode.html
+        localStorage.setItem('focus_duration', focusDuration * 60);
+        window.location.href = '/focus';
+    }
+
+    // Notes Logic
+    const notes = document.getElementById('userNotes');
+    if (notes) {
+        notes.value = localStorage.getItem('partnerai_notes') || '';
+        notes.addEventListener('input', () => localStorage.setItem('partnerai_notes', notes.value));
+    }
+
+    // AI Tasks Logic
+    // AI News Logic (Auto-Load)
+    fetch('/api/news').then(r => r.json()).then(data => {
+        const list = document.getElementById('aiNewsList');
+        const news = data.news || [];
+
+        if (news.length) {
+            list.innerHTML = news.map(n => `
+                <a href="${n.link}" target="_blank" style="text-decoration: none; color: inherit; display: block;">
+                    <div class="news-item" style="padding: 12px; background: var(--color-bg-tertiary); border-radius: 12px; transition: transform 0.2s; margin-bottom: 8px;">
+                        <div style="font-weight: 600; font-size: 14px; margin-bottom: 4px; line-height: 1.4;">${n.title}</div>
+                        <div style="font-size: 12px; color: var(--color-text-tertiary); display: flex; justify-content: space-between;">
+                            <span>${n.source}</span>
+                            <span>${new Date(n.date).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                </a>
+            `).join('');
+
+            // Add hover effect via JS or CSS (CSS preferred but inline here for simplicity)
+            const items = list.querySelectorAll('.news-item');
+            items.forEach(item => {
+                item.addEventListener('mouseenter', () => item.style.background = 'var(--color-bg-secondary)');
+                item.addEventListener('mouseleave', () => item.style.background = 'var(--color-bg-tertiary)');
+            });
+
+        } else {
+            list.innerHTML = '<div style="text-align: center; color: var(--color-text-tertiary);">No news found for today.</div>';
+        }
+    }).catch(e => {
+        console.error(e);
+        const list = document.getElementById('aiNewsList');
+        if (list) list.innerHTML = '<div style="color: var(--color-error); text-align: center;">Failed to load news.</div>';
+    });
+</script>
+{% endblock %}

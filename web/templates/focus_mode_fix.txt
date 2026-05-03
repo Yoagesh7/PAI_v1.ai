@@ -1,0 +1,3 @@
+    window.onload = function () { loadSongs(); loadGarden(); updateDisplay(); }
+</script>
+{% endblock %}

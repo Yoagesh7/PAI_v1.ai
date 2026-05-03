@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>PartnerAI</title>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Design System -->
+    <link rel="stylesheet" href="/static/css/design-system.css">
+
+    <!-- Theme Initialization (Prevents Flash) -->
+    <script>
+        (function () {
+            const savedTheme = localStorage.getItem('theme');
+
+            if (savedTheme === 'light') {
+                document.documentElement.setAttribute('data-theme', 'light');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                if (!savedTheme) localStorage.setItem('theme', 'dark');
+            }
+        })();
+
+        window.toggleTheme = function () {
+            const current = document.documentElement.getAttribute('data-theme');
+            const newTheme = current === 'dark' ? 'light' : 'dark';
+
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+
+            // Dispatch event for other components if needed
+            window.dispatchEvent(new Event('themeChanged'));
+            return newTheme;
+        };
+    </script>
+
+    <style>
+        /* ============================================
+           APP LAYOUT STRUCTURE
+           ============================================ */
+
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+            background: var(--color-bg-primary);
+        }
+
+        /* ============================================
+           LEFT SIDEBAR (Desktop)
+           ============================================ */
+
+        .left-sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            background: var(--color-bg-secondary);
+            border-right: 1px solid var(--color-border-light);
+            display: flex;
+            flex-direction: column;
+            z-index: var(--z-fixed);
+            transition: transform var(--transition-base);
+        }
+
+        .sidebar-header {
+            padding: var(--space-6) var(--space-5);
+            border-bottom: 1px solid var(--color-border-light);
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            font-weight: 700;
+            font-size: var(--text-lg);
+            color: var(--color-text-primary);
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--color-primary-500);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: var(--text-sm);
+        }
+
+        /* Navigation */
+        .sidebar-nav {
+            flex: 1;
+            padding: var(--space-4) var(--space-3);
+            overflow-y: auto;
+        }
+
+        .nav-section {
+            margin-bottom: var(--space-6);
+        }
+
+        .nav-section-title {
+            font-size: var(--text-xs);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--color-text-muted);
+            padding: 0 var(--space-3);
+            margin-bottom: var(--space-2);
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            padding: var(--space-3) var(--space-3);
+            margin-bottom: var(--space-1);
+            border-radius: var(--radius-md);
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            font-size: var(--text-sm);
+            font-weight: 500;
+            transition: all var(--transition-fast);
+            min-height: var(--touch-target-min);
+        }
+
+        .nav-item:hover {
+            background: var(--color-bg-tertiary);
+            color: var(--color-text-primary);
+        }
+
+        .nav-item.active {
+            background: var(--color-primary-50);
+            color: var(--color-primary-600);
+            font-weight: 600;
+        }
+
+        .nav-item svg {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        /* Sidebar Footer */
+        .sidebar-footer {
+            padding: var(--space-4) var(--space-3);
+            border-top: 1px solid var(--color-border-light);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            padding: var(--space-3);
+            border-radius: var(--radius-md);
+            transition: background var(--transition-fast);
+            cursor: pointer;
+        }
+
+        .user-profile:hover {
+            background: var(--color-bg-tertiary);
+        }
+
+        .user-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .user-name {
+            font-size: var(--text-sm);
+            font-weight: 600;
+            color: var(--color-text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .user-email {
+            font-size: var(--text-xs);
+            color: var(--color-text-tertiary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* ============================================
+           MAIN CONTENT AREA
+           ============================================ */
+
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .page-container {
+            flex: 1;
+            padding: var(--space-6);
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .page-header {
+            margin-bottom: var(--space-6);
+        }
+
+        .page-title {
+            font-size: var(--text-3xl);
+            font-weight: 700;
+            color: var(--color-text-primary);
+            margin: 0 0 var(--space-2) 0;
+        }
+
+        .page-description {
+            font-size: var(--text-base);
+            color: var(--color-text-secondary);
+            margin: 0;
+        }
+
+        /* ============================================
+           MOBILE BOTTOM NAVIGATION
+           ============================================ */
+
+        .mobile-bottom-nav {
+            display: none;
+            position: fixed;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: auto;
+            min-width: 300px;
+            max-width: 94vw;
+            height: 64px;
+            background: rgba(255, 255, 255, 0.92);
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            border-radius: 36px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.10), 0 1px 4px rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(255,255,255,0.6);
+            z-index: var(--z-fixed);
+            padding: 0 10px;
+            /* Safe area for notched phones */
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        [data-theme="dark"] .mobile-bottom-nav {
+            background: rgba(30, 30, 36, 0.94);
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), 0 1px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .mobile-nav-items {
+            display: flex;
+            height: 100%;
+            justify-content: space-around;
+            align-items: center;
+            gap: 2px;
+            width: 100%;
+        }
+
+        .mobile-nav-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 46px;
+            height: 46px;
+            border-radius: 23px;
+            color: var(--color-text-tertiary);
+            text-decoration: none;
+            transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+            background: transparent;
+            overflow: hidden;
+            padding: 0;
+            cursor: pointer;
+            border: none;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .mobile-nav-item svg {
+            width: 22px;
+            height: 22px;
+            stroke-width: 2px;
+            flex-shrink: 0;
+            transition: transform 0.2s;
+        }
+
+        .mobile-nav-item span {
+            display: none;
+            font-size: 13px;
+            font-weight: 600;
+            margin-left: 7px;
+            white-space: nowrap;
+        }
+
+        /* Active: pill expands with gradient */
+        .mobile-nav-item.active {
+            width: auto;
+            min-width: 96px;
+            padding: 0 18px;
+            background: linear-gradient(135deg, #8B5CF6 0%, #6366f1 100%);
+            color: white !important;
+            box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+        }
+
+        .mobile-nav-item.active span { display: block; }
+        .mobile-nav-item.active svg { color: white; transform: scale(1.05); }
+
+        .mobile-nav-item:not(.active):hover {
+            background: var(--color-bg-tertiary);
+            color: var(--color-text-primary);
+        }
+
+        .mobile-nav-item:active { transform: scale(0.93); }
+
+        /* ============================================
+           RESPONSIVE DESIGN
+           ============================================ */
+
+        @media (max-width: 768px) {
+            .left-sidebar {
+                transform: translateX(-100%);
+                /* Smooth slide-in from left */
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+
+            .left-sidebar.mobile-open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+                /* bottom padding = nav height + extra breathing room */
+                padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 24px);
+            }
+
+            .page-container {
+                padding: var(--space-4) var(--space-4) var(--space-4);
+            }
+
+            .page-title {
+                font-size: var(--text-2xl);
+            }
+
+            /* Show bottom nav pill */
+            .mobile-bottom-nav {
+                display: block;
+            }
+
+            /* Cards should be full-width with less padding */
+            .card {
+                border-radius: var(--radius-lg) !important;
+            }
+
+            /* Page header compact */
+            .page-header {
+                margin-bottom: var(--space-4);
+            }
+        }
+
+        /* Extra small screens */
+        @media (max-width: 375px) {
+            .mobile-bottom-nav {
+                min-width: 280px;
+                height: 60px;
+            }
+            .mobile-nav-item.active {
+                min-width: 82px;
+                padding: 0 14px;
+            }
+        }
+
+        /* Mobile sidebar overlay */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: calc(var(--z-fixed) - 1);
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+        }
+
+        /* Mobile menu button removed */
+        .mobile-menu-btn {
+            display: none !important;
+        }
+
+        /* Mobile More Popup (above 3-dot button) */
+        .more-btn-wrapper {
+            position: relative;
+        }
+
+        .mobile-more-popup {
+            position: absolute;
+            bottom: calc(100% + 12px);
+            right: -8px;
+            background: var(--color-bg-secondary);
+            border-radius: 18px;
+            padding: 6px;
+            box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.13), 0 8px 24px rgba(0, 0, 0, 0.10);
+            border: 1px solid var(--color-border-light);
+            min-width: 176px;
+            opacity: 0;
+            transform: translateY(8px) scale(0.93);
+            transform-origin: bottom right;
+            transition: opacity 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+                        transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+            pointer-events: none;
+            z-index: 200;
+        }
+
+        [data-theme="dark"] .mobile-more-popup {
+            box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5), 0 8px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        .mobile-more-popup.active {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
+        }
+
+        /* Arrow pointer at the bottom */
+        .mobile-more-popup::after {
+            content: '';
+            position: absolute;
+            bottom: -7px;
+            right: 20px;
+            width: 12px;
+            height: 12px;
+            background: var(--color-bg-secondary);
+            border-right: 1px solid var(--color-border-light);
+            border-bottom: 1px solid var(--color-border-light);
+            transform: rotate(45deg);
+        }
+
+        .popup-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 12px;
+            border-radius: 12px;
+            text-decoration: none;
+            color: var(--color-text-primary);
+            font-size: 14px;
+            font-weight: 500;
+            transition: background 0.12s;
+            white-space: nowrap;
+        }
+
+        .popup-item:hover,
+        .popup-item:active {
+            background: var(--color-bg-tertiary);
+        }
+
+        .popup-item-icon {
+            width: 30px;
+            height: 30px;
+            background: var(--color-bg-tertiary);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            flex-shrink: 0;
+        }
+
+        /* Transparent overlay to catch outside clicks */
+        .drawer-overlay {
+            position: fixed;
+            inset: 0;
+            background: transparent;
+            z-index: 89;
+            display: none;
+        }
+
+        .drawer-overlay.active {
+            display: block;
+        }
+    </style>
+
+    {% block head %}{% endblock %}
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Left Sidebar Navigation -->
+        <aside class="left-sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <a href="/" class="sidebar-logo">
+                    <div class="logo-icon">PA</div>
+                    <span>PartnerAI</span>
+                </a>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <a href="/" class="nav-item {{ 'active' if active_page == 'home' }}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                            <polyline points="9 22 9 12 15 12 15 22" />
+                        </svg>
+                        <span>Home</span>
+                    </a>
+
+                    <a href="/chat" class="nav-item {{ 'active' if active_page == 'chat' }}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                        </svg>
+                        <span>Chat</span>
+                    </a>
+
+                    <a href="/habits" class="nav-item {{ 'active' if active_page == 'habits' }}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                            <line x1="16" y1="2" x2="16" y2="6" />
+                            <line x1="8" y1="2" x2="8" y2="6" />
+                            <line x1="3" y1="10" x2="21" y2="10" />
+                        </svg>
+                        <span>Habits</span>
+                    </a>
+
+                    <a href="/productivity" class="nav-item {{ 'active' if active_page == 'productivity' }}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                        </svg>
+                        <span>Productivity</span>
+                    </a>
+
+                    <a href="/focus" class="nav-item {{ 'active' if active_page == 'focus' }}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <polyline points="12 6 12 12 16 14" />
+                        </svg>
+                        <span>Focus</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">Team</div>
+
+                    <a href="/community" class="nav-item {{ 'active' if active_page == 'community' }}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                            <circle cx="9" cy="7" r="4" />
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                        </svg>
+                        <span>Community</span>
+                    </a>
+
+                    <a href="/group" class="nav-item {{ 'active' if active_page == 'group' }}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="7" height="7" />
+                            <rect x="14" y="3" width="7" height="7" />
+                            <rect x="14" y="14" width="7" height="7" />
+                            <rect x="3" y="14" width="7" height="7" />
+                        </svg>
+                        <span>Groups</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">More</div>
+
+                    <a href="/workspace" class="nav-item {{ 'active' if active_page == 'workspace' }}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                        </svg>
+                        <span>Workspace</span>
+                    </a>
+
+                    <a href="/report" class="nav-item {{ 'active' if active_page == 'report' }}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="20" x2="18" y2="10" />
+                            <line x1="12" y1="20" x2="12" y2="4" />
+                            <line x1="6" y1="20" x2="6" y2="14" />
+                        </svg>
+                        <span>Reports</span>
+                    </a>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <a href="/settings" class="user-profile" style="text-decoration: none; color: inherit;">
+                    <div class="avatar avatar-sm">PA</div>
+                    <div class="user-info">
+                        <div class="user-name">User</div>
+                        <div class="user-email">My Profile</div>
+                    </div>
+                </a>
+            </div>
+        </aside>
+
+        <!-- Mobile Menu Button Removed -->
+
+        <!-- Sidebar Overlay (Mobile) -->
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleMobileSidebar()"></div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+
+        <!-- Overlay: closes popup on outside tap -->
+        <div class="drawer-overlay" id="drawerOverlay" onclick="toggleMoreDrawer()"></div>
+
+        <!-- Mobile Bottom Navigation -->
+
+        <nav class="mobile-bottom-nav">
+            <div class="mobile-nav-items">
+                <!-- 1. Home -->
+                <a href="/" class="mobile-nav-item {{ 'active' if active_page == 'home' }}">
+                    <svg viewBox="0 0 24 24" fill="currentColor" class="text-current">
+                        <path d="M12 3L4 9v12h5v-7h6v7h5V9z" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M12 3L4 9v12h5v-7h6v7h5V9z" opacity="0.2" class="fill-current"
+                            style="display: {{ 'block' if active_page == 'home' else 'none' }}" />
+                    </svg>
+                    <span>Home</span>
+                </a>
+
+                <!-- 2. Habits (Calendar Icon) -->
+                <a href="/habits" class="mobile-nav-item {{ 'active' if active_page == 'habits' }}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                        <line x1="16" y1="2" x2="16" y2="6" />
+                        <line x1="8" y1="2" x2="8" y2="6" />
+                        <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                    <span>Habits</span>
+                </a>
+
+                <!-- 3. Chat -->
+                <a href="/chat" class="mobile-nav-item {{ 'active' if active_page == 'chat' }}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path
+                            d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                    </svg>
+                    <span>Chat</span>
+                </a>
+
+                <!-- 4. Productivity (Graph) -->
+                <a href="/productivity" class="mobile-nav-item {{ 'active' if active_page == 'productivity' }}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                        <polyline points="17 6 23 6 23 12" />
+                    </svg>
+                    <span>Prod.</span>
+                </a>
+
+                <!-- 5. Reports (Bar Chart) 
+                <a href="/report-page" class="mobile-nav-item {{ 'active' if active_page == 'report' }}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="20" x2="18" y2="10"/>
+                        <line x1="12" y1="20" x2="12" y2="4"/>
+                        <line x1="6" y1="20" x2="6" y2="14"/>
+                    </svg>
+                    <span>Report</span>
+                </a>
+                -->
+                <!-- Keeping only 4 main icons to match space, adding last as More button -->
+
+
+                <a href="/report" class="mobile-nav-item {{ 'active' if active_page == 'report' }}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <line x1="18" y1="20" x2="18" y2="10" />
+                        <line x1="12" y1="20" x2="12" y2="4" />
+                        <line x1="6" y1="20" x2="6" y2="14" />
+                    </svg>
+                    <span>Report</span>
+                </a>
+
+                <!-- 6. More -->
+                <div class="more-btn-wrapper">
+                    <button class="mobile-nav-item" id="moreBtn" onclick="toggleMoreDrawer()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="1"></circle>
+                            <circle cx="19" cy="12" r="1"></circle>
+                            <circle cx="5" cy="12" r="1"></circle>
+                        </svg>
+                        <span>More</span>
+                    </button>
+
+                    <!-- Popup appears above the 3-dot button -->
+                    <div class="mobile-more-popup" id="morePopup">
+                        <a href="/focus" class="popup-item">
+                            <div class="popup-item-icon">🎯</div>
+                            <span>Focus</span>
+                        </a>
+                        <a href="/community" class="popup-item">
+                            <div class="popup-item-icon">🌍</div>
+                            <span>Community</span>
+                        </a>
+                        <a href="/group" class="popup-item">
+                            <div class="popup-item-icon">👥</div>
+                            <span>Groups</span>
+                        </a>
+                        <a href="/workspace" class="popup-item">
+                            <div class="popup-item-icon">📂</div>
+                            <span>Workspace</span>
+                        </a>
+                        <a href="/settings" class="popup-item">
+                            <div class="popup-item-icon">⚙️</div>
+                            <span>Settings</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </div>
+
+    <script>
+        // Mobile sidebar toggle
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+
+            sidebar.classList.toggle('mobile-open');
+            overlay.classList.toggle('active');
+        }
+
+        // More Popup Toggle
+        function toggleMoreDrawer() {
+            const popup = document.getElementById('morePopup');
+            const overlay = document.getElementById('drawerOverlay');
+            const btn = document.getElementById('moreBtn');
+
+            const isOpen = popup.classList.toggle('active');
+            overlay.classList.toggle('active', isOpen);
+            btn.classList.toggle('active', isOpen);
+        }
+
+        // Close sidebar when clicking nav item on mobile
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', () => {
+                if (window.innerWidth <= 768) {
+                    toggleMobileSidebar();
+                }
+            });
+        });
+    </script>
+
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Weekly Progress Report</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "charcoal": "#121214",
+                        "charcoal-light": "#1c1c1f",
+                        "lavender": "#e0d7ff",
+                        "vibrant-purple": "#a855f7",
+                        "primary": "#8b5cf6",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        :root {
+            --glow-purple: 0 0 15px rgba(168, 85, 247, 0.4);
+            --glow-purple-strong: 0 0 25px rgba(168, 85, 247, 0.6);
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .glow-bar {
+            box-shadow: var(--glow-purple);
+        }
+        .glow-ring {
+            filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.5));
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-charcoal font-display text-white antialiased overflow-x-hidden">
+<div class="relative flex min-h-screen w-full flex-col max-w-[430px] mx-auto bg-charcoal shadow-2xl">
+<div class="sticky top-0 z-20 bg-charcoal/80 backdrop-blur-xl px-4 py-6 flex items-center justify-between border-b border-white/5">
+<div class="size-10 flex items-center justify-center rounded-full bg-charcoal-light border border-white/10 shadow-sm active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-lg text-lavender">arrow_back_ios_new</span>
+</div>
+<div class="flex flex-col items-center">
+<h2 class="text-[10px] font-black uppercase tracking-[0.2em] text-vibrant-purple">Premium Report</h2>
+<p class="text-sm font-bold text-white">OCT 12 — OCT 18</p>
+</div>
+<div class="size-10 flex items-center justify-center rounded-full bg-charcoal-light border border-white/10 shadow-sm">
+<span class="material-symbols-outlined text-lg text-lavender">share</span>
+</div>
+</div>
+<main class="flex-1 px-6 pb-32">
+<div class="mt-10 mb-12 flex flex-col items-center justify-center text-center">
+<div class="relative flex items-center justify-center w-52 h-52">
+<svg class="w-full h-full transform -rotate-90 glow-ring">
+<circle class="text-white/5" cx="104" cy="104" fill="transparent" r="94" stroke="currentColor" stroke-width="6"></circle>
+<circle class="text-vibrant-purple" cx="104" cy="104" fill="transparent" r="94" stroke="currentColor" stroke-dasharray="590" stroke-dashoffset="94" stroke-linecap="round" stroke-width="8"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="text-7xl font-black tracking-tighter text-white">84</span>
+<span class="text-[10px] font-black text-lavender/60 tracking-[0.2em] uppercase">Growth Index</span>
+</div>
+</div>
+<div class="mt-8 inline-flex items-center gap-1.5 bg-green-500/10 text-green-400 px-4 py-1.5 rounded-full text-[11px] font-bold border border-green-500/20">
+<span class="material-symbols-outlined text-sm">trending_up</span>
+<span>ELITE PERFORMANCE (+5%)</span>
+</div>
+<p class="mt-6 text-base text-lavender/70 font-medium leading-relaxed max-w-[300px]">
+                    Your cognitive focus is <span class="text-white font-bold">exceptional</span>. You’ve maintained a flow state for 12% longer than your monthly average.
+                </p>
+</div>
+<div class="bg-charcoal-light rounded-2xl p-6 border border-white/5 shadow-2xl mb-8">
+<div class="flex items-center justify-between mb-8">
+<div>
+<h3 class="text-sm font-bold text-white uppercase tracking-wider">Deep Work Hours</h3>
+<p class="text-xs text-lavender/40 mt-1">Weekly focus distribution</p>
+</div>
+<div class="flex flex-col items-end">
+<span class="text-xl font-bold text-vibrant-purple">42h</span>
+<span class="text-[9px] font-bold text-lavender/30 uppercase tracking-tighter">Total Time</span>
+</div>
+</div>
+<div class="grid grid-cols-7 gap-3 h-36 items-end px-1">
+<div class="flex flex-col items-center gap-3">
+<div class="w-full bg-vibrant-purple/10 rounded-full" style="height: 45%;"></div>
+<span class="text-[10px] font-bold text-lavender/30">M</span>
+</div>
+<div class="flex flex-col items-center gap-3">
+<div class="w-full bg-vibrant-purple/10 rounded-full" style="height: 90%;"></div>
+<span class="text-[10px] font-bold text-lavender/30">T</span>
+</div>
+<div class="flex flex-col items-center gap-3">
+<div class="w-full bg-vibrant-purple rounded-full glow-bar" style="height: 75%;"></div>
+<span class="text-[10px] font-bold text-vibrant-purple">W</span>
+</div>
+<div class="flex flex-col items-center gap-3">
+<div class="w-full bg-vibrant-purple/10 rounded-full" style="height: 15%;"></div>
+<span class="text-[10px] font-bold text-lavender/30">T</span>
+</div>
+<div class="flex flex-col items-center gap-3">
+<div class="w-full bg-vibrant-purple/10 rounded-full" style="height: 60%;"></div>
+<span class="text-[10px] font-bold text-lavender/30">F</span>
+</div>
+<div class="flex flex-col items-center gap-3">
+<div class="w-full border border-dashed border-vibrant-purple/30 rounded-full h-8"></div>
+<span class="text-[10px] font-bold text-lavender/30">S</span>
+</div>
+<div class="flex flex-col items-center gap-3">
+<div class="w-full bg-vibrant-purple/10 rounded-full" style="height: 25%;"></div>
+<span class="text-[10px] font-bold text-lavender/30">S</span>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4 mb-8">
+<div class="bg-charcoal-light rounded-2xl p-5 border border-white/5">
+<div class="flex items-center gap-2 mb-4">
+<div class="size-7 rounded-lg bg-green-500/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-green-400 text-lg">auto_awesome</span>
+</div>
+<h4 class="text-[10px] font-black uppercase tracking-widest text-lavender/50">Strengths</h4>
+</div>
+<ul class="space-y-4">
+<li class="text-xs leading-relaxed text-lavender/90 font-medium">Early morning velocity (+15% output).</li>
+<li class="text-xs leading-relaxed text-lavender/90 font-medium">Zero context switching on Wed.</li>
+</ul>
+</div>
+<div class="bg-charcoal-light rounded-2xl p-5 border border-white/5">
+<div class="flex items-center gap-2 mb-4">
+<div class="size-7 rounded-lg bg-amber-500/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-amber-400 text-lg">explore</span>
+</div>
+<h4 class="text-[10px] font-black uppercase tracking-widest text-lavender/50">Weaknesses</h4>
+</div>
+<ul class="space-y-4">
+<li class="text-xs leading-relaxed text-lavender/90 font-medium">Late-night screen time spikes.</li>
+<li class="text-xs leading-relaxed text-lavender/90 font-medium">Missed recovery blocks on Thu.</li>
+</ul>
+</div>
+</div>
+<div class="bg-gradient-to-br from-vibrant-purple/10 to-charcoal-light rounded-3xl p-8 relative overflow-hidden border border-vibrant-purple/20">
+<div class="absolute -top-16 -right-16 w-48 h-48 bg-vibrant-purple/10 rounded-full blur-[60px]"></div>
+<div class="flex items-center gap-4 mb-8">
+<div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-vibrant-purple to-indigo-500 flex items-center justify-center text-white shadow-lg overflow-hidden border border-white/20">
+<span class="material-symbols-outlined text-3xl">neurology</span>
+</div>
+<div>
+<h4 class="text-base font-bold text-white">AI Mentor</h4>
+<p class="text-[10px] uppercase tracking-[0.2em] text-vibrant-purple font-black">Strategic Advisory</p>
+</div>
+</div>
+<div class="space-y-6 text-[15px] leading-relaxed text-lavender italic font-medium">
+<p class="relative">
+<span class="absolute -left-4 top-0 text-3xl text-vibrant-purple opacity-30 font-serif">"</span>
+                        This week, you've shown a remarkable ability to prioritize the <span class="text-white font-bold not-italic underline decoration-vibrant-purple underline-offset-4">Critical Few</span> over the Trivial Many. Your mid-week sessions represent a peak state of cognitive endurance.
+                    </p>
+<p>
+                        However, I noticed your recovery metrics dipping on Thursday. Remember: sustainable excellence is a marathon, not a sprint. The slight decline in Deep Work was your brain's natural request for restorative rest.
+                    </p>
+<p>
+                        For the coming week, let's focus on <span class="text-white font-bold not-italic">The Ritual of Disengagement</span>. Try setting a hard-stop at 7 PM. Use that space to let your subconscious solve complex problems while you recharge.
+                    </p>
+</div>
+<div class="mt-10 pt-6 border-t border-white/5 flex items-center justify-between">
+<span class="text-[10px] font-black uppercase tracking-[0.3em] text-lavender/30">End Transmission</span>
+<div class="flex items-center gap-1.5">
+<div class="w-1.5 h-1.5 rounded-full bg-vibrant-purple"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-vibrant-purple/40"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-vibrant-purple/10"></div>
+</div>
+</div>
+</div>
+</main>
+<div class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] p-6 bg-gradient-to-t from-charcoal via-charcoal/95 to-transparent z-30">
+<button class="w-full bg-vibrant-purple text-white h-16 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 shadow-[0_10px_30px_-10px_rgba(168,85,247,0.5)] active:scale-95 transition-all">
+<span class="material-symbols-outlined text-xl">chat_bubble</span>
+                Consult AI Mentor
+            </button>
+</div>
+</div>
+
+</body></html>

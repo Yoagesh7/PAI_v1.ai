@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Home Dashboard - AI Productivity</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#5b498d",
+                        "background-light": "#f9f9fa",
+                        "background-dark": "#18181b",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+                    boxShadow: {
+                        'mate': '0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 2px 10px -2px rgba(0, 0, 0, 0.02)',
+                    }
+                },
+            },
+        }
+    </script>
+<style>.material-symbols-outlined {
+    font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+    vertical-align: middle
+    }
+.glass-nav {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(0, 0, 0, 0.05)
+    }
+.dark .glass-nav {
+    background: rgba(24, 24, 27, 0.8);
+    border-top: 1px solid rgba(255, 255, 255, 0.1)
+    }
+.checkbox-custom:checked {
+    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuAltBbUidT5s34BIjT6BII1R83BkpPiePy7kxZLC4En69IHxAZPuBMtfEK9f0FJ1IPdn-wJtED1dFAi8b8Dm3EnKlrV6RwhnH1P7ME6u8gH2zxcEm9vbOPsoTKhY3uHavXGd_iLLnkm2goAjhNmSoUXEW2YcUjAmR0wUwLPwdU2CRrvILR6IV7rt5KxZkVL2YkPwryVg7uYZXj6lt1eMh2f2hp2Zx5SvxDG-ZU6CVsktb58_48YvUAkydgGdDIYI9jTXFuWmlo6YSo)
+    }</style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-[#131217] dark:text-gray-100 antialiased">
+<div class="relative flex h-screen w-full flex-col overflow-hidden max-w-[430px] mx-auto border-x border-gray-100 dark:border-gray-800 shadow-2xl">
+<!-- Top Navigation -->
+<header class="flex items-center justify-between px-6 pt-8 pb-4">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-full bg-cover bg-center border-2 border-white dark:border-gray-700 shadow-sm" data-alt="User profile portrait close up" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAC8hlxUBlo8ooSuD9pB-C6GNUmc1FLe5VvTUhuMCJ79elTowbWY6LfKM7vEIDBhgrEIYEXAJ9omOQ8Fyt92uuO7PRhzQ-ELpbAnjRCec4xgu4g8F2Edz_wNbMPN-x5gUYYNZkhCPHJNDP4a6JH-ZcFRLCy1S5i9CYApOpIb7BAkx8nrshJNBSMfPIx0_pmrkF6zyHlKU2GZDBiEhxdFjOYXVy5LqL3I7bpce73K63hD930b19cGwujgXSxszs1eNcRqyPexB3A4vE");'>
+</div>
+<div>
+<h1 class="text-xl font-bold tracking-tight">Good evening, Yoagesh</h1>
+<p class="text-xs text-gray-500 dark:text-gray-400">Let’s wind down for the day.</p>
+</div>
+</div>
+<div class="flex h-8 items-center justify-center gap-x-2 rounded-full bg-primary/10 dark:bg-primary/20 pl-2 pr-3">
+<span class="material-symbols-outlined text-primary text-sm">local_fire_department</span>
+<p class="text-primary text-xs font-semibold">14-day flow</p>
+</div>
+</header>
+<!-- Main Content Scroll Area -->
+<main class="flex-1 overflow-y-auto px-6 pb-32 space-y-6">
+<!-- Primary Focus Card (Hero) -->
+<section class="mt-4">
+<div class="group relative flex flex-col overflow-hidden rounded-xl bg-white dark:bg-gray-900 shadow-mate border border-gray-50 dark:border-gray-800">
+<div class="relative h-40 w-full overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
+<div class="h-full w-full bg-center bg-cover transition-transform duration-500 group-hover:scale-105" data-alt="Abstract purple and blue workspace creative gradient" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDDlQMC2vvVAc-VN7yemHvt0XhFiCd3t4l6sXFeLK4QQc9gr00ziUMvxMLjKXjscVa9prCUYcRX7hFV_GopkcIX0yPrLVA6dhLCEr5Y-tIC7brr9WXlcCWsQi_e1FvUhfJAZGLUVSDSBRbdnnPlJNwoMZiNv6D6OlVVbthJD_KOII3E4SeNE_m3EPqM0Szt75PvHslNE9xJHQP7TEY_XimLHQAP8Bv4oEq9VDiqC8447k-WtSp0-sqCGq2rfWBtajzw9paCkXmAUQ8");'>
+</div>
+<div class="absolute bottom-4 left-4 z-20">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase bg-primary text-white mb-2 inline-block">High Priority</span>
+<h2 class="text-white text-xl font-bold">Complete the Series A pitch deck</h2>
+</div>
+</div>
+<div class="p-4 flex items-center justify-between">
+<p class="text-gray-500 dark:text-gray-400 text-sm italic">Finish the market analysis slide.</p>
+<button class="bg-primary hover:bg-primary/90 text-white rounded-lg px-4 py-2 text-sm font-semibold transition-colors flex items-center gap-2">
+<span>Start Now</span>
+<span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+</div>
+</section>
+<!-- AI Task List Section -->
+<section class="space-y-3">
+<div class="flex items-center justify-between px-1">
+<h3 class="text-base font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-xl">auto_awesome</span>
+                        AI-Generated Tasks
+                    </h3>
+<button class="text-xs text-primary font-semibold">Edit List</button>
+</div>
+<div class="space-y-2">
+<!-- Task 1 -->
+<label class="flex items-center gap-4 p-4 rounded-xl bg-white dark:bg-gray-900 shadow-sm border border-gray-100 dark:border-gray-800 transition-all hover:border-primary/30">
+<input class="checkbox-custom h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary focus:ring-offset-0 dark:border-gray-700 dark:bg-gray-800" type="checkbox"/>
+<div class="flex-1">
+<p class="text-sm font-medium leading-none mb-1">Review financial projections</p>
+<p class="text-[11px] text-gray-400">Est: 15 mins</p>
+</div>
+<span class="material-symbols-outlined text-gray-300 dark:text-gray-600">drag_indicator</span>
+</label>
+<!-- Task 2 -->
+<label class="flex items-center gap-4 p-4 rounded-xl bg-white dark:bg-gray-900 shadow-sm border border-gray-100 dark:border-gray-800 transition-all hover:border-primary/30">
+<input class="checkbox-custom h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary focus:ring-offset-0 dark:border-gray-700 dark:bg-gray-800" type="checkbox"/>
+<div class="flex-1">
+<p class="text-sm font-medium leading-none mb-1">Email 3 potential lead investors</p>
+<p class="text-[11px] text-gray-400">Est: 30 mins</p>
+</div>
+<span class="material-symbols-outlined text-gray-300 dark:text-gray-600">drag_indicator</span>
+</label>
+<!-- Task 3 -->
+<label class="flex items-center gap-4 p-4 rounded-xl bg-white dark:bg-gray-900 shadow-sm border border-gray-100 dark:border-gray-800 transition-all hover:border-primary/30">
+<input class="checkbox-custom h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary focus:ring-offset-0 dark:border-gray-700 dark:bg-gray-800" type="checkbox"/>
+<div class="flex-1">
+<p class="text-sm font-medium leading-none mb-1">Update slide 5 visuals</p>
+<p class="text-[11px] text-gray-400">Est: 10 mins</p>
+</div>
+<span class="material-symbols-outlined text-gray-300 dark:text-gray-600">drag_indicator</span>
+</label>
+</div>
+</section>
+<!-- Productivity Insight -->
+<section class="p-4 rounded-xl bg-primary/5 border border-primary/10">
+<div class="flex gap-3">
+<div class="shrink-0 size-8 rounded-full bg-primary/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-lg">lightbulb</span>
+</div>
+<div>
+<p class="text-sm font-bold text-primary">Insight of the Day</p>
+<p class="text-xs text-primary/80 leading-relaxed mt-1">Founders who complete their main focus before 11 AM are 40% more likely to reach their weekly goals.</p>
+</div>
+</div>
+</section>
+</main>
+<!-- Fixed Mentor CTA -->
+<div class="absolute bottom-24 left-1/2 -translate-x-1/2 w-[85%] z-30">
+<button class="w-full flex items-center justify-center gap-2 bg-primary text-white h-14 rounded-full shadow-lg shadow-primary/30 font-bold active:scale-95 transition-transform">
+<span class="material-symbols-outlined">smart_toy</span>
+                Talk to your Mentor
+            </button>
+</div>
+<!-- Tab Bar Navigation -->
+<nav class="glass-nav absolute bottom-0 left-0 right-0 h-20 px-8 flex items-center justify-between pb-4">
+<button class="flex flex-col items-center gap-1 text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="text-[10px] font-bold">Home</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-gray-400 dark:text-gray-500">
+<span class="material-symbols-outlined">query_stats</span>
+<span class="text-[10px] font-medium">Insights</span>
+</button>
+<div class="w-12"></div> <!-- Spacer for floating button -->
+<button class="flex flex-col items-center gap-1 text-gray-400 dark:text-gray-500">
+<span class="material-symbols-outlined">library_books</span>
+<span class="text-[10px] font-medium">Resources</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-gray-400 dark:text-gray-500">
+<span class="material-symbols-outlined">person_outline</span>
+<span class="text-[10px] font-medium">Profile</span>
+</button>
+</nav>
+<!-- Safe Area Home Indicator (Visual Only) -->
+<div class="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-32 h-1 bg-gray-200 dark:bg-gray-800 rounded-full z-40"></div>
+</div>
+</body></html>

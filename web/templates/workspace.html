@@ -1,0 +1,649 @@
+﻿{% extends "base.html" %}
+
+{% block content %}
+<style>
+/* =====================================================
+   WORKSPACE - KNOWLEDGE HUB  (Notion-inspired)
+   ===================================================== */
+
+/* -- Dark Theme (matches app design-system) -- */
+[data-theme="dark"] {
+  --kb-bg:          #121212;
+  --kb-hdr-bg:      rgba(18,18,18,0.96);
+  --kb-card:        #1E1E24;
+  --kb-card-hov:    #2C2C35;
+  --kb-border:      rgba(255,255,255,0.07);
+  --kb-border-hov:  rgba(139,92,246,0.35);
+  --kb-title:       #F7F8FA;
+  --kb-sec:         #A0AEC0;
+  --kb-muted:       #555555;
+  --kb-accent:      #8B78CC;
+  --kb-glow:        rgba(139,120,204,0.18);
+  --kb-tab-act:     linear-gradient(135deg,#8B78CC,#7A66C2);
+  --kb-tab-act-t:   #fff;
+  --kb-tab-idle:    rgba(255,255,255,0.06);
+  --kb-tab-idle-t:  #A0AEC0;
+  --kb-srch-bg:     rgba(255,255,255,0.06);
+  --kb-srch-brd:    rgba(255,255,255,0.1);
+  --kb-fab:         linear-gradient(135deg,#8B78CC,#7A66C2);
+  --kb-skel:        rgba(255,255,255,0.04);
+  --kb-skel2:       rgba(139,120,204,0.06);
+}
+/* -- Light Theme -- */
+[data-theme="light"] {
+  --kb-bg:          #f2f2f7;
+  --kb-hdr-bg:      rgba(248,248,255,0.96);
+  --kb-card:        #ffffff;
+  --kb-card-hov:    #f7f5ff;
+  --kb-border:      rgba(0,0,0,0.07);
+  --kb-border-hov:  rgba(124,58,237,0.28);
+  --kb-title:       #18182c;
+  --kb-sec:         #55556e;
+  --kb-muted:       #aaaabc;
+  --kb-accent:      #7C3AED;
+  --kb-glow:        rgba(124,58,237,0.12);
+  --kb-tab-act:     linear-gradient(135deg,#7C3AED,#5B21B6);
+  --kb-tab-act-t:   #fff;
+  --kb-tab-idle:    rgba(0,0,0,0.05);
+  --kb-tab-idle-t:  #66667a;
+  --kb-srch-bg:     rgba(0,0,0,0.04);
+  --kb-srch-brd:    rgba(0,0,0,0.1);
+  --kb-fab:         linear-gradient(135deg,#7C3AED,#5B21B6);
+  --kb-skel:        rgba(0,0,0,0.04);
+  --kb-skel2:       rgba(124,58,237,0.06);
+}
+
+/* -- Type colour tokens (set on card, inherited by children) -- */
+.t-idea       { --tc:#FBBF24; --tb:rgba(251,191,36,.12); }
+.t-task       { --tc:#A78BFA; --tb:rgba(139,92,246,.12); }
+.t-learning   { --tc:#60A5FA; --tb:rgba(59,130,246,.12); }
+.t-reflection { --tc:#F472B6; --tb:rgba(236,72,153,.12); }
+.t-read       { --tc:#4ADE80; --tb:rgba(34,197,94,.12);  }
+[data-theme="light"] .t-idea       { --tc:#D97706; }
+[data-theme="light"] .t-task       { --tc:#7C3AED; }
+[data-theme="light"] .t-learning   { --tc:#2563EB; }
+[data-theme="light"] .t-reflection { --tc:#DB2777; }
+[data-theme="light"] .t-read       { --tc:#16A34A; }
+
+/* -- Page -- */
+.kb-page { min-height:100vh; background:var(--kb-bg); padding-bottom:110px; }
+
+/* -- Sticky header -- */
+.kb-hdr {
+  position:sticky; top:0; z-index:50;
+  background:var(--kb-hdr-bg);
+  backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--kb-border);
+  padding:14px 18px 0;
+}
+.kb-hdr-top { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+.kb-logo { font-size:20px; font-weight:700; color:var(--kb-title); letter-spacing:-.3px; flex-shrink:0; }
+
+/* -- Search -- */
+.kb-srch-wrap { position:relative; flex:1; max-width:340px; margin-left:auto; }
+.kb-srch {
+  width:100%; padding:8px 14px 8px 36px;
+  background:var(--kb-srch-bg); border:1px solid var(--kb-srch-brd);
+  border-radius:20px; color:var(--kb-title); font-size:14px;
+  outline:none; transition:border-color .2s; font-family:inherit;
+}
+.kb-srch:focus { border-color:var(--kb-accent); }
+.kb-srch::placeholder { color:var(--kb-muted); }
+.kb-srch-ic {
+  position:absolute; left:11px; top:50%; transform:translateY(-50%);
+  color:var(--kb-muted); pointer-events:none;
+}
+
+/* -- Tabs -- */
+.kb-tabs {
+  display:flex; gap:6px; overflow-x:auto; padding-bottom:12px;
+  scrollbar-width:none; -ms-overflow-style:none;
+}
+.kb-tabs::-webkit-scrollbar { display:none; }
+.kb-tab {
+  flex-shrink:0; padding:5px 14px; border-radius:20px;
+  font-size:13px; font-weight:500; cursor:pointer; border:none;
+  background:var(--kb-tab-idle); color:var(--kb-tab-idle-t);
+  transition:all .2s; white-space:nowrap; font-family:inherit;
+}
+.kb-tab.active {
+  background:var(--kb-tab-act); color:var(--kb-tab-act-t);
+  box-shadow:0 2px 12px var(--kb-glow);
+}
+
+/* -- Body -- */
+.kb-body { padding:18px; max-width:1100px; margin:0 auto; }
+
+/* -- AI Banner -- */
+.ai-banner {
+  display:none; align-items:center; gap:12px;
+  background:linear-gradient(135deg,rgba(139,92,246,.14),rgba(109,40,217,.07));
+  border:1px solid rgba(139,92,246,.22); border-radius:14px;
+  padding:12px 16px; margin-bottom:16px; cursor:pointer; transition:all .2s;
+}
+.ai-banner:hover { border-color:rgba(139,92,246,.4); }
+.ai-banner-text { flex:1; font-size:13px; color:var(--kb-sec); line-height:1.45; }
+.ai-banner-text strong { color:var(--kb-accent); font-weight:600; }
+
+/* -- Stats row -- */
+.kb-stats { display:flex; gap:10px; margin-bottom:18px; overflow-x:auto; padding-bottom:2px; }
+.kb-stat {
+  flex-shrink:0; min-width:76px;
+  background:var(--kb-card); border:1px solid var(--kb-border);
+  border-radius:12px; padding:10px 14px; text-align:center;
+}
+.kb-stat-v { font-size:20px; font-weight:700; color:var(--kb-title); line-height:1; margin-bottom:3px; }
+.kb-stat-l { font-size:10px; font-weight:600; color:var(--kb-muted); text-transform:uppercase; letter-spacing:.5px; }
+
+/* -- Grid -- */
+.kb-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:12px; }
+
+/* -- Card -- */
+.kb-card {
+  background:var(--kb-card); border:1px solid var(--kb-border);
+  border-radius:16px; padding:16px; cursor:pointer;
+  transition:all .22s cubic-bezier(.4,0,.2,1);
+  position:relative; overflow:hidden;
+}
+.kb-card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  background:linear-gradient(90deg,var(--tc,#8B5CF6),transparent);
+  opacity:0; transition:opacity .22s;
+}
+.kb-card:hover {
+  transform:translateY(-2px);
+  border-color:var(--kb-border-hov);
+  box-shadow:0 8px 28px var(--kb-glow);
+}
+.kb-card:hover::before { opacity:1; }
+.kb-card:active { transform:translateY(0); }
+
+.card-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.card-icon {
+  width:34px; height:34px; border-radius:9px;
+  background:var(--tb,rgba(139,92,246,.12));
+  display:flex; align-items:center; justify-content:center; font-size:17px; flex-shrink:0;
+}
+.card-badge {
+  font-size:10px; font-weight:700; color:var(--tc,var(--kb-accent));
+  background:var(--tb,rgba(139,92,246,.1));
+  padding:3px 8px; border-radius:8px; text-transform:capitalize;
+}
+.card-title {
+  font-size:14px; font-weight:600; color:var(--kb-title); margin:0 0 5px; line-height:1.35;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+}
+.card-preview {
+  font-size:12px; color:var(--kb-sec); line-height:1.5;
+  display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
+  margin-bottom:12px;
+}
+.card-foot { display:flex; align-items:center; justify-content:space-between; }
+.card-date { font-size:11px; color:var(--kb-muted); }
+.card-acts { display:flex; gap:4px; opacity:0; transition:opacity .15s; }
+.kb-card:hover .card-acts { opacity:1; }
+.card-btn {
+  width:26px; height:26px; border-radius:7px;
+  border:1px solid var(--kb-border); background:transparent;
+  color:var(--kb-sec); display:flex; align-items:center; justify-content:center;
+  cursor:pointer; font-size:12px; transition:all .15s;
+}
+.card-btn:hover { background:var(--kb-glow); border-color:var(--kb-accent); color:var(--kb-accent); }
+
+/* -- Empty state -- */
+.kb-empty { display:none; text-align:center; padding:64px 24px; }
+.kb-empty-ic { font-size:52px; opacity:.45; margin-bottom:14px; }
+.kb-empty-ttl { font-size:18px; font-weight:600; color:var(--kb-title); margin-bottom:8px; }
+.kb-empty-sub { font-size:13px; color:var(--kb-sec); line-height:1.55; max-width:260px; margin:0 auto 22px; }
+.kb-empty-btn {
+  background:var(--kb-fab); color:#fff; border:none;
+  padding:12px 24px; border-radius:14px; font-size:14px; font-weight:600;
+  cursor:pointer; transition:opacity .15s; font-family:inherit;
+}
+.kb-empty-btn:hover { opacity:.88; }
+
+/* -- FAB -- */
+.kb-fab {
+  position:fixed;
+  bottom:calc(90px + env(safe-area-inset-bottom,0px));
+  right:20px; width:54px; height:54px;
+  background:var(--kb-fab); border-radius:16px; border:none;
+  color:#fff; font-size:26px; display:flex; align-items:center; justify-content:center;
+  cursor:pointer; box-shadow:0 8px 24px rgba(109,40,217,.4);
+  transition:all .22s; z-index:200; text-decoration:none;
+  line-height:1;
+}
+.kb-fab:hover { transform:scale(1.08) rotate(8deg); box-shadow:0 14px 32px rgba(109,40,217,.5); }
+.kb-fab:active { transform:scale(.96); }
+
+/* -- Skeleton -- */
+.kb-skel-card { background:var(--kb-card); border:1px solid var(--kb-border); border-radius:16px; padding:16px; }
+.sk {
+  height:11px; border-radius:6px; margin-bottom:8px;
+  background:linear-gradient(90deg,var(--kb-skel) 0%,var(--kb-skel2) 50%,var(--kb-skel) 100%);
+  background-size:200% 100%; animation:shimmer 1.6s infinite;
+}
+.sk.w6 { width:60%; } .sk.w8 { width:80%; } .sk.w4 { width:40%; }
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+/* -- Responsive: Tablet -- */
+@media (min-width:769px) and (max-width:1024px) {
+  .kb-grid { grid-template-columns:repeat(2,1fr); }
+}
+
+/* =========================================================
+   MOBILE VIEW  (≤768px — matches base.html breakpoint)
+   ========================================================= */
+@media (max-width:768px) {
+  /* Page */
+  .kb-page {
+    padding-bottom:120px;
+    background:var(--kb-bg);
+  }
+
+  /* ── Header ── */
+  .kb-hdr {
+    padding:12px 16px 0;
+    position:sticky; top:0;
+  }
+  .kb-hdr-top {
+    display:flex; align-items:center; gap:10px;
+    margin-bottom:10px;
+    flex-wrap:nowrap;
+  }
+  .kb-logo { font-size:18px; flex-shrink:0; }
+
+  /* Search: inline, no wrap */
+  .kb-srch-wrap {
+    flex:1; max-width:none; margin-left:0;
+  }
+  .kb-srch {
+    padding:9px 12px 9px 34px;
+    font-size:14px; border-radius:12px;
+    height:38px;
+  }
+  .kb-srch-ic { left:10px; }
+
+  /* ── Tabs: compact horizontal scroll, NEVER wrap ── */
+  .kb-tabs {
+    display:flex !important;
+    flex-direction:row !important;
+    flex-wrap:nowrap !important;
+    overflow-x:auto;
+    gap:6px;
+    padding:6px 0 10px;
+    -webkit-overflow-scrolling:touch;
+  }
+  .kb-tab {
+    flex-shrink:0;
+    padding:7px 14px;
+    font-size:12px;
+    border-radius:20px;
+    min-height:32px;
+    white-space:nowrap;
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  /* ── Stats: compact horizontal row, NO wrap ── */
+  .kb-stats {
+    display:flex !important;
+    flex-direction:row !important;
+    flex-wrap:nowrap !important;
+    overflow-x:auto;
+    gap:8px;
+    margin-bottom:14px;
+    padding-bottom:4px;
+    -webkit-overflow-scrolling:touch;
+  }
+  .kb-stat {
+    flex:1; flex-shrink:0;
+    min-width:60px; max-width:80px;
+    padding:8px 6px;
+    border-radius:10px;
+    text-align:center;
+  }
+  .kb-stat-v { font-size:16px; margin-bottom:2px; }
+  .kb-stat-l { font-size:9px; letter-spacing:.3px; }
+
+  /* ── Body ── */
+  .kb-body { padding:10px 16px; }
+
+  /* ── Grid: single column ── */
+  .kb-grid {
+    grid-template-columns:1fr !important;
+    gap:10px;
+  }
+
+  /* ── Card: compact mobile list-style ── */
+  .kb-card {
+    padding:12px 14px;
+    border-radius:14px;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .kb-card:hover {
+    transform:none; box-shadow:none;
+  }
+  .kb-card:active { transform:scale(.98); }
+  .kb-card::before { display:none; }
+
+  .card-top { margin-bottom:6px; }
+  .card-icon {
+    width:30px; height:30px;
+    border-radius:8px; font-size:14px;
+  }
+  .card-badge {
+    font-size:9px; padding:2px 7px;
+    border-radius:6px;
+  }
+  .card-title {
+    font-size:14px; margin-bottom:4px;
+    -webkit-line-clamp:1;
+  }
+  .card-preview {
+    font-size:12px; margin-bottom:8px;
+    -webkit-line-clamp:2;
+    line-height:1.4;
+  }
+  .card-foot { gap:6px; }
+  .card-date { font-size:10px; }
+
+  /* Always show action buttons (no hover on touch) */
+  .card-acts { opacity:1; }
+  .card-btn {
+    width:30px; height:30px;
+    border-radius:8px;
+    min-width:30px; min-height:30px;
+  }
+
+  /* ── Empty state ── */
+  .kb-empty { padding:40px 20px; }
+  .kb-empty-ic { font-size:40px; }
+  .kb-empty-ttl { font-size:16px; }
+  .kb-empty-sub { font-size:12px; max-width:240px; }
+  .kb-empty-btn {
+    padding:12px 24px; border-radius:14px;
+    font-size:14px; width:100%; max-width:240px;
+  }
+
+  /* ── FAB ── */
+  .kb-fab {
+    width:52px; height:52px;
+    border-radius:16px; font-size:26px;
+    bottom:calc(96px + env(safe-area-inset-bottom,0px));
+    right:16px;
+    box-shadow:0 6px 20px rgba(109,40,217,.45);
+  }
+  .kb-fab:hover { transform:none; }
+  .kb-fab:active { transform:scale(.92); }
+
+  /* AI banner */
+  .ai-banner { padding:10px 12px; border-radius:12px; gap:8px; }
+  .ai-banner-text { font-size:12px; }
+
+  /* Skeleton */
+  .kb-skel-card { padding:12px; border-radius:14px; }
+}
+
+/* ── Extra small (iPhone SE / 375px) ── */
+@media (max-width:375px) {
+  .kb-hdr { padding:10px 12px 0; }
+  .kb-body { padding:8px 12px; }
+  .kb-hdr-top { gap:8px; }
+  .kb-logo { font-size:16px; }
+  .kb-srch { height:34px; font-size:13px; padding:7px 10px 7px 30px; }
+  .kb-tab { padding:6px 10px; font-size:11px; min-height:28px; }
+  .kb-stat { min-width:52px; padding:6px 4px; }
+  .kb-stat-v { font-size:14px; }
+  .kb-stat-l { font-size:8px; }
+  .kb-card { padding:10px 12px; }
+  .card-title { font-size:13px; }
+  .card-preview { font-size:11px; }
+}
+</style>
+
+<div class="kb-page">
+
+  <!-- Sticky Header -->
+  <header class="kb-hdr">
+    <div class="kb-hdr-top">
+      <div class="kb-logo">&#x1F9E0; Knowledge</div>
+      <div class="kb-srch-wrap">
+        <svg class="kb-srch-ic" width="14" height="14" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2.5">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input class="kb-srch" id="searchInput" type="search"
+               placeholder="Search blocks..." oninput="onSearch()" />
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="kb-tabs" id="tabsRow">
+      <button class="kb-tab active" onclick="setTab(this,'all')">All</button>
+      <button class="kb-tab" onclick="setTab(this,'idea')">&#x1F4A1; Ideas</button>
+      <button class="kb-tab" onclick="setTab(this,'task')">&#x2705; Tasks</button>
+      <button class="kb-tab" onclick="setTab(this,'learning')">&#x1F9E0; Learnings</button>
+      <button class="kb-tab" onclick="setTab(this,'reflection')">&#x1FA9E; Reflections</button>
+      <button class="kb-tab" onclick="setTab(this,'read')">&#x1F4D6; Reads</button>
+    </div>
+  </header>
+
+  <div class="kb-body">
+
+    <!-- AI Banner -->
+    <div class="ai-banner" id="aiBanner" onclick="openAIBanner()">
+      <span style="font-size:20px;">&#x2728;</span>
+      <div class="ai-banner-text">
+        <strong id="aiBannerMsg">AI spotted a connection</strong><br>
+        <span id="aiBannerSub">Click to explore how your blocks relate.</span>
+      </div>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2.5" style="color:var(--kb-accent);flex-shrink:0">
+        <path d="M5 12h14M12 5l7 7-7 7"/>
+      </svg>
+    </div>
+
+    <!-- Stats -->
+    <div class="kb-stats" id="statsRow" style="display:none">
+      <div class="kb-stat">
+        <div class="kb-stat-v" id="sTotal">0</div>
+        <div class="kb-stat-l">Total</div>
+      </div>
+      <div class="kb-stat t-idea">
+        <div class="kb-stat-v" id="sIdeas">0</div>
+        <div class="kb-stat-l">Ideas</div>
+      </div>
+      <div class="kb-stat t-task">
+        <div class="kb-stat-v" id="sTasks">0</div>
+        <div class="kb-stat-l">Tasks</div>
+      </div>
+      <div class="kb-stat t-learning">
+        <div class="kb-stat-v" id="sLearn">0</div>
+        <div class="kb-stat-l">Learning</div>
+      </div>
+      <div class="kb-stat t-reflection">
+        <div class="kb-stat-v" id="sReflect">0</div>
+        <div class="kb-stat-l">Reflect</div>
+      </div>
+    </div>
+
+    <!-- Grid -->
+    <div class="kb-grid" id="blocksGrid">
+      <div class="kb-skel-card"><div class="sk w6"></div><div class="sk w8"></div><div class="sk w4"></div></div>
+      <div class="kb-skel-card"><div class="sk w8"></div><div class="sk w6"></div><div class="sk w4"></div></div>
+      <div class="kb-skel-card"><div class="sk w4"></div><div class="sk w8"></div><div class="sk w6"></div></div>
+    </div>
+
+    <!-- Empty State -->
+    <div class="kb-empty" id="emptyState">
+      <div class="kb-empty-ic">&#x1F4D3;</div>
+      <div class="kb-empty-ttl">Your knowledge space is empty</div>
+      <div class="kb-empty-sub">
+        Capture ideas, tasks, learnings and reflections &mdash; your AI-powered second brain.
+      </div>
+      <button class="kb-empty-btn" onclick="location.href='/workspace/new'">
+        + Create your first block
+      </button>
+    </div>
+
+  </div><!-- /kb-body -->
+</div><!-- /kb-page -->
+
+<!-- FAB -->
+<a href="/workspace/new" class="kb-fab" title="New block">+</a>
+
+<script>
+/* === WORKSPACE JS === */
+let allBlocks   = [];
+let activeTab   = 'all';
+let aiConn      = null;
+let searchTimer = null;
+
+const typeIcons = {
+  idea:       '\u{1F4A1}',
+  task:       '\u2705',
+  learning:   '\u{1F9E0}',
+  reflection: '\u{1FA9E}',
+  read:       '\u{1F4D6}'
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadBlocks();
+  setTimeout(checkAIInsights, 4000);
+});
+
+/* -- Fetch -- */
+async function loadBlocks() {
+  try {
+    const res = await fetch('/api/knowledge');
+    allBlocks = await res.json();
+    renderView();
+    if (allBlocks.length) document.getElementById('statsRow').style.display = 'flex';
+    updateStats();
+  } catch (e) {
+    console.error('loadBlocks:', e);
+    document.getElementById('blocksGrid').innerHTML = '';
+    showEmpty();
+  }
+}
+
+/* -- Render -- */
+function renderView() {
+  const q  = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+  let list = allBlocks;
+  if (activeTab !== 'all') list = list.filter(b => b.type === activeTab);
+  if (q) list = list.filter(b =>
+    (b.title   || '').toLowerCase().includes(q) ||
+    (b.content || '').toLowerCase().includes(q));
+  renderCards(list);
+}
+
+function renderCards(blocks) {
+  const grid = document.getElementById('blocksGrid');
+  if (!blocks.length) { grid.innerHTML = ''; showEmpty(); return; }
+  hideEmpty();
+  grid.innerHTML = blocks.map(cardHTML).join('');
+}
+
+function cardHTML(b) {
+  const ic   = typeIcons[b.type] || '\u{1F4DD}';
+  const date = b.created_at
+    ? new Date(b.created_at).toLocaleDateString('en-US', {month:'short', day:'numeric'})
+    : '';
+  const prev = esc((b.content || '').slice(0, 130));
+  return `
+    <div class="kb-card t-${b.type}" onclick="openBlock(${b.id})">
+      <div class="card-top">
+        <div class="card-icon">${ic}</div>
+        <span class="card-badge">${b.type}</span>
+      </div>
+      <div class="card-title">${esc(b.title || 'Untitled')}</div>
+      ${prev ? `<div class="card-preview">${prev}</div>` : ''}
+      <div class="card-foot">
+        <span class="card-date">${date}</span>
+        <div class="card-acts" onclick="event.stopPropagation()">
+          <button class="card-btn" title="Edit" onclick="editBlock(${b.id})">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </button>
+          <button class="card-btn" title="Delete" onclick="delBlock(${b.id})">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
+              <path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+/* -- Tabs / Search -- */
+function setTab(el, type) {
+  document.querySelectorAll('.kb-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  activeTab = type;
+  renderView();
+}
+
+function onSearch() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(renderView, 180);
+}
+
+/* -- Navigation -- */
+function openBlock(id)  { location.href = `/workspace/${id}/edit`; }
+function editBlock(id)  { location.href = `/workspace/${id}/edit`; }
+
+async function delBlock(id) {
+  if (!confirm('Delete this block?')) return;
+  await fetch('/api/knowledge/' + id, { method: 'DELETE' });
+  allBlocks = allBlocks.filter(b => b.id !== id);
+  renderView();
+  updateStats();
+}
+
+/* -- Stats -- */
+function updateStats() {
+  document.getElementById('sTotal').textContent   = allBlocks.length;
+  document.getElementById('sIdeas').textContent   = allBlocks.filter(b => b.type === 'idea').length;
+  document.getElementById('sTasks').textContent   = allBlocks.filter(b => b.type === 'task').length;
+  document.getElementById('sLearn').textContent   = allBlocks.filter(b => b.type === 'learning').length;
+  document.getElementById('sReflect').textContent = allBlocks.filter(b => b.type === 'reflection').length;
+}
+
+/* -- Empty state -- */
+function showEmpty() { document.getElementById('emptyState').style.display = 'block'; }
+function hideEmpty() { document.getElementById('emptyState').style.display = 'none'; }
+
+/* -- AI Insight Banner -- */
+async function checkAIInsights() {
+  if (allBlocks.length < 2) return;
+  try {
+    const res  = await fetch('/api/knowledge/insight', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: '{}'
+    });
+    const data = await res.json();
+    if (data && data.reason) {
+      aiConn = data;
+      document.getElementById('aiBannerMsg').textContent = 'AI found a connection';
+      document.getElementById('aiBannerSub').textContent = data.reason;
+      document.getElementById('aiBanner').style.display  = 'flex';
+    }
+  } catch (_) {}
+}
+
+function openAIBanner() {
+  if (aiConn && aiConn.source_id) location.href = `/workspace/${aiConn.source_id}/edit`;
+}
+</script>
+{% endblock %}

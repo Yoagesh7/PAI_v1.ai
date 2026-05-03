@@ -1,0 +1,1237 @@
+{% extends "base.html" %}
+
+{% block head %}
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.1/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<!-- IMPROVED AI CHAT v2 with HITL -->
+<style>
+    /* ── Reset & Base ── */
+    .app-container  { min-height: auto !important; height: 100% !important; overflow: hidden !important; }
+    .left-sidebar, .mobile-bottom-nav { display: none !important; }
+    .main-content   { margin-left: 0 !important; min-height: auto !important; height: 100% !important; padding: 0 !important; overflow: hidden !important; }
+    html            { height: 100%; height: -webkit-fill-available; }
+    body            { height: 100%; height: -webkit-fill-available; overflow: hidden; margin: 0; padding: 0; background: #121212; overscroll-behavior: none; }
+    *, *::before, *::after { box-sizing: border-box; }
+    #morePopup, #drawerOverlay { display: none !important; }
+
+    .chat-wrap {
+        display: flex; flex-direction: column;
+        height: 100vh; height: 100dvh;
+        width: 100%; background: #121212; overflow: hidden;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        /* iOS keyboard-aware height */
+        height: -webkit-fill-available;
+    }
+
+    /* Header */
+    .chat-header {
+        flex-shrink: 0; display: flex; align-items: center;
+        justify-content: space-between;
+        padding: 12px 18px;
+        padding-top: max(12px, env(safe-area-inset-top));
+        background: #1E1E24; border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .h-left { display: flex; align-items: center; gap: 10px; }
+    .back-btn {
+        width: 40px; height: 40px; border-radius: 12px;
+        background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.07);
+        color: #888; cursor: pointer; display: flex; align-items: center;
+        justify-content: center; transition: all 0.18s; flex-shrink: 0;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .back-btn:hover, .back-btn:active { background: rgba(255,255,255,0.1); color: #ccc; }
+    .ai-avatar {
+        width: 36px; height: 36px; border-radius: 12px;
+        background: linear-gradient(135deg, #8B78CC, #7A66C2);
+        display: flex; align-items: center; justify-content: center;
+        color: white; font-weight: 700; font-size: 12px;
+        position: relative; flex-shrink: 0;
+    }
+    .ai-avatar .dot {
+        position: absolute; bottom: -2px; right: -2px;
+        width: 10px; height: 10px; background: #22c55e;
+        border: 2px solid #1E1E24; border-radius: 50%;
+    }
+    .ai-info h3 { margin: 0; font-size: 14px; font-weight: 600; color: #efefef; }
+    .ai-info p  { margin: 2px 0 0; font-size: 11px; color: #555; }
+    .h-right { display: flex; gap: 8px; }
+    .icon-btn {
+        width: 40px; height: 40px; border-radius: 12px;
+        background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
+        color: #666; cursor: pointer; display: flex; align-items: center;
+        justify-content: center; transition: all 0.18s;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .icon-btn:hover, .icon-btn:active { background: rgba(255,255,255,0.09); color: #ccc; }
+
+    /* Speed-dial menu */
+    .menu-wrap { position: relative; }
+    .menu-items {
+        position: absolute; right: 0; bottom: calc(100% + 10px);
+        display: flex; flex-direction: column; align-items: flex-end;
+        gap: 8px; pointer-events: none;
+        background: none; border: none; box-shadow: none;
+    }
+    .menu-items.open { pointer-events: all; }
+    .menu-item {
+        display: flex; align-items: center; gap: 8px;
+        background: #2C2C35; border: 1px solid rgba(255,255,255,0.09);
+        border-radius: 22px; padding: 9px 14px 9px 12px;
+        color: #ccc; font-size: 13px; font-weight: 500;
+        cursor: pointer; white-space: nowrap;
+        -webkit-tap-highlight-color: transparent;
+        transition: background 0.15s, color 0.15s;
+        opacity: 0; transform: translateY(12px) scale(0.92);
+        transition: opacity 0.22s ease, transform 0.22s ease, background 0.15s;
+    }
+    .menu-items.open .menu-item {
+        opacity: 1; transform: translateY(0) scale(1);
+    }
+    .menu-items.open .menu-item:nth-child(1) { transition-delay: 0s; }
+    .menu-items.open .menu-item:nth-child(2) { transition-delay: 0.07s; }
+    .menu-items.open .menu-item:nth-child(3) { transition-delay: 0.14s; }
+    .menu-item:hover, .menu-item:active { background: rgba(139,120,204,0.15); color: white; }
+    .menu-item svg { flex-shrink: 0; opacity: 0.75; }
+    .dot-btn.active { background: rgba(139,120,204,0.15); color: #B8AEDE; }
+
+    /* Messages */
+    .messages-area {
+        flex: 1 1 auto; overflow-y: auto; overflow-x: hidden;
+        padding: 16px 16px 8px; background: #121212; min-height: 0;
+        scroll-behavior: smooth; -webkit-overflow-scrolling: touch;
+        overscroll-behavior-y: contain;
+    }
+    .messages-area::-webkit-scrollbar { width: 3px; }
+    .messages-area::-webkit-scrollbar-track { background: transparent; }
+    .messages-area::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+    .msg-row { display: flex; margin-bottom: 12px; animation: msgFade 0.22s ease; }
+    .msg-row.user { justify-content: flex-end; }
+    @keyframes msgFade {
+        from { opacity: 0; transform: translateY(6px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    .ai-bubble {
+        background: #1E1E24; border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 4px 18px 18px 18px;
+        padding: 12px 15px; max-width: 82%;
+        color: #d8d8e8; font-size: 14.5px; line-height: 1.68;
+        word-break: break-word;
+    }
+    .user-bubble {
+        background: linear-gradient(135deg, #8B78CC, #7A66C2);
+        border-radius: 18px 4px 18px 18px;
+        padding: 11px 15px; max-width: 78%;
+        color: white; font-size: 14.5px; line-height: 1.65;
+        word-break: break-word;
+    }
+    .msg-time { display: block; font-size: 10px; color: rgba(255,255,255,0.2); margin-top: 6px; }
+    .user-bubble .msg-time { text-align: right; }
+
+    /* Markdown */
+    .ai-bubble p            { margin: 0 0 7px; }
+    .ai-bubble p:last-child { margin-bottom: 0; }
+    .ai-bubble strong       { color: #B8AEDE; font-weight: 600; }
+    .ai-bubble em           { color: #94a3b8; }
+    .ai-bubble a            { color: #A89BD4; }
+    .ai-bubble code {
+        background: rgba(255,255,255,0.07); border-radius: 5px;
+        padding: 2px 6px; font-size: 12.5px; color: #c9d1d9;
+    }
+    .ai-bubble pre {
+        background: #121212; border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 10px; padding: 12px; overflow-x: auto; margin: 8px 0;
+    }
+    .ai-bubble pre code { background: transparent; padding: 0; }
+    .ai-bubble ul, .ai-bubble ol { padding-left: 18px; margin: 5px 0; }
+    .ai-bubble li { margin-bottom: 3px; }
+
+    /* Poll */
+    .poll-wrap { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; }
+    .poll-opt {
+        background: rgba(139,120,204,0.1); border: 1px solid rgba(139,120,204,0.3);
+        color: #B8AEDE; padding: 8px 16px; border-radius: 20px; font-size: 13.5px;
+        cursor: pointer; transition: all 0.16s; white-space: nowrap;
+        -webkit-tap-highlight-color: transparent; min-height: 36px;
+    }
+    .poll-opt:hover, .poll-opt:active  { background: rgba(139,120,204,0.22); color: white; }
+    .poll-opt.picked { background: #8B78CC; border-color: #8B78CC; color: white; }
+
+    /* Typing */
+    .typing-row { display: flex; margin-bottom: 14px; }
+    .typing-bubble {
+        background: #1E1E24; border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 4px 20px 20px 20px;
+        padding: 14px 18px; display: inline-flex; gap: 5px; align-items: center;
+    }
+    .t-dot {
+        width: 6px; height: 6px; border-radius: 50%; background: #8B78CC;
+        animation: tPulse 1.3s infinite ease-in-out;
+    }
+    .t-dot:nth-child(2) { animation-delay: 0.17s; }
+    .t-dot:nth-child(3) { animation-delay: 0.34s; }
+    @keyframes tPulse {
+        0%,60%,100% { transform: translateY(0); opacity: 0.35; }
+        30%          { transform: translateY(-6px); opacity: 1; }
+    }
+
+    /* Input */
+    .input-section {
+        flex-shrink: 0;
+        padding: 8px 14px 14px;
+        padding-bottom: max(14px, env(safe-area-inset-bottom));
+        background: #121212; border-top: 1px solid rgba(255,255,255,0.04);
+    }
+    /* Chips row — no overflow clip so nothing is hidden */
+    .cmd-chips {
+        display: flex; gap: 6px;
+        overflow-x: auto; overflow-y: visible;
+        padding: 2px 0 10px; margin: 0 -2px;
+        scrollbar-width: none;
+    }
+    .cmd-chips::-webkit-scrollbar { display: none; }
+    .chip {
+        flex-shrink: 0; background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.07); border-radius: 20px;
+        padding: 6px 13px; font-size: 12px; color: #8B78CC;
+        cursor: pointer; transition: all 0.16s; white-space: nowrap;
+        min-height: 32px; display: inline-flex; align-items: center;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .chip:hover, .chip:active { background: rgba(139,120,204,0.12); border-color: rgba(139,120,204,0.4); color: #B8AEDE; }
+    .input-box {
+        display: flex; align-items: flex-end; gap: 10px;
+        background: #1E1E24; border: 1px solid rgba(255,255,255,0.07);
+        border-radius: 22px; padding: 10px 10px 10px 16px;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .input-box:focus-within {
+        border-color: rgba(139,120,204,0.5);
+        box-shadow: 0 0 0 3px rgba(139,120,204,0.08);
+    }
+    .msg-textarea {
+        flex: 1; background: transparent; border: none;
+        color: #e2e2ec; font-size: 15px; outline: none;
+        resize: none; line-height: 1.5; max-height: 110px; min-height: 22px;
+        overflow-y: auto; padding: 0; font-family: inherit; scrollbar-width: none;
+        -webkit-appearance: none;
+    }
+    .msg-textarea::-webkit-scrollbar { display: none; }
+    .msg-textarea::placeholder { color: #404040; }
+    .send-btn {
+        flex-shrink: 0; width: 38px; height: 38px; border-radius: 13px;
+        background: linear-gradient(135deg, #8B78CC, #7A66C2);
+        border: none; color: white; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        transition: all 0.18s; -webkit-tap-highlight-color: transparent;
+    }
+    .send-btn:hover, .send-btn:active { opacity: 0.85; transform: scale(1.05); }
+    .send-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+
+    /* Mobile */
+    #morePopup, #drawerOverlay { display: none !important; }
+
+    /* ── Layout ── */
+    .chat-wrap {
+        display: flex; flex-direction: column;
+        height: 100vh; height: 100dvh;
+        width: 100%; background: #121212; overflow: hidden;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    /* ── Header ── */
+    .chat-header {
+        flex-shrink: 0; display: flex; align-items: center;
+        justify-content: space-between;
+        padding: 10px 16px;
+        padding-top: max(10px, env(safe-area-inset-top));
+        background: rgba(30,30,36,0.96);
+        backdrop-filter: blur(16px);
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        z-index: 10;
+    }
+    .h-left { display: flex; align-items: center; gap: 10px; }
+    .back-btn {
+        width: 38px; height: 38px; border-radius: 11px;
+        background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.07);
+        color: #777; cursor: pointer; display: flex; align-items: center;
+        justify-content: center; transition: all 0.18s; flex-shrink: 0;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .back-btn:hover { background: rgba(255,255,255,0.1); color: #bbb; }
+
+    .ai-avatar {
+        width: 38px; height: 38px; border-radius: 12px;
+        background: linear-gradient(135deg, #8B78CC, #7A66C2);
+        display: flex; align-items: center; justify-content: center;
+        color: white; font-weight: 700; font-size: 12px;
+        position: relative; flex-shrink: 0;
+        box-shadow: 0 0 0 2px rgba(139,120,204,0.25);
+    }
+    .ai-avatar .dot {
+        position: absolute; bottom: -2px; right: -2px;
+        width: 10px; height: 10px; background: #22c55e;
+        border: 2px solid #1E1E24; border-radius: 50%;
+        animation: pulse-dot 2.5s infinite;
+    }
+    @keyframes pulse-dot {
+        0%,100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.5); }
+        50%      { box-shadow: 0 0 0 4px rgba(34,197,94,0); }
+    }
+    .ai-info h3 { margin: 0; font-size: 14px; font-weight: 600; color: #eaeaf0; line-height: 1.2; }
+    .ai-info p  { margin: 1px 0 0; font-size: 11px; color: #555555; }
+
+    /* strategy badge */
+    .strategy-badge {
+        display: inline-flex; align-items: center; gap: 4px;
+        background: rgba(139,120,204,0.12); border: 1px solid rgba(139,120,204,0.25);
+        color: #A89BD4; border-radius: 8px; padding: 2px 7px;
+        font-size: 10px; font-weight: 500; margin-top: 2px;
+    }
+
+    .h-right { display: flex; gap: 6px; align-items: center; }
+    .icon-btn {
+        width: 38px; height: 38px; border-radius: 11px;
+        background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
+        color: #555; cursor: pointer; display: flex; align-items: center;
+        justify-content: center; transition: all 0.18s;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .icon-btn:hover { background: rgba(255,255,255,0.09); color: #bbb; }
+    .icon-btn.active { background: rgba(139,120,204,0.15); color: #B8AEDE; border-color: rgba(139,120,204,0.3); }
+
+    /* Speed-dial menu */
+    .menu-wrap { position: relative; }
+    .menu-items {
+        position: absolute; right: 0; bottom: calc(100% + 10px);
+        display: flex; flex-direction: column; align-items: flex-end;
+        gap: 7px; pointer-events: none;
+    }
+    .menu-items.open { pointer-events: all; }
+    .menu-item {
+        display: flex; align-items: center; gap: 8px;
+        background: #2C2C35; border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 22px; padding: 9px 14px 9px 11px;
+        color: #ccc; font-size: 13px; font-weight: 500;
+        cursor: pointer; white-space: nowrap;
+        opacity: 0; transform: translateY(10px) scale(0.93);
+        transition: opacity 0.2s ease, transform 0.2s ease, background 0.15s;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .menu-items.open .menu-item { opacity: 1; transform: translateY(0) scale(1); }
+    .menu-items.open .menu-item:nth-child(1) { transition-delay: 0s; }
+    .menu-items.open .menu-item:nth-child(2) { transition-delay: 0.07s; }
+    .menu-items.open .menu-item:nth-child(3) { transition-delay: 0.14s; }
+    .menu-item:hover { background: rgba(139,120,204,0.12); color: white; }
+    .menu-item svg { flex-shrink: 0; opacity: 0.7; }
+    .dot-btn.active { background: rgba(139,120,204,0.15); color: #B8AEDE; }
+
+    /* ── Messages ── */
+    .messages-area {
+        flex: 1 1 auto; overflow-y: auto; overflow-x: hidden;
+        padding: 20px 16px 12px; background: #121212; min-height: 0;
+        scroll-behavior: smooth; -webkit-overflow-scrolling: touch;
+        overscroll-behavior-y: contain;
+    }
+    .messages-area::-webkit-scrollbar { width: 3px; }
+    .messages-area::-webkit-scrollbar-track { background: transparent; }
+    .messages-area::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 3px; }
+
+    /* Date divider */
+    .date-divider {
+        display: flex; align-items: center; gap: 10px;
+        margin: 10px 0 20px; color: #333;
+        font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .date-divider::before, .date-divider::after {
+        content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.05);
+    }
+
+    /* Message rows */
+    .msg-row { display: flex; margin-bottom: 4px; gap: 8px; align-items: flex-end; animation: msgFade 0.25s ease; }
+    .msg-row.user { justify-content: flex-end; }
+    .msg-row + .msg-row.user,
+    .msg-row + .msg-row { margin-top: 6px; }
+    @keyframes msgFade {
+        from { opacity: 0; transform: translateY(8px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Bubble wrappers */
+    .bubble-col { display: flex; flex-direction: column; max-width: 88%; }
+    .msg-row.user .bubble-col { align-items: flex-end; }
+
+    .ai-bubble {
+        background: #1E1E2480; border: 1px solid rgba(255,255,255,0.07);
+        backdrop-filter: blur(8px);
+        border-radius: 18px 18px 18px 4px;
+        padding: 12px 15px; width: fit-content; max-width: 100%;
+        color: #d4d4e8; font-size: 14.5px; line-height: 1.7;
+        word-break: break-word; position: relative;
+    }
+    .user-bubble {
+        background: linear-gradient(135deg, #8B78CC, #6B5BA8);
+        border-radius: 18px 4px 18px 18px;
+        padding: 11px 15px; width: 100%;
+        color: white; font-size: 14.5px; line-height: 1.65;
+        word-break: break-word; position: relative;
+        box-shadow: 0 4px 14px rgba(139,120,204,0.25);
+    }
+    .msg-time { display: block; font-size: 10px; color: rgba(255,255,255,0.2); margin-top: 6px; }
+    .user-bubble .msg-time { text-align: right; }
+
+    /* ── HITL Action Bar ── */
+    .msg-actions {
+        display: flex; align-items: center; gap: 2px;
+        margin-top: 6px; opacity: 0;
+        transition: opacity 0.18s;
+        height: 0; overflow: hidden;
+    }
+    .msg-row:not(.user):hover .msg-actions,
+    .msg-row:not(.user):focus-within .msg-actions,
+    .msg-actions.visible {
+        opacity: 1; height: auto; overflow: visible;
+    }
+    .act-btn {
+        display: inline-flex; align-items: center; gap: 4px;
+        background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 8px; padding: 5px 9px;
+        color: #555; font-size: 11.5px; cursor: pointer;
+        transition: all 0.15s; -webkit-tap-highlight-color: transparent;
+        white-space: nowrap;
+    }
+    .act-btn:hover { background: rgba(255,255,255,0.09); color: #bbb; }
+    .act-btn.good  { color: #22c55e; border-color: rgba(34,197,94,0.3); background: rgba(34,197,94,0.07); }
+    .act-btn.bad   { color: #ef4444; border-color: rgba(239,68,68,0.3);  background: rgba(239,68,68,0.07); }
+    .act-btn.regen { color: #A89BD4; border-color: rgba(139,120,204,0.3); background: rgba(139,120,204,0.07); }
+    .act-btn svg   { flex-shrink: 0; }
+    .act-btn.locked { pointer-events: none; opacity: 0.5; }
+
+    /* Feedback inline correction */
+    .correction-box {
+        display: none; margin-top: 8px;
+        background: rgba(44,44,53,0.9); border: 1px solid rgba(139,120,204,0.3);
+        border-radius: 12px; padding: 10px 12px; gap: 8px;
+    }
+    .correction-box.open { display: flex; flex-direction: column; }
+    .correction-input {
+        background: transparent; border: none; outline: none;
+        color: #d4d4e8; font-size: 13px; line-height: 1.5;
+        resize: none; width: 100%; font-family: inherit;
+        min-height: 40px; max-height: 90px;
+    }
+    .correction-input::placeholder { color: #333; }
+    .correction-actions { display: flex; justify-content: flex-end; gap: 6px; }
+    .corr-btn {
+        padding: 5px 12px; border-radius: 8px; font-size: 12px;
+        cursor: pointer; border: none; transition: all 0.15s;
+    }
+    .corr-cancel { background: rgba(255,255,255,0.06); color: #777; }
+    .corr-submit { background: #8B78CC; color: white; font-weight: 500; }
+    .corr-submit:hover { background: #6B5BA8; }
+
+    /* Markdown */
+    .ai-bubble p            { margin: 0 0 7px; }
+    .ai-bubble p:last-child { margin-bottom: 0; }
+    .ai-bubble strong       { color: #B8AEDE; font-weight: 600; }
+    .ai-bubble em           { color: #94a3b8; }
+    .ai-bubble a            { color: #A89BD4; }
+    .ai-bubble code {
+        background: rgba(255,255,255,0.07); border-radius: 5px;
+        padding: 2px 6px; font-size: 12.5px; color: #c9d1d9;
+    }
+    .ai-bubble pre {
+        background: #121212; border: 1px solid rgba(255,255,255,0.07);
+        border-radius: 10px; padding: 12px; overflow-x: auto; margin: 8px 0;
+        position: relative;
+    }
+    .ai-bubble pre code { background: transparent; padding: 0; }
+    .ai-bubble ul, .ai-bubble ol { padding-left: 18px; margin: 5px 0; }
+    .ai-bubble li { margin-bottom: 3px; }
+    /* Copy code button */
+    .pre-copy {
+        position: absolute; top: 7px; right: 8px;
+        background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1);
+        color: #777; border-radius: 6px; padding: 3px 8px;
+        font-size: 10px; cursor: pointer; transition: all 0.15s;
+    }
+    .pre-copy:hover { background: rgba(255,255,255,0.13); color: #bbb; }
+    .pre-copy.copied { color: #22c55e; border-color: rgba(34,197,94,0.3); }
+
+    /* Quick-reply options */
+    .poll-wrap { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
+    .poll-opt {
+        background: rgba(139,120,204,0.1); border: 1px solid rgba(139,120,204,0.3);
+        color: #B8AEDE; padding: 8px 16px; border-radius: 20px; font-size: 13.5px;
+        cursor: pointer; transition: all 0.16s; white-space: nowrap;
+        -webkit-tap-highlight-color: transparent; min-height: 36px;
+    }
+    .poll-opt:hover { background: rgba(139,120,204,0.2); color: white; }
+    .poll-opt.picked { background: #8B78CC; border-color: #8B78CC; color: white; }
+
+    /* Typing indicator */
+    .typing-row { display: flex; margin-bottom: 14px; align-items: flex-end; }
+    .typing-bubble {
+        background: rgba(30,30,36,0.8); border: 1px solid rgba(255,255,255,0.07);
+        border-radius: 4px 18px 18px 18px;
+        padding: 14px 18px; display: inline-flex; gap: 5px; align-items: center;
+    }
+    .t-dot {
+        width: 6px; height: 6px; border-radius: 50%; background: #8B78CC;
+        animation: tPulse 1.3s infinite ease-in-out;
+    }
+    .t-dot:nth-child(2) { animation-delay: 0.18s; }
+    .t-dot:nth-child(3) { animation-delay: 0.36s; }
+    @keyframes tPulse {
+        0%,60%,100% { transform: translateY(0); opacity: 0.35; }
+        30%          { transform: translateY(-6px); opacity: 1; }
+    }
+
+    /* ── Input Section ── */
+    .input-section {
+        flex-shrink: 0;
+        padding: 6px 12px 12px;
+        padding-bottom: max(12px, env(safe-area-inset-bottom));
+        background: #121212; border-top: 1px solid rgba(255,255,255,0.04);
+    }
+    .cmd-chips {
+        display: flex; gap: 6px;
+        overflow-x: auto; overflow-y: visible;
+        padding: 2px 0 9px; margin: 0 -2px;
+        scrollbar-width: none;
+    }
+    .cmd-chips::-webkit-scrollbar { display: none; }
+    .chip {
+        flex-shrink: 0; background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.07); border-radius: 20px;
+        padding: 6px 13px; font-size: 12px; color: #8B78CC;
+        cursor: pointer; transition: all 0.16s; white-space: nowrap;
+        min-height: 32px; display: inline-flex; align-items: center;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .chip:hover { background: rgba(139,120,204,0.12); border-color: rgba(139,120,204,0.4); color: #B8AEDE; }
+
+    .input-row {
+        display: flex; align-items: flex-end; gap: 8px;
+    }
+    .input-box {
+        flex: 1; display: flex; align-items: flex-end; gap: 8px;
+        background: #1E1E2480; border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 22px; padding: 9px 10px 9px 15px;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        backdrop-filter: blur(8px);
+    }
+    .input-box:focus-within {
+        border-color: rgba(139,120,204,0.45);
+        box-shadow: 0 0 0 3px rgba(139,120,204,0.07);
+    }
+    .msg-textarea {
+        flex: 1; background: transparent; border: none;
+        color: #e2e2ec; font-size: 15px; outline: none;
+        resize: none; line-height: 1.5; max-height: 110px; min-height: 22px;
+        overflow-y: auto; padding: 0; font-family: inherit; scrollbar-width: none;
+        -webkit-appearance: none;
+    }
+    .msg-textarea::-webkit-scrollbar { display: none; }
+    .msg-textarea::placeholder { color: #404040; }
+
+    .send-btn {
+        flex-shrink: 0; width: 38px; height: 38px; border-radius: 13px;
+        background: linear-gradient(135deg, #8B78CC, #7A66C2);
+        border: none; color: white; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        transition: all 0.18s; -webkit-tap-highlight-color: transparent;
+        box-shadow: 0 4px 12px rgba(139,120,204,0.3);
+    }
+    .send-btn:hover { opacity: 0.87; transform: scale(1.06); }
+    .send-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    /* deep-think toggle */
+    .dt-btn {
+        flex-shrink: 0; width: 38px; height: 38px; border-radius: 13px;
+        background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+        color: #444; cursor: pointer; display: flex; align-items: center;
+        justify-content: center; transition: all 0.18s;
+        -webkit-tap-highlight-color: transparent;
+        position: relative;
+    }
+    .dt-btn:hover { background: rgba(139,120,204,0.1); color: #A89BD4; border-color: rgba(139,120,204,0.3); }
+    .dt-btn.on { background: rgba(139,120,204,0.15); color: #A89BD4; border-color: rgba(139,120,204,0.4); }
+    .dt-btn .dt-tip {
+        position: absolute; bottom: calc(100% + 8px); right: 0;
+        background: #2C2C35; border: 1px solid rgba(255,255,255,0.08);
+        color: #aaa; font-size: 11px; white-space: nowrap;
+        padding: 5px 10px; border-radius: 8px; pointer-events: none;
+        opacity: 0; transition: opacity 0.15s;
+    }
+    .dt-btn:hover .dt-tip { opacity: 1; }
+
+    /* ── Toast ── */
+    .toast {
+        position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(20px);
+        background: #2C2C35; border: 1px solid rgba(255,255,255,0.1);
+        color: #ccc; font-size: 13px; padding: 9px 18px;
+        border-radius: 22px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        opacity: 0; transition: all 0.25s; z-index: 999; white-space: nowrap;
+        pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── Reminder Notification Popup ── */
+    .reminder-popup {
+        position: fixed; top: 20px; right: 20px; z-index: 10000;
+        background: #1E1E24; border: 1px solid rgba(139,120,204,0.4);
+        border-radius: 14px; padding: 14px 18px;
+        display: flex; align-items: center; gap: 12px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(139,120,204,0.15);
+        max-width: 380px; min-width: 280px;
+        transform: translateX(120%); transition: transform 0.35s cubic-bezier(.4,0,.2,1), opacity 0.35s;
+        opacity: 0;
+    }
+    .reminder-popup.show { transform: translateX(0); opacity: 1; }
+    .reminder-icon { font-size: 28px; flex-shrink: 0; animation: bellShake 0.6s ease-in-out 0.4s; }
+    @keyframes bellShake {
+        0%,100% { transform: rotate(0); }
+        20% { transform: rotate(15deg); }
+        40% { transform: rotate(-10deg); }
+        60% { transform: rotate(8deg); }
+        80% { transform: rotate(-5deg); }
+    }
+    .reminder-body { flex: 1; }
+    .reminder-title { font-size: 13px; font-weight: 600; color: #8B78CC; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .reminder-text { font-size: 14px; color: #E0E0E0; line-height: 1.4; }
+    .reminder-dismiss {
+        background: none; border: none; color: #666; font-size: 18px;
+        cursor: pointer; padding: 4px 8px; border-radius: 6px;
+        transition: background 0.15s, color 0.15s; flex-shrink: 0;
+    }
+    .reminder-dismiss:hover { background: rgba(255,255,255,0.08); color: #ccc; }
+
+    /* ── Responsive ── */
+    @media (max-width: 480px) {
+        .ai-bubble { font-size: 15px; }
+        .user-bubble { font-size: 15px; }
+        .messages-area { padding: 14px 12px 6px; }
+        .input-section  { padding: 6px 10px 10px; padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+        .chat-header    { padding: 8px 12px; padding-top: max(8px, env(safe-area-inset-top)); }
+        .bubble-col     { max-width: 92%; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="chat-wrap">
+
+    <!-- ── Header ── -->
+    <div class="chat-header">
+        <div class="h-left">
+            <button class="back-btn" onclick="window.location.href='/'">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+            </button>
+            <div class="ai-avatar">AI<span class="dot"></span></div>
+            <div class="ai-info">
+                <h3>PartnerAI Mentor</h3>
+                <p id="statusLine">Online · Ready to help</p>
+            </div>
+        </div>
+        <div class="h-right">
+            <div class="menu-wrap">
+                <div class="menu-items" id="menuItems">
+                    <div class="menu-item" onclick="closeMenu(); if(confirm('Clear chat history?')) window.location.href='/reset'">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="1 4 1 10 7 10"/>
+                            <path d="M3.51 15a9 9 0 1 0 .49-3.41"/>
+                        </svg>
+                        Clear Chat
+                    </div>
+                    <div class="menu-item" onclick="closeMenu(); window.location.href='/settings'">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                        </svg>
+                        Settings
+                    </div>
+                    <div class="menu-item" onclick="closeMenu(); window.location.href='/'">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                            <polyline points="9 22 9 12 15 12 15 22"/>
+                        </svg>
+                        Home
+                    </div>
+                </div>
+                <button class="icon-btn dot-btn" id="dotBtn" onclick="toggleMenu()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="12" cy="5" r="2"/>
+                        <circle cx="12" cy="12" r="2"/>
+                        <circle cx="12" cy="19" r="2"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Messages ── -->
+    <div class="messages-area" id="messages">
+        <div class="date-divider">Today</div>
+    </div>
+
+    <!-- ── Input ── -->
+    <div class="input-section">
+        <div class="cmd-chips" id="cmdChips">
+            <span class="chip" onclick="useCmd('/plan')">/plan</span>
+            <span class="chip" onclick="useCmd('/daily')">/daily</span>
+            <span class="chip" onclick="useCmd('/report')">/report</span>
+            <span class="chip" onclick="useCmd('/article')">/article</span>
+            <span class="chip" onclick="useCmd('/reminder')">/reminder</span>
+            <span class="chip" onclick="useCmd('/news')">/news</span>
+        </div>
+        <div class="input-row">
+            <!-- Deep-Think toggle -->
+            <button class="dt-btn" id="dtBtn" onclick="toggleDeepThink()" title="Deep Think">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                <span class="dt-tip">Deep Think</span>
+            </button>
+            <div class="input-box">
+                <textarea class="msg-textarea" id="messageInput"
+                    placeholder="Message your mentor..."
+                    rows="1" onkeydown="onKey(event)" oninput="grow(this)"></textarea>
+            </div>
+            <button class="send-btn" id="sendBtn" onclick="send()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="22" y1="2" x2="11" y2="13"/>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+    /* ── State ── */
+    let conversationHistory = {{ history | tojson | safe if history else '[]' }};
+    let deepThink = false;
+    let lastUserMsg = '';
+    let lastAiText  = '';
+    let lastStrategy = 'balanced';
+    let isStreaming = false;
+
+    /* ── Header menu ── */
+    function toggleMenu() {
+        const items = document.getElementById('menuItems');
+        const btn   = document.getElementById('dotBtn');
+        items.classList.toggle('open');
+        btn.classList.toggle('active', items.classList.contains('open'));
+    }
+    function closeMenu() {
+        document.getElementById('menuItems').classList.remove('open');
+        document.getElementById('dotBtn').classList.remove('active');
+    }
+    document.addEventListener('click', e => { if (!e.target.closest('.menu-wrap')) closeMenu(); });
+
+    /* ── Helpers ── */
+    function grow(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 110) + 'px'; }
+    function ts() { return new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }); }
+    function esc(t) { return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function scrollBottom() {
+        const a = document.getElementById('messages');
+        requestAnimationFrame(() => a.scrollTop = a.scrollHeight);
+    }
+
+    /* ── Toast ── */
+    function toast(msg, duration = 2200) {
+        const el = document.getElementById('toast');
+        el.textContent = msg;
+        el.classList.add('show');
+        clearTimeout(el._t);
+        el._t = setTimeout(() => el.classList.remove('show'), duration);
+    }
+
+    /* ── Smart Suggestion Generator ── */
+    function getSmartSuggestions(aiText) {
+        const t = aiText.toLowerCase();
+        const hasQuestion = /\?\s*$/.test(t.trim()) || /\?[\s\n]*/.test(t);
+
+        // ── Question-specific suggestions ──
+        if (hasQuestion) {
+            // Yes/No questions
+            if (/\b(do you|have you|are you|did you|would you|could you|is it|was it|can you|should i)\b/.test(t)) {
+                if (/\b(ready|start|begin|want to|shall we)\b/.test(t))
+                    return ['Yes, let\'s go! 🚀', 'Not yet', 'Tell me more'];
+                if (/\b(tried|done|finished|completed|started)\b/.test(t))
+                    return ['Yes ✅', 'Not yet', 'Working on it'];
+                return ['Yes', 'No', 'Tell me more'];
+            }
+            if (/\bwhat('s|\s+is|\s+are|\s+do)\b/.test(t))
+                return ['Help me decide', 'I\'m not sure', 'Skip this'];
+            if (/\bhow\s+(do|can|should|would|long|much|many)\b/.test(t))
+                return ['Show me an example', 'Step by step', 'I need help'];
+            if (/\bwhich\b|\bchoose\b|\bpick\b/.test(t))
+                return ['First one', 'Second one', 'Help me choose'];
+            if (/\b(when|what time|schedule|morning|evening)\b/.test(t))
+                return ['Morning ☀️', 'Afternoon', 'Evening 🌙'];
+            return ['Yes', 'No', 'Tell me more'];
+        }
+
+        // ── Context-based suggestions (no question) ──
+
+        // Welcome / greeting
+        if (/\b(welcome|hey|hello|hi there|what.*working on|how can i help)\b/.test(t))
+            return ['/daily', '/plan', 'I need help with something'];
+
+        // Tasks / productivity
+        if (/\b(task|tasks|todo|to-do|daily|plan|schedule|focus)\b/.test(t))
+            return ['Show my tasks', 'What\'s next?', '/daily'];
+
+        // Reminder set
+        if (/\b(reminder set|remind you|scheduled|notification)\b/.test(t))
+            return ['Set another reminder', 'Show my tasks', 'Thanks! 👍'];
+
+        // Motivation / coaching
+        if (/\b(you got this|keep going|proud|great job|well done|nice work|amazing|step)\b/.test(t))
+            return ['What\'s next?', 'Give me a challenge', 'Thanks! 🙏'];
+
+        // Struggling / empathy
+        if (/\b(stuck|struggling|hard|difficult|overwhelm|tired|break|rest)\b/.test(t))
+            return ['I need motivation', 'Give me a small win', 'Let\'s take a break'];
+
+        // Code / technical
+        if (/\b(code|function|error|bug|debug|api|variable|class|method)\b/.test(t))
+            return ['Show me the code', 'Explain more', 'What else?'];
+
+        // Habit / routine
+        if (/\b(habit|routine|streak|consistency|daily practice)\b/.test(t))
+            return ['Track a habit', 'Show my streaks', 'Suggest habits'];
+
+        // Default suggestions
+        return ['Tell me more', 'What\'s next?', '/daily'];
+    }
+
+    /* ── Deep Think ── */
+    function toggleDeepThink() {
+        deepThink = !deepThink;
+        const btn = document.getElementById('dtBtn');
+        btn.classList.toggle('on', deepThink);
+        toast(deepThink ? '🧠 Deep Think ON — slower, more thorough' : 'Deep Think OFF');
+    }
+
+    /* ── Add user message ── */
+    function addUserMsg(content) {
+        const area = document.getElementById('messages');
+        const row = document.createElement('div');
+        row.className = 'msg-row user';
+        row.innerHTML = `<div class="bubble-col"><div class="user-bubble">${esc(content)}<span class="msg-time">${ts()}</span></div></div>`;
+        area.appendChild(row);
+        scrollBottom();
+    }
+
+    /* ── Add AI message (static, for history) ── */
+    function addAiMsgStatic(content) {
+        const area = document.getElementById('messages');
+        const row = document.createElement('div');
+        row.className = 'msg-row';
+
+        const col = document.createElement('div'); col.className = 'bubble-col';
+        const bubble = document.createElement('div'); bubble.className = 'ai-bubble';
+
+        // Parse [OPTIONS: ...] tag if present
+        const optMatch = content.match(/\[OPTIONS:\s*([^\]]+)\]/i);
+        const cleanContent = content.replace(/\[OPTIONS:[^\]]+\]/gi, '').trim();
+
+        const span = document.createElement('span');
+        span.innerHTML = marked.parse(cleanContent);
+        span.querySelectorAll('pre code').forEach(b => hljs.highlightElement(b));
+        addCopyToCodeBlocks(bubble);
+
+        bubble.appendChild(span);
+
+        // Render poll buttons if OPTIONS found
+        if (optMatch) {
+            const wrap = document.createElement('div'); wrap.className = 'poll-wrap';
+            optMatch[1].split('|').map(o => o.trim()).filter(Boolean).forEach(opt => {
+                const btn = document.createElement('button'); btn.className = 'poll-opt'; btn.textContent = opt;
+                btn.onclick = () => {
+                    wrap.querySelectorAll('.poll-opt').forEach(b => b.classList.remove('picked'));
+                    btn.classList.add('picked');
+                    document.getElementById('messageInput').value = opt;
+                    setTimeout(send, 80);
+                };
+                wrap.appendChild(btn);
+            });
+            bubble.appendChild(wrap);
+        }
+
+        const time = document.createElement('span'); time.className = 'msg-time'; time.textContent = ts();
+        bubble.appendChild(time);
+        col.appendChild(bubble);
+        row.appendChild(col);
+        area.appendChild(row);
+        scrollBottom();
+    }
+
+    /* ── Typing indicator ── */
+    function showTyping() {
+        const area = document.getElementById('messages');
+        const row = document.createElement('div');
+        row.className = 'typing-row'; row.id = 'typing';
+        row.innerHTML = `<div class="typing-bubble"><div class="t-dot"></div><div class="t-dot"></div><div class="t-dot"></div></div>`;
+        area.appendChild(row); scrollBottom();
+        setStatus('Thinking…');
+    }
+    function hideTyping() {
+        const t = document.getElementById('typing');
+        if (t) t.remove();
+        setStatus('Online · Ready to help');
+    }
+    function setStatus(text) {
+        document.getElementById('statusLine').textContent = text;
+    }
+
+    /* ── Copy-to-code blocks ── */
+    function addCopyToCodeBlocks(container) {
+        container.querySelectorAll('pre').forEach(pre => {
+            if (pre.querySelector('.pre-copy')) return;
+            const btn = document.createElement('button');
+            btn.className = 'pre-copy'; btn.textContent = 'Copy';
+            btn.onclick = () => {
+                const code = pre.querySelector('code');
+                navigator.clipboard.writeText(code ? code.innerText : pre.innerText).then(() => {
+                    btn.textContent = '✓ Copied'; btn.classList.add('copied');
+                    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+                });
+            };
+            pre.style.position = 'relative';
+            pre.appendChild(btn);
+        });
+    }
+
+    /* ── HITL Action Bar ── */
+    function buildActionBar(bubble, col, userMsg, aiText) {
+        const bar = document.createElement('div');
+        bar.className = 'msg-actions visible';
+
+        // 👍 Helpful
+        const thumbUp = document.createElement('button');
+        thumbUp.className = 'act-btn';
+        thumbUp.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>Helpful`;
+        thumbUp.onclick = () => sendFeedback(userMsg, aiText, 'helpful', thumbUp, thumbDown, bar);
+
+        // 👎 Not helpful
+        const thumbDown = document.createElement('button');
+        thumbDown.className = 'act-btn';
+        thumbDown.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>Not helpful`;
+        thumbDown.onclick = () => sendFeedback(userMsg, aiText, 'not_helpful', thumbDown, thumbUp, bar);
+
+        // 📋 Copy
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'act-btn';
+        copyBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy`;
+        copyBtn.onclick = () => {
+            navigator.clipboard.writeText(aiText).then(() => {
+                copyBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Copied!`;
+                setTimeout(() => { copyBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy`; }, 2000);
+            });
+        };
+
+        // 🔄 Regenerate
+        const regenBtn = document.createElement('button');
+        regenBtn.className = 'act-btn regen';
+        regenBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.41"/></svg>Retry`;
+        regenBtn.onclick = () => regenerate(userMsg, col);
+
+        // ✏️ Correct
+        const editBtn = document.createElement('button');
+        editBtn.className = 'act-btn';
+        editBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Correct`;
+        editBtn.onclick = () => toggleCorrectionBox(col, userMsg, aiText, editBtn);
+
+        bar.appendChild(thumbUp);
+        bar.appendChild(thumbDown);
+        bar.appendChild(copyBtn);
+        bar.appendChild(regenBtn);
+        bar.appendChild(editBtn);
+        col.appendChild(bar);
+    }
+
+    /* ── Send feedback to /api/feedback (RLHF) ── */
+    async function sendFeedback(userMsg, aiText, feedbackType, clickedBtn, otherBtn, bar) {
+        clickedBtn.classList.add(feedbackType === 'helpful' ? 'good' : 'bad', 'locked');
+        otherBtn.classList.add('locked');
+        try {
+            await fetch('/api/feedback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_input: userMsg,
+                    ai_response: aiText,
+                    strategy: lastStrategy,
+                    feedback: feedbackType
+                })
+            });
+            toast(feedbackType === 'helpful' ? '👍 Thanks! Helps me improve.' : '👎 Got it — I\'ll do better.');
+        } catch(e) {
+            toast('Feedback saved locally.'); console.warn(e);
+        }
+    }
+
+    /* ── Inline correction box ── */
+    function toggleCorrectionBox(col, userMsg, aiText, editBtn) {
+        let box = col.querySelector('.correction-box');
+        if (box) { box.classList.toggle('open'); return; }
+        box = document.createElement('div'); box.className = 'correction-box open';
+        const inp = document.createElement('textarea');
+        inp.className = 'correction-input';
+        inp.placeholder = 'What should the ideal answer look like? (optional)';
+        inp.rows = 2;
+        const actions = document.createElement('div'); actions.className = 'correction-actions';
+        const cancel = document.createElement('button'); cancel.className = 'corr-btn corr-cancel'; cancel.textContent = 'Cancel';
+        cancel.onclick = () => box.classList.remove('open');
+        const submit = document.createElement('button'); submit.className = 'corr-btn corr-submit'; submit.textContent = 'Submit & Retrain';
+        submit.onclick = async () => {
+            const correction = inp.value.trim();
+            try {
+                await fetch('/api/feedback', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_input: userMsg,
+                        ai_response: aiText,
+                        strategy: lastStrategy,
+                        feedback: 'not_helpful',
+                        correction: correction
+                    })
+                });
+            } catch(e) { console.warn(e); }
+            toast('✏️ Correction submitted — thank you!');
+            box.classList.remove('open');
+            // Optionally re-ask
+            if (correction) {
+                document.getElementById('messageInput').value = userMsg;
+                setTimeout(send, 200);
+            }
+        };
+        actions.appendChild(cancel); actions.appendChild(submit);
+        box.appendChild(inp); box.appendChild(actions);
+        col.appendChild(box);
+    }
+
+    /* ── Regenerate last response ── */
+    async function regenerate(userMsg, existingCol) {
+        if (isStreaming) return;
+        // Remove old bubble col from the row and make fresh
+        const row = existingCol.parentElement;
+        row.parentElement.removeChild(row);
+        await sendMessage(userMsg, false);
+    }
+
+    /* ── Core send ── */
+    async function send() {
+        const input = document.getElementById('messageInput');
+        const msg = input.value.trim();
+        if (!msg || isStreaming) return;
+        input.value = ''; input.style.height = 'auto';
+        await sendMessage(msg, true);
+    }
+    function onKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }
+    function useCmd(cmd) { const i = document.getElementById('messageInput'); i.value = cmd + ' '; i.focus(); }
+
+    async function sendMessage(msg, appendUser = true) {
+        if (isStreaming) return;
+        isStreaming = true;
+        lastUserMsg = msg;
+
+        if (appendUser) addUserMsg(msg);
+
+        document.getElementById('sendBtn').disabled = true;
+        showTyping();
+
+        try {
+            const res = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: msg, deep_think: deepThink })
+            });
+
+            hideTyping();
+            const area = document.getElementById('messages');
+
+            // Build new AI row
+            const row = document.createElement('div'); row.className = 'msg-row';
+            const col = document.createElement('div'); col.className = 'bubble-col';
+            const bubble = document.createElement('div'); bubble.className = 'ai-bubble';
+            const span = document.createElement('span');
+            bubble.appendChild(span);
+            col.appendChild(bubble);
+            row.appendChild(col);
+            area.appendChild(row);
+
+            const reader = res.body.getReader();
+            const dec = new TextDecoder();
+            let full = '';
+
+            setStatus('Typing…');
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                full += dec.decode(value, { stream: true });
+                const display = full.replace(/\[OPTIONS:[^\]]*\]?$/gi, '').trimEnd();
+                span.innerHTML = marked.parse(display);
+                span.querySelectorAll('pre code').forEach(b => hljs.highlightElement(b));
+                addCopyToCodeBlocks(bubble);
+                scrollBottom();
+            }
+            lastAiText = full.replace(/\[OPTIONS:[^\]]+\]/gi, '').trim();
+
+            // Quick-reply options from [OPTIONS:] tag
+            const m = full.match(/\[OPTIONS:\s*([^\]]+)\]/i);
+            let hasOptions = false;
+            if (m) {
+                hasOptions = true;
+                span.innerHTML = marked.parse(lastAiText);
+                const wrap = document.createElement('div'); wrap.className = 'poll-wrap';
+                m[1].split('|').map(o => o.trim()).filter(Boolean).forEach(opt => {
+                    const btn = document.createElement('button'); btn.className = 'poll-opt'; btn.textContent = opt;
+                    btn.onclick = () => {
+                        wrap.querySelectorAll('.poll-opt').forEach(b => b.classList.remove('picked'));
+                        btn.classList.add('picked');
+                        document.getElementById('messageInput').value = opt;
+                        setTimeout(send, 80);
+                    };
+                    wrap.appendChild(btn);
+                });
+                bubble.appendChild(wrap);
+            }
+
+            // Smart auto-suggestions: always show quick-reply pills after AI responds
+            if (!hasOptions) {
+                const suggestions = getSmartSuggestions(lastAiText);
+                if (suggestions.length > 0) {
+                    const wrap = document.createElement('div'); wrap.className = 'poll-wrap';
+                    suggestions.forEach(opt => {
+                        const btn = document.createElement('button'); btn.className = 'poll-opt'; btn.textContent = opt;
+                        btn.onclick = () => {
+                            wrap.querySelectorAll('.poll-opt').forEach(b => b.classList.remove('picked'));
+                            btn.classList.add('picked');
+                            document.getElementById('messageInput').value = opt;
+                            setTimeout(send, 80);
+                        };
+                        wrap.appendChild(btn);
+                    });
+                    bubble.appendChild(wrap);
+                }
+            }
+
+            // Timestamp
+            const time = document.createElement('span'); time.className = 'msg-time'; time.textContent = ts();
+            bubble.appendChild(time);
+
+            // ── HITL bar ──
+            buildActionBar(bubble, col, msg, lastAiText);
+
+            addCopyToCodeBlocks(bubble);
+            setStatus('Online · Ready to help');
+            scrollBottom();
+
+        } catch (err) {
+            hideTyping();
+            console.error(err);
+            addAiMsgStatic('Something went wrong. Please try again.');
+        } finally {
+            document.getElementById('sendBtn').disabled = false;
+            isStreaming = false;
+        }
+    }
+
+    /* ── Load history ── */
+    if (conversationHistory && conversationHistory.length > 0) {
+        conversationHistory.forEach(m => {
+            if (m.role === 'user') addUserMsg(m.content);
+            else addAiMsgStatic(m.content);
+        });
+    } else {
+        // Welcome message
+        addAiMsgStatic("Hey! 👋 I'm your **PartnerAI Mentor**. What are we working on today? 🚀\n\nTry a quick command like `/daily`, `/plan`, or just tell me what's on your mind.");
+    }
+
+    /* ── URL ?msg= auto-send ── */
+    window.addEventListener('load', () => {
+        const msg = new URLSearchParams(window.location.search).get('msg');
+        if (msg) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+            document.getElementById('messageInput').value = msg;
+            send();
+        }
+    });
+
+    /* ── Reminder Notification Polling ── */
+    function checkReminders() {
+        fetch('/api/reminders/check')
+            .then(r => r.json())
+            .then(data => {
+                if (data.reminders && data.reminders.length > 0) {
+                    data.reminders.forEach(rem => {
+                        showReminderNotification(rem);
+                    });
+                }
+            })
+            .catch(() => {});
+    }
+
+    function showReminderNotification(reminder) {
+        // Prevent showing same reminder twice in this session
+        if (document.querySelector(`.reminder-popup[data-rid="${reminder.id}"]`)) return;
+
+        const popup = document.createElement('div');
+        popup.className = 'reminder-popup';
+        popup.dataset.rid = reminder.id;
+        popup.innerHTML = `
+            <div class="reminder-icon">🔔</div>
+            <div class="reminder-body">
+                <div class="reminder-title">Reminder!</div>
+                <div class="reminder-text">${reminder.content}</div>
+            </div>
+            <button class="reminder-dismiss" onclick="dismissReminder(${reminder.id}, this)">✕</button>
+        `;
+        document.body.appendChild(popup);
+
+        // Animate in
+        requestAnimationFrame(() => popup.classList.add('show'));
+
+        // Also show as AI message in chat
+        addAiMsgStatic(`🔔 **Reminder:** ${reminder.content}`);
+        scrollBottom();
+
+        // Auto-dismiss after 30 seconds
+        setTimeout(() => {
+            if (popup.parentNode) dismissReminder(reminder.id, popup.querySelector('.reminder-dismiss'));
+        }, 30000);
+    }
+
+    function dismissReminder(id, btn) {
+        fetch('/api/reminders/dismiss', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({id: id})
+        }).catch(() => {});
+
+        const popup = btn ? btn.closest('.reminder-popup') : document.querySelector(`.reminder-popup[data-rid="${id}"]`);
+        if (popup) {
+            popup.classList.remove('show');
+            setTimeout(() => popup.remove(), 300);
+        }
+    }
+
+    // Poll every 15 seconds
+    setInterval(checkReminders, 15000);
+    // Also check immediately on load
+    setTimeout(checkReminders, 2000);
+</script>
+{% endblock %}

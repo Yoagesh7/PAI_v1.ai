@@ -1,0 +1,1339 @@
+{% extends "base.html" %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.1/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<style>
+    /* New UI Styles matching the reference image layout */
+
+    /* Layout Overrides to match Mobile App View */
+    /* Layout Overrides to match Mobile App View */
+    .app-container {
+        display: block !important;
+        /* Stack context */
+    }
+
+    /* Sidebar styles removed - inherited from base.html */
+
+    .content-area {
+        background: transparent !important;
+        /* Let body background show through */
+        border: none !important;
+        box-shadow: none !important;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        /* Full height */
+        margin: 0 !important;
+        border-radius: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        /* Force full width */
+    }
+
+    /* Header styles removed - inherited from base.html */
+
+    /* Chat Area */
+    .chat-area {
+        flex: 1;
+        overflow-y: auto;
+        /* Dynamic Centering: Maintains ~850px max width column */
+        padding: 40px max(20px, calc(50% - 425px));
+        display: flex;
+        flex-direction: column;
+        gap: 32px;
+        scroll-behavior: smooth;
+        mask-image: linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%);
+    }
+
+    .message {
+        max-width: 85%;
+        padding: 16px 24px;
+        border-radius: 24px;
+        line-height: 1.6;
+        position: relative;
+        overflow-wrap: anywhere;
+        font-size: 1.05rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        animation: messageEntrance 0.5s ease-out;
+    }
+
+    @keyframes messageEntrance {
+        from {
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    .message.user {
+        align-self: flex-end;
+        background: var(--accent-gradient);
+        color: white;
+        border-bottom-right-radius: 4px;
+        box-shadow: 0 4px 15px var(--accent-glow);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* AI Message Row Container */
+    .ai-message-row {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+        width: 100%;
+    }
+
+    /* Avatar Styling */
+    .ai-avatar {
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
+        border-radius: 14px;
+        background: var(--accent-gradient);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 8px 16px rgba(108, 92, 231, 0.2);
+        animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+
+        0%,
+        100% {
+            transform: translateY(0);
+        }
+
+        50% {
+            transform: translateY(-5px);
+        }
+    }
+
+    /* Avatar Styling - HIDDEN PER USER REQUEST */
+    .ai-avatar {
+        display: none !important;
+    }
+
+    /* Content Box Styling - Fixed Glassmorphism */
+    /* Content Box Styling - MINIMALIST / CLEAN */
+    .message-content {
+        background: transparent;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        border: none;
+        border-radius: 0;
+        padding: 0 4px;
+        /* Reduced side padding since no avatar */
+        color: var(--text-primary);
+        box-shadow: none;
+        line-height: 1.8;
+        /* Good spacing */
+        flex: 1;
+        max-width: 100%;
+        font-size: 1rem;
+        /* Standard Base Size */
+    }
+
+    /* Fixed Horizontal Rule */
+    .message-content hr {
+        border: 0;
+        height: 1px;
+        background: rgba(255, 255, 255, 0.15);
+        /* Brighter line */
+        margin: 24px 0;
+        width: 100%;
+        display: block;
+    }
+
+    /* Code blocks */
+    pre {
+        background: rgba(0, 0, 0, 0.4);
+        border-radius: 16px;
+        padding: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        overflow-x: auto;
+        margin: 24px 0;
+        position: relative;
+    }
+
+    code {
+        font-family: 'Fira Code', 'Courier New', monospace;
+        font-size: 0.95rem;
+        color: #e0e0e0;
+    }
+
+    /* Table Styling */
+    .message-content table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin: 20px 0;
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid var(--glass-border);
+    }
+
+    .message-content th {
+        background: rgba(108, 92, 231, 0.1);
+        color: var(--accent);
+        text-align: left;
+        padding: 14px 18px;
+        font-weight: 600;
+        border-bottom: 1px solid var(--glass-border);
+    }
+
+    .message-content td {
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--glass-border);
+        color: var(--text-primary);
+    }
+
+    .message-content tr:last-child td {
+        border-bottom: none;
+    }
+
+    /* Header & Markdown Styling */
+    /* Standardize Headers to avoid "Big/Small" jarring differences */
+    .message-content h1,
+    .message-content h2,
+    .message-content h3,
+    .message-content h4 {
+        margin: 24px 0 12px 0;
+        color: #fff;
+        font-family: var(--font-heading);
+        font-weight: 600;
+        font-size: 1.1rem !important;
+        /* Flattened scale */
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        letter-spacing: 0.01em;
+    }
+
+    .message-content ul,
+    .message-content ol {
+        margin: 16px 0;
+        padding-left: 28px;
+        list-style-position: outside;
+        display: block;
+    }
+
+    .message-content li {
+        margin-bottom: 30px;
+        color: var(--text-primary);
+        line-height: 1.4;
+        display: list-item;
+        list-style-type: disc;
+        padding-left: 8px;
+    }
+
+    .message-content li::marker {
+        color: var(--accent);
+        font-weight: bold;
+    }
+
+    .message-content p {
+        margin-bottom: 20px !important;
+    }
+
+    .message-content blockquote {
+        border-left: 4px solid var(--accent);
+        margin: 24px 0;
+        padding: 16px 24px;
+        background: rgba(108, 92, 231, 0.05);
+        border-radius: 4px 16px 16px 4px;
+        color: var(--text-secondary);
+        font-style: italic;
+    }
+
+    /* Typing Cursor Effect */
+    .message-content.typing::after {
+        content: "▊";
+        display: inline-block;
+        margin-left: 5px;
+        animation: blink 0.8s infinite;
+        color: var(--accent);
+        font-size: 1.2rem;
+        vertical-align: middle;
+    }
+
+    .message-content.typing {
+        border-color: rgba(91, 141, 239, 0.4) !important;
+        animation: pulse 2s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+
+        0%,
+        100% {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        50% {
+            box-shadow: 0 4px 25px rgba(91, 141, 239, 0.15);
+        }
+    }
+
+    @keyframes blink {
+
+        0%,
+        100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0;
+        }
+    }
+
+    /* Floating Input Area Styling */
+    .input-wrapper {
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        align-items: center;
+        width: 100%;
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .input-actions {
+        display: flex;
+        gap: 12px;
+        width: 100%;
+        padding-left: 12px;
+    }
+
+    .action-badge {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--glass-border);
+        padding: 6px 14px;
+        border-radius: 100px;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .action-badge:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+        transform: translateY(-2px);
+    }
+
+    .action-badge.active {
+        background: rgba(108, 92, 231, 0.2);
+        border-color: var(--accent);
+        color: var(--accent);
+        box-shadow: 0 0 10px rgba(108, 92, 231, 0.2);
+    }
+
+    .floating-bar {
+        width: 100%;
+        background: rgba(18, 18, 20, 0.95);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 24px;
+        padding: 8px 12px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+        transition: all 0.3s ease;
+    }
+
+    .floating-bar:focus-within {
+        border-color: rgba(99, 102, 241, 0.4);
+        box-shadow: 0 20px 40px rgba(99, 102, 241, 0.2);
+    }
+
+    .add-btn {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.05);
+        color: #fff;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .add-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        transform: rotate(90deg);
+    }
+
+    #message-input {
+        flex: 1;
+        background: transparent;
+        border: none;
+        color: white;
+        font-size: 1.05rem;
+        font-family: var(--font-body);
+        /* Enforce Inter font */
+        outline: none;
+        padding: 10px 4px;
+        resize: none;
+        max-height: 120px;
+        line-height: 1.5;
+    }
+
+    .send-circle {
+        width: 48px;
+        height: 48px;
+        flex-shrink: 0;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        border: none;
+        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    /* Utility Class for toggling */
+    .hidden {
+        display: none !important;
+    }
+
+    .send-circle:hover {
+        transform: scale(1.1) rotate(-10deg);
+    }
+
+    /* Command Button Container */
+    .cmd-wrapper {
+        position: relative;
+    }
+
+    /* Command Menu Floating - Relative to Button */
+    .command-menu {
+        position: absolute;
+        bottom: 80px;
+        /* Lifted up slightly */
+        left: 0;
+        width: 220px;
+        /* Slightly wider */
+        background: rgba(30, 30, 35, 0.98);
+        /* More opaque */
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        padding: 8px;
+        display: none;
+        flex-direction: column;
+        z-index: 9999;
+        /* Ensure on top of everything */
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        max-height: 60vh;
+        /* Prevent off-screen */
+        overflow-y: auto;
+        /* Scroll if too tall */
+    }
+
+    /* STOP BUTTON STYLING */
+    .stop-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: rgba(255, 82, 82, 0.2);
+        border: 1px solid rgba(255, 82, 82, 0.5);
+        color: #ff5252;
+        display: none;
+        /* Flex when active */
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .stop-btn:hover {
+        background: rgba(255, 82, 82, 0.4);
+        transform: scale(1.1);
+    }
+
+    .send-circle.hidden {
+        display: none;
+    }
+
+    .command-menu.show {
+        display: flex;
+    }
+
+    .cmd-item {
+        padding: 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        color: #a0a0b0;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .cmd-item:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+    }
+
+    /* Typing Dot */
+    .typing-indicator {
+        display: none;
+        padding: 10px;
+        opacity: 0.7;
+    }
+
+    .dot {
+        width: 6px;
+        height: 6px;
+        background: var(--text-secondary);
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 4px;
+        animation: bounce 1.4s infinite ease-in-out both;
+    }
+
+    .dot:nth-child(1) {
+        animation-delay: -0.32s;
+    }
+
+    .dot:nth-child(2) {
+        animation-delay: -0.16s;
+    }
+
+    /* Intro Overlay */
+    .intro-overlay {
+        z-index: 9999;
+    }
+
+    /* Overlay to close sidebar when clicking outside on mobile if needed */
+    /* Not implemented to keep it simple, just toggle button */
+
+    /* VOICE OVERLAY FIXED */
+    .voice-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 10000;
+        display: none;
+        /* Managed by JS */
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* MOBILE OPTIMIZATIONS (FIXED OVERFLOW) */
+    @media (max-width: 768px) {
+        #chat-box {
+            height: calc(100dvh - 85px) !important;
+            margin-top: 85px !important;
+            padding: 10px 15px 120px 15px !important;
+            overflow-y: auto !important;
+        }
+
+        .input-wrapper {
+            position: fixed !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            max-width: none !important;
+            /* Maximum clearance based on user request */
+            padding: 0 15px calc(20px + env(safe-area-inset-bottom)) 15px !important;
+            background: linear-gradient(to top, var(--bg-dark) 95%, transparent) !important;
+            z-index: 10000;
+            margin: 0 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+        }
+
+        .input-actions {
+            justify-content: center !important;
+            margin-bottom: 10px !important;
+            gap: 12px !important;
+        }
+
+        .floating-bar {
+            width: 95% !important;
+            max-width: 500px !important;
+            padding: 8px 12px !important;
+            background: rgba(22, 24, 28, 0.98) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+            border-radius: 28px !important;
+        }
+
+        .message {
+            max-width: 90% !important;
+            font-size: 0.95rem !important;
+        }
+
+        textarea {
+            font-size: 16px !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Header Removed (In Base.html) -->
+
+<!-- Main Chat Area -->
+<div class="chat-area" id="chat-box">
+    <!-- Placeholder Welcome -->
+    <div id="welcome-screen"
+        style="text-align: center; margin-top: 120px; opacity: 0.9; display: flex; flex-direction: column; align-items: center; gap: 24px; animation: fadeIn 1s ease-out;">
+        <div
+            style="width: 100px; height: 100px; border-radius: 30px; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center; box-shadow: 0 20px 40px var(--accent-glow); transform: rotate(-10deg); animation: pulse 3s infinite ease-in-out;">
+            <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2a10 10 0 1 0 10 10H12V2z"></path>
+                <path d="M12 2a10 10 0 0 1 10 10"></path>
+                <path d="M12 2A10 10 0 0 0 2 12"></path>
+            </svg>
+        </div>
+        <div style="margin-top: 10px;">
+            <h1
+                style="font-weight: 700; font-size: 2.2rem; margin: 0; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.04em;">
+                PartnerAI</h1>
+            <p style="color: var(--text-secondary); font-size: 1.1rem; margin-top: 8px;">Your path to greatness starts
+                here.</p>
+        </div>
+
+        <!-- Suggestion Pills -->
+        <div
+            style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; max-width: 600px; margin-top: 20px;">
+            <div class="action-badge" onclick="insertCmd('/daily')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                Daily tasks
+            </div>
+            <div class="action-badge" onclick="insertCmd('/mt')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                </svg>
+                Motivation
+            </div>
+            <div class="action-badge" onclick="insertCmd('/report')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="20" x2="18" y2="10"></line>
+                    <line x1="12" y1="20" x2="12" y2="4"></line>
+                    <line x1="6" y1="20" x2="6" y2="14"></line>
+                </svg>
+                Progress Report
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages will be appended here -->
+    <div class="typing-indicator" id="typingIndicator">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+    </div>
+</div>
+
+<!-- Floating Input Section -->
+<div class="input-wrapper">
+    <!-- Main Bar -->
+    <div class="floating-bar">
+        <!-- Add Button Wrapper for Menu Position -->
+        <div class="cmd-wrapper">
+            <button class="add-btn" id="cmd-btn" title="Commands">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+            </button>
+
+            <!-- Command Menu (Moved Inside Wrapper) -->
+            <div class="command-menu" id="cmd-menu">
+                <div class="cmd-item" onclick="insertCmd('/reminder 10m ')">Remind <span>/reminder</span></div>
+                <div class="cmd-item" onclick="insertCmd('/custom ')">Custom <span>/custom</span></div>
+                <div class="cmd-item" onclick="insertCmd('/report')">Status <span>/report</span></div>
+                <div class="cmd-item" onclick="insertCmd('/reset')">Reset <span>/reset</span></div>
+                <div class="cmd-item" onclick="insertCmd('/daily')">Daily Tasks <span>/daily</span></div>
+                <div class="cmd-item" onclick="insertCmd('/article')">Daily Article <span>/article</span></div>
+                <div class="cmd-item" onclick="insertCmd('/news')">Daily News <span>/news</span></div>
+                <div class="cmd-item" onclick="toggleVoiceMode()">Voice Mode <span>Mic</span></div>
+                <div class="cmd-item" onclick="clearChatHistory()"
+                    style="color: #ff5252; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 8px; padding-top: 8px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        style="margin-right: 8px;">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                    Clear Chat
+                </div>
+            </div>
+        </div>
+
+        <!-- Text Input -->
+        <textarea id="message-input" rows="1" placeholder="message PartnerAI"></textarea>
+
+        <!-- Script for Outside Click -->
+        <script>
+            document.addEventListener('click', function (event) {
+                const menu = document.getElementById('cmd-menu');
+                const btn = document.getElementById('cmd-btn');
+                if (menu.classList.contains('show') && !menu.contains(event.target) && !btn.contains(event.target)) {
+                    menu.classList.remove('show');
+                }
+            });
+        </script>
+
+        <!-- Stop Button (Replaces Send during generation) -->
+        <button class="stop-btn" id="stop-btn" title="Stop Generation" onclick="stopGeneration()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="6" y="6" width="12" height="12" rx="2" />
+            </svg>
+        </button>
+
+        <!-- Voice / Send Toggle based on input -->
+        <button class="send-circle" id="send-btn">
+            <!-- Default Mic Icon (Voice) or Arrow (Send) -->
+            <svg id="action-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <!-- Arrow Icon default for this design? Or Mic? User image shows Mic. -->
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
+            </svg>
+        </button>
+    </div>
+</div>
+
+<!-- Intro Modal (Reused) -->
+<!-- Intro Modal Removed -->
+
+<!-- Voice Overlay (Reused) -->
+<!-- Refined 'Pop View' Voice Overlay -->
+<div id="voice-overlay" class="voice-overlay">
+    <!-- Pop up container -->
+    <div
+        style="background: rgba(30, 30, 35, 0.95); border: 1px solid var(--glass-border); padding: 30px; border-radius: 30px; width: 300px; display: flex; flex-direction: column; align-items: center; gap: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); backdrop-filter: blur(20px); animation: popUp 0.3s ease-out;">
+        <div style="width: 100%; display: flex; justify-content: flex-end;">
+            <button class="close-voice-btn" onclick="toggleVoiceMode()"
+                style="position: static; font-size: 1.5rem; background:none; border:none; color:white; cursor:pointer;">×</button>
+        </div>
+
+        <div class="voice-visualizer" id="voice-visualizer" style="width: 80px; height: 80px; margin: 0;"></div>
+        <div class="voice-status" id="voice-status" style="margin: 0; font-size: 1.1rem; text-align: center;">
+            Listening...</div>
+
+        <button onclick="testVoice()"
+            style="background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: white; padding: 5px 15px; border-radius: 12px; font-size: 0.9rem; cursor: pointer;">
+            Test Voice
+        </button>
+
+        <div style="display: flex; gap: 10px; width: 100%;">
+            <select id="lang-select" onchange="updateVoiceSettings()"
+                style="flex: 1; padding: 10px; border-radius: 12px; background: rgba(255,255,255,0.05); color: white; border: 1px solid var(--glass-border); outline: none;">
+                <option value="en-US">English (US)</option>
+                <option value="hi-IN">Hindi (India)</option>
+            </select>
+            <select id="gender-select" onchange="updateVoiceSettings()"
+                style="flex: 1; padding: 10px; border-radius: 12px; background: rgba(255,255,255,0.05); color: white; border: 1px solid var(--glass-border); outline: none;">
+                <option value="female">Female</option>
+                <option value="male">Male</option>
+            </select>
+        </div>
+
+        <!-- Debug Log -->
+        <div id="tts-debug"
+            style="width: 100%; height: 60px; overflow-y: auto; background: rgba(0,0,0,0.5); font-size: 0.7rem; color: #aaa; padding: 5px; border-radius: 8px; margin-top: 10px;">
+            Debug Log...
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script>
+    const chatBox = document.getElementById('chat-box');
+    const input = document.getElementById('message-input');
+    const sendBtn = document.getElementById('send-btn');
+    const stopBtn = document.getElementById('stop-btn');
+    const cmdBtn = document.getElementById('cmd-btn');
+    const cmdMenu = document.getElementById('cmd-menu');
+    const actionIcon = document.getElementById('action-icon');
+
+    let abortController = null; // Controller for stopping fetch
+
+    // DEBUG LOGGER
+    function logToScreen(msg) {
+        console.log(msg);
+        const el = document.getElementById('tts-debug');
+        if (el) {
+            el.innerText = msg + "\n" + el.innerText;
+        }
+    }
+
+    // Sidebar Toggle Logic
+    // Sidebar Toggle Logic (In Base)
+
+    // Auto-resize & Init
+    function updateSendButton() {
+        input.style.height = 'auto';
+        input.style.height = (input.scrollHeight) + 'px';
+
+        if (input.value.trim().length > 0) {
+            actionIcon.innerHTML = '<line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>';
+            sendBtn.onclick = () => sendMessage();
+        } else {
+            actionIcon.innerHTML = '<path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line>';
+            sendBtn.onclick = () => toggleVoiceMode();
+        }
+    }
+
+    input.addEventListener('input', updateSendButton);
+    // Init on load
+    updateSendButton();
+
+    // Command Menu
+    cmdBtn.addEventListener('click', () => {
+        // Position menu above button
+        cmdMenu.classList.toggle('show');
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!cmdBtn.contains(e.target) && !cmdMenu.contains(e.target)) {
+            cmdMenu.classList.remove('show');
+        }
+    });
+
+    function insertCmd(cmd) {
+        input.value = cmd;
+        input.focus();
+        cmdMenu.classList.remove('show');
+        // Trigger input event to update icon
+        input.dispatchEvent(new Event('input'));
+    }
+
+    // Markdown Configuration
+    marked.setOptions({
+        gfm: true,
+        breaks: true,
+        headerIds: false,
+        mangle: false
+    });
+
+    function parseMarkdown(text) {
+        // Enforce double newline to <br> for vertical air if marked eats it
+        // marked.js 'breaks: true' usually handles single newlines as <br>
+        // We want to ensure gaps.
+        return marked.parse(text);
+    }
+
+    function appendMessage(text, sender) {
+        // HIDE WELCOME SCREEN
+        const welcome = document.getElementById('welcome-screen');
+        if (welcome) welcome.style.display = 'none';
+
+        const isUser = (sender.toLowerCase() === 'user');
+
+        if (isUser) {
+            const div = document.createElement('div');
+            div.className = `message user`;
+            div.innerHTML = parseMarkdown(text);
+
+            const indicator = document.getElementById('typingIndicator');
+            if (indicator) {
+                chatBox.insertBefore(div, indicator);
+            } else {
+                chatBox.appendChild(div);
+            }
+        } else {
+            // AI Message with Avatar + Box
+            const row = document.createElement('div');
+            row.className = 'ai-message-row';
+
+            // Avatar
+            const avatar = document.createElement('div');
+            avatar.className = 'ai-avatar';
+            avatar.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10H12V2z"></path><path d="M12 2a10 10 0 0 1 10 10"></path><path d="M12 2A10 10 0 0 0 2 12"></path></svg>`;
+
+            // Content Box
+            const contentBox = document.createElement('div');
+            contentBox.className = 'message-content';
+            contentBox.innerHTML = parseMarkdown(text);
+
+            row.appendChild(avatar);
+            row.appendChild(contentBox);
+
+            // Add to Chat
+            const indicator = document.getElementById('typingIndicator');
+            if (indicator) {
+                chatBox.insertBefore(row, indicator);
+            } else {
+                chatBox.appendChild(row);
+            }
+
+            // Highlight Code
+            contentBox.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightElement(block);
+            });
+        }
+
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function stopGeneration() {
+        if (abortController) {
+            abortController.abort();
+            abortController = null;
+
+            // UI Cleanup
+            document.getElementById('typingIndicator').style.display = 'none';
+            stopBtn.style.display = 'none';
+            sendBtn.classList.remove('hidden');
+
+            // Append "[Stopped]" Note? (Optional)
+            // Can be done if we had a reference to the active message logic.
+        }
+    }
+
+    async function sendMessage(textOverride) {
+        const text = textOverride || input.value.trim();
+        if (!text) return;
+
+        if (!textOverride) {
+            input.value = '';
+            input.style.height = 'auto';
+            input.dispatchEvent(new Event('input')); // Reset icon
+            appendMessage(text, 'user');
+        }
+
+        // Setup abort controller
+        abortController = new AbortController();
+        const signal = abortController.signal;
+
+        const indicator = document.getElementById('typingIndicator');
+        indicator.style.display = 'block';
+        chatBox.appendChild(indicator); // Force to bottom
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        // Toggle Buttons
+        sendBtn.classList.add('hidden');
+        stopBtn.style.display = 'flex';
+
+        const dtEl = document.getElementById('deep-think-toggle');
+        const sEl = document.getElementById('search-toggle');
+        const deepThink = dtEl ? dtEl.classList.contains('active') : false;
+        const useSearch = sEl ? sEl.classList.contains('active') : false;
+
+        try {
+            const res = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: text,
+                    deep_think: deepThink,
+                    use_search: useSearch
+                }),
+                signal: signal
+            });
+
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+
+            // Create AI Message Row Structure
+            const row = document.createElement('div');
+            row.className = 'ai-message-row';
+
+            const avatar = document.createElement('div');
+            avatar.className = 'ai-avatar';
+            avatar.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10H12V2z"></path><path d="M12 2a10 10 0 0 1 10 10"></path><path d="M12 2A10 10 0 0 0 2 12"></path></svg>`;
+
+            const contentBox = document.createElement('div');
+            contentBox.className = 'message-content typing'; // Add typing class
+
+            row.appendChild(avatar);
+            row.appendChild(contentBox);
+
+            // Insert
+            chatBox.insertBefore(row, indicator);
+
+            let fullText = '';
+            let firstChunk = true;
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                if (firstChunk) {
+                    indicator.style.display = 'none'; // Hide indicator on first data
+                    firstChunk = false;
+                }
+
+                const chunk = decoder.decode(value, { stream: true });
+                fullText += chunk;
+                contentBox.innerHTML = parseMarkdown(fullText);
+                chatBox.scrollTop = chatBox.scrollHeight;
+
+                // Voice TTS Feed
+                if (typeof feedTTS === 'function') feedTTS(chunk);
+            }
+
+            // Highlight after complete
+            contentBox.classList.remove('typing'); // Remove typing class
+            contentBox.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightElement(block);
+            });
+
+            if (typeof flushTTS === 'function') flushTTS();
+
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                console.log('Fetch aborted');
+            } else {
+                console.error(error);
+            }
+            indicator.style.display = 'none';
+        } finally {
+            // Reset Buttons
+            stopBtn.style.display = 'none';
+            sendBtn.classList.remove('hidden');
+            abortController = null;
+        }
+    }
+
+    // Intro Logic
+    function startJourney() {
+        const name = document.getElementById('intro-name').value;
+        if (name) {
+            fetch('/api/onboarding/complete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: name, age: 25, goal: 'Growth', work_time: '9-5', free_time: 'Evening' }) // Mock values for quick start if needed
+            }).then(() => {
+                document.getElementById('intro-modal').style.display = 'none';
+                appendMessage(`Welcome, ${name}!`, 'ai');
+            });
+        } else {
+            document.getElementById('intro-modal').style.display = 'none';
+        }
+    }
+
+    // Check Init
+    window.addEventListener('load', async () => {
+        let historyLoaded = false;
+        console.log("Adding Load Event Listener...");
+
+        // Robust Server-Side History Injection
+        const serverHistory = {{ history | tojson | default ('[]') | safe
+    }};
+
+    if (Array.isArray(serverHistory) && serverHistory.length > 0) {
+        console.log(`[Server] Loaded ${serverHistory.length} messages.`);
+        const welcome = document.getElementById('welcome-screen');
+        if (welcome) welcome.style.display = 'none';
+
+        serverHistory.forEach(msg => {
+            appendMessage(msg.content, msg.role);
+        });
+        historyLoaded = true;
+        chatBox.scrollTop = chatBox.scrollHeight;
+    } else {
+        console.log("[Server] No history found in template.");
+    }
+
+    // Fallback: Fetch from API if Server failed or was empty
+    // This handles cases where caching served a stale page without history
+    if (!historyLoaded) {
+        console.log("[Client] Fetching history from API...");
+        try {
+            const res = await fetch('/api/init');
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+            const data = await res.json();
+            console.log("[Client] API Response:", data);
+
+            if (data.history && data.history.length > 0) {
+                console.log(`[Client] Loaded ${data.history.length} messages.`);
+                const welcome = document.getElementById('welcome-screen');
+                if (welcome) welcome.style.display = 'none';
+
+                // Prevent duplicates if server actually did load something partial (rare)
+                // But here historyLoaded is false, so we assume empty.
+
+                data.history.forEach(msg => {
+                    appendMessage(msg.content, msg.role == 'ai' ? 'ai' : 'user');
+                });
+                chatBox.scrollTop = chatBox.scrollHeight;
+            } else {
+                console.log("[Client] API returned no history.");
+            }
+        } catch (e) {
+            console.error("[Client] Failed to fetch history:", e);
+        }
+    }
+    });
+
+    // Check if user is new
+    const modal = document.getElementById('intro-modal');
+    if (modal) modal.style.display = 'none';
+
+    // Init TTS
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.getVoices(); // Force load
+        logToScreen("TTS System Detected");
+    } else {
+        logToScreen("ERROR: No TTS Support");
+    }
+
+
+
+    // Enter Key
+    input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+
+    // --- VOICE MODE LOGIC (Optimized) ---
+    let isVoiceActive = false;
+    let recognition;
+    let synth = window.speechSynthesis;
+    let ttsBuffer = ""; // Buffer for sentences
+    let isSpeaking = false;
+    let currentLang = 'en-US';
+    let currentGender = 'female'; // Default
+
+    function toggleVoiceMode() {
+        const overlay = document.getElementById('voice-overlay');
+        const status = document.getElementById('voice-status');
+
+        if (!isVoiceActive) {
+            // Start
+            isVoiceActive = true;
+            overlay.style.display = 'flex';
+            status.innerText = "Listening...";
+            startRecognition();
+
+            // DEBUG
+            const v = synth.getVoices();
+            logToScreen(`Available Voices: ${v.length}`);
+
+        } else {
+            // Stop
+            isVoiceActive = false;
+            overlay.style.display = 'none';
+            stopRecognition();
+            synth.cancel(); // Stop talking
+        }
+    }
+
+    function updateVoiceSettings() {
+        currentLang = document.getElementById('lang-select').value;
+        currentGender = document.getElementById('gender-select').value;
+        logToScreen(`Settings: ${currentLang} | ${currentGender}`);
+        // If speaking, maybe restart? For now just apply to next sentence.
+    }
+
+    function startRecognition() {
+        if (!('webkitSpeechRecognition' in window)) {
+            alert("Voice Not Supported in this browser.");
+            return;
+        }
+        recognition = new webkitSpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = currentLang;
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            document.getElementById('voice-status').innerText = "Processing: " + transcript;
+
+            // Send to Chat
+            sendMessage(transcript);
+        };
+
+        recognition.onerror = (e) => {
+            console.error(e);
+            document.getElementById('voice-status').innerText = "Error. Click Mic to retry.";
+            logToScreen("Mic Error: " + e.error);
+        };
+
+        recognition.onend = () => {
+            if (isVoiceActive && !isSpeaking) {
+                // Restart listening if not speaking
+                try { recognition.start(); } catch (e) { }
+            }
+        };
+
+        recognition.start();
+    }
+
+    function stopRecognition() {
+        if (recognition) recognition.stop();
+    }
+
+    // --- TTS ENGINE (Buffered & Safe) ---
+    function feedTTS(textChunk) {
+        if (!isVoiceActive) return;
+
+        if (recognition) recognition.stop();
+        isSpeaking = true;
+        document.getElementById('voice-status').innerText = "Speaking...";
+
+        ttsBuffer += textChunk;
+
+        // Safety: If buffer gets too long without terminator, force speak
+        if (ttsBuffer.length > 200) {
+            console.log("Buffer overflow safety trigger");
+            speakText(ttsBuffer);
+            ttsBuffer = "";
+            return;
+        }
+
+        const parts = ttsBuffer.split(/([.?!:\n]+)/);
+
+        while (parts.length >= 2) {
+            const sentence = parts.shift();
+            const delimiter = parts.shift();
+            const fullSentence = sentence + delimiter;
+            if (fullSentence.trim()) {
+                speakText(fullSentence.trim());
+            }
+        }
+
+        ttsBuffer = parts.join('');
+    }
+
+    function flushTTS() {
+        if (ttsBuffer.trim().length > 0) {
+            console.log("Flushing remaining TTS:", ttsBuffer);
+            speakText(ttsBuffer.trim());
+        }
+        ttsBuffer = "";
+    }
+
+    function testVoice() {
+        // Simple test to verify system audio
+        console.log("Testing voice...");
+        speakText("This is a test of the Partner AI voice system.");
+    }
+
+    function speakText(text) {
+        if (!text) return;
+
+        // Cancel current if needed? No, we queue sentences.
+        // But if queue is clogged? 
+
+        const uttr = new SpeechSynthesisUtterance(text);
+
+        const voices = synth.getVoices();
+        let selectedVoice = null;
+
+        // Filter by Lang
+        const langVoices = voices.filter(v => v.lang.includes(currentLang.replace('-', '_')) || v.lang.includes(currentLang));
+
+        if (langVoices.length > 0) {
+            if (currentGender === 'female') {
+                // Prioritize GOOGLE for better quality
+                selectedVoice = langVoices.find(v => v.name.includes('Google') && v.name.includes('Female'))
+                    || langVoices.find(v => v.name.includes('Google') && !v.name.includes('Male'))
+                    || langVoices.find(v => v.name.includes('Zira'))
+                    || langVoices.find(v => v.name.includes('Female'))
+                    || langVoices[0];
+            } else {
+                selectedVoice = langVoices.find(v => v.name.includes('Google') && v.name.includes('Male'))
+                    || langVoices.find(v => v.name.includes('David'))
+                    || langVoices.find(v => v.name.includes('Male'))
+                    || langVoices[0];
+            }
+        } else {
+            // Fallback if no lang match, try to find ANY match for gender at least?
+            selectedVoice = voices[0];
+        }
+
+        if (selectedVoice) {
+            uttr.voice = selectedVoice;
+            logToScreen(`Speaking with: ${selectedVoice.name}`);
+        } else {
+            logToScreen(`Speaking with Default (No match)`);
+        }
+
+        uttr.rate = 1.0;
+        uttr.pitch = 1.0;
+
+        uttr.onend = () => {
+            if (synth.pending === 0 && ttsBuffer === "") {
+                isSpeaking = false;
+                document.getElementById('voice-status').innerText = "Listening...";
+                if (isVoiceActive) {
+                    try { recognition.start(); } catch (e) { }
+                }
+            }
+        };
+
+        uttr.onerror = (e) => {
+            console.error("TTS Error:", e);
+            logToScreen("TTS Error: " + e.error);
+        };
+
+        synth.speak(uttr);
+    }
+
+    // Init voices (Chrome async load)
+    window.speechSynthesis.onvoiceschanged = () => {
+        logToScreen(`Voices Loaded: ${window.speechSynthesis.getVoices().length}`);
+    };
+
+    // Clear Chat History Function
+    function clearChatHistory() {
+        // Close the menu first
+        document.getElementById('cmd-menu').classList.remove('show');
+
+        if (!confirm('Clear all chat messages? This cannot be undone.')) {
+            return;
+        }
+
+        // Remove all message elements
+        const chatBox = document.getElementById('chat-box');
+        const messages = chatBox.querySelectorAll('.message');
+        messages.forEach(msg => msg.remove());
+
+        // Show the intro overlay again
+        const intro = document.getElementById('intro-overlay');
+        if (intro) {
+            intro.style.display = 'flex';
+        }
+
+        // Clear chat history on server
+        fetch('/api/clear_chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+            .then(res => res.json())
+            .then(data => {
+                console.log('Chat history cleared');
+            })
+            .catch(err => console.error('Error clearing chat:', err));
+    }
+
+    // The following functions were duplicated and are now removed as the above logic handles voice mode.
+</script>
+{% endblock %}

@@ -1,0 +1,939 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    /* ── Habits page dark-theme token overrides ─────────────────────── */
+    [data-theme="dark"] {
+        --habits-bg:        #121214;
+        --habits-card:      #1e1e24;
+        --habits-border:    #2d2d35;
+        --habits-surface:   #2c2c35;
+        --habits-text:      #ffffff;
+        --habits-muted:     #888888;
+        --habits-subtle:    #a1a1aa;
+        --habits-icon-bg:   rgba(255,255,255,0.05);
+        --habits-btn-bg:    #1e1e24;
+        --habits-check-border: #555;
+        --habits-input-bg:  #2c2c35;
+        --habits-input-border: #333;
+        --habits-icon-sel:  rgba(139, 92, 246, 0.1);
+        --habits-icon-opt:  #2c2c35;
+        --habits-modal-bg:  #1e1e24;
+    }
+
+    /* ── Habits page light-theme token overrides ────────────────────── */
+    [data-theme="light"] {
+        --habits-bg:        #f7f8fa;
+        --habits-card:      #ffffff;
+        --habits-border:    #e2e8f0;
+        --habits-surface:   #f1f3f7;
+        --habits-text:      #1a202c;
+        --habits-muted:     #718096;
+        --habits-subtle:    #4a5568;
+        --habits-icon-bg:   rgba(0,0,0,0.04);
+        --habits-btn-bg:    #f1f3f7;
+        --habits-check-border: #cbd5e0;
+        --habits-input-bg:  #f7f8fa;
+        --habits-input-border: #e2e8f0;
+        --habits-icon-sel:  rgba(91, 75, 138, 0.08);
+        --habits-icon-opt:  #f1f3f7;
+        --habits-modal-bg:  #ffffff;
+    }
+
+    body {
+        background-color: var(--habits-bg);
+        color: var(--habits-text);
+    }
+
+    .sidebar-nav .nav-item {
+        color: var(--habits-subtle);
+    }
+
+    .sidebar-nav .nav-item:hover,
+    .sidebar-nav .nav-item.active {
+        background: var(--habits-icon-bg);
+        color: var(--habits-text);
+    }
+
+    .sidebar-logo { color: var(--habits-text); }
+
+    .main-content { background-color: var(--habits-bg); }
+
+    .habits-container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: var(--space-4) var(--space-4) 120px var(--space-4);
+    }
+
+    /* Header */
+    .habits-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: var(--space-6);
+        padding-top: var(--space-4);
+    }
+
+    .user-pill {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+    }
+
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--habits-surface);
+        overflow: hidden;
+    }
+
+    .user-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .header-text h1 {
+        font-size: var(--text-lg);
+        font-weight: 700;
+        margin: 0;
+        color: var(--habits-text);
+    }
+
+    .header-text p {
+        font-size: var(--text-xs);
+        color: var(--habits-muted);
+        margin: 0;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .calendar-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--habits-btn-bg);
+        border: 1px solid var(--habits-border);
+        color: var(--habits-muted);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .calendar-btn:hover {
+        border-color: #667eea;
+        color: #667eea;
+    }
+
+    /* Weekly Progress Card */
+    .progress-card {
+        background: var(--habits-card);
+        border-radius: 24px;
+        padding: var(--space-6);
+        margin-bottom: var(--space-6);
+        border: 1px solid var(--habits-border);
+    }
+
+    .progress-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--space-6);
+    }
+
+    .progress-title {
+        font-size: var(--text-xs);
+        font-weight: 600;
+        color: var(--habits-muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .progress-badge {
+        font-size: var(--text-xs);
+        color: #4ade80;
+        background: rgba(74, 222, 128, 0.1);
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-weight: 600;
+    }
+
+    .completion-stat { margin-bottom: var(--space-6); }
+
+    .stat-value {
+        font-size: var(--text-4xl);
+        font-weight: 700;
+        color: var(--habits-text);
+    }
+
+    .stat-label {
+        font-size: var(--text-sm);
+        color: var(--habits-muted);
+        margin-left: var(--space-2);
+    }
+
+    .week-chart {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        height: 80px;
+        gap: 8px;
+    }
+
+    .day-column {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+        height: 100%;
+        justify-content: flex-end;
+    }
+
+    .bar {
+        width: 100%;
+        background: var(--habits-border);
+        border-radius: 6px;
+        min-height: 4px;
+        transition: height 0.5s ease;
+    }
+
+    .bar.filled {
+        background: #8b5cf6;
+        box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
+    }
+
+    .bar.partial { background: rgba(139, 92, 246, 0.3); }
+
+    .day-label {
+        font-size: 10px;
+        color: var(--habits-muted);
+        font-weight: 600;
+    }
+
+    .day-label.active { color: #8b5cf6; }
+
+    /* AI Insights Card */
+    .ai-card {
+        background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+        border-radius: 24px;
+        padding: var(--space-6);
+        margin-bottom: var(--space-8);
+        position: relative;
+        overflow: hidden;
+        min-height: 140px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .ai-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(255, 255, 255, 0.2);
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: var(--text-xs);
+        font-weight: 700;
+        color: white;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        width: fit-content;
+    }
+
+    .ai-message {
+        font-size: var(--text-xl);
+        font-weight: 600;
+        color: white;
+        line-height: 1.4;
+        margin: var(--space-4) 0;
+        max-width: 90%;
+    }
+
+    .ai-btn {
+        background: white;
+        color: #7c3aed;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: var(--text-sm);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        transition: transform 0.2s;
+        width: fit-content;
+        text-decoration: none;
+    }
+
+    .ai-btn:hover { transform: translateY(-2px); }
+
+    .ai-bg-icon {
+        position: absolute;
+        right: -20px;
+        top: 20px;
+        font-size: 140px;
+        opacity: 0.1;
+        transform: rotate(15deg);
+    }
+
+    /* Habits List */
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--space-4);
+        padding: 0 var(--space-1);
+    }
+
+    .section-title {
+        font-size: var(--text-xs);
+        font-weight: 700;
+        color: var(--habits-muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .section-subtitle {
+        font-size: var(--text-xs);
+        color: var(--habits-muted);
+    }
+
+    .habit-card {
+        background: var(--habits-card);
+        border-radius: 16px;
+        padding: var(--space-4) var(--space-5);
+        display: flex;
+        align-items: center;
+        gap: var(--space-4);
+        margin-bottom: var(--space-3);
+        border: 1px solid var(--habits-border);
+        transition: all 0.2s;
+        position: relative;
+    }
+
+    .habit-card:hover {
+        border-color: var(--habits-surface);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .habit-check {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        border: 2px solid var(--habits-check-border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: transparent;
+        cursor: pointer;
+        transition: all 0.2s;
+        flex-shrink: 0;
+    }
+
+    .habit-check.completed {
+        background: #8b5cf6;
+        border-color: #8b5cf6;
+        color: white;
+    }
+
+    .habit-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .habit-title {
+        font-size: var(--text-base);
+        font-weight: 500;
+        color: var(--habits-text);
+        margin-bottom: 2px;
+        transition: color 0.2s;
+    }
+
+    .habit-subtitle {
+        font-size: 13px;
+        color: var(--habits-muted);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .habit-meta-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: var(--habits-icon-bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        margin-left: auto;
+        color: var(--habits-muted);
+    }
+
+    .habit-menu {
+        color: var(--habits-muted);
+        cursor: pointer;
+        padding: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .habit-menu:hover { color: var(--habits-text); }
+
+    .quote-section {
+        margin-top: var(--space-10);
+        text-align: center;
+        padding: 0 var(--space-8);
+    }
+
+    .quote-text {
+        font-family: serif;
+        font-style: italic;
+        color: var(--habits-muted);
+        font-size: var(--text-sm);
+        line-height: 1.6;
+    }
+
+    /* Add Habit Modal */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-content {
+        background: var(--habits-modal-bg);
+        border-radius: 20px;
+        padding: var(--space-6);
+        width: 90%;
+        max-width: 400px;
+        border: 1px solid var(--habits-border);
+    }
+
+    .form-group { margin-bottom: var(--space-4); }
+
+    .form-label {
+        display: block;
+        color: var(--habits-muted);
+        margin-bottom: var(--space-2);
+        font-size: var(--text-sm);
+    }
+
+    .form-input {
+        width: 100%;
+        padding: var(--space-3);
+        background: var(--habits-input-bg);
+        border: 1px solid var(--habits-input-border);
+        border-radius: var(--radius-md);
+        color: var(--habits-text);
+        font-size: var(--text-base);
+    }
+
+    .form-input:focus {
+        border-color: #8b5cf6;
+        outline: none;
+    }
+
+    .icon-grid {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 8px;
+    }
+
+    .icon-option {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        background: var(--habits-icon-opt);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        border: 2px solid transparent;
+        font-size: 20px;
+    }
+
+    .icon-option.selected {
+        border-color: #8b5cf6;
+        background: var(--habits-icon-sel);
+    }
+
+    /* Back button respects theme */
+    .back-btn {
+        background: none;
+        border: none;
+        color: var(--habits-text);
+        cursor: pointer;
+        margin-right: 8px;
+        display: flex;
+    }
+
+    /* Mobile tweaks */
+    @media (max-width: 768px) {
+        .habits-container {
+            padding: var(--space-4) var(--space-3) 100px;
+        }
+        .ai-message { font-size: var(--text-lg); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="habits-container">
+    <!-- Header -->
+    <div class="habits-header">
+        <div class="user-pill">
+            <button class="back-btn" onclick="window.location.href='/'">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+            </button>
+            <div class="user-avatar">
+                <div
+                    style="width:100%; height:100%; background: #667eea; display: flex; align-items:center; justify-content:center; color:white; font-weight:700;">
+                    PA</div>
+            </div>
+            <div class="header-text" style="margin-left: 12px;">
+                <h1>Habits & Insights <span
+                        style="font-size: 10px; background: #333; padding: 2px 6px; border-radius: 4px; color: #4ade80;">v2.1
+                        Live</span></h1>
+                <p id="currentDate">MONDAY, OCT 23</p>
+            </div>
+        </div>
+        <button class="calendar-btn" onclick="openAddModal()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 5v14M5 12h14" />
+            </svg>
+        </button>
+    </div>
+
+    <!-- Weekly Progress -->
+    <div class="progress-card">
+        <div class="progress-header">
+            <span class="progress-title">Weekly Progress</span>
+            <span class="progress-badge" id="vsLastWeek">+5% vs last week</span>
+        </div>
+
+        <div class="completion-stat">
+            <span class="stat-value" id="completionRate">0%</span>
+            <span class="stat-label">completion rate</span>
+        </div>
+
+        <div class="week-chart" id="weekChart">
+            <!-- Bars injected via JS -->
+        </div>
+    </div>
+
+    <!-- AI Insights -->
+    <div class="ai-card">
+        <div class="ai-bg-icon">🧠</div>
+        <div class="ai-badge">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2L9 9l-7 3 7 3 3 7 3-7 7-3-7-3z" />
+            </svg>
+            AI Insights
+        </div>
+        <div class="ai-message" id="aiMessage">
+            Analyzing your habit patterns...
+        </div>
+        <button class="ai-btn" onclick="fetchAIAnalysis(true)">
+            Update Analysis
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+            </svg>
+        </button>
+    </div>
+
+    <!-- Habits List -->
+    <div class="section-header">
+        <span class="section-title">Today's Habits</span>
+        <span class="section-subtitle" id="dailyProgress">0 of 0 completed</span>
+    </div>
+
+    <div id="habitList">
+        <!-- Habits Rendered Here -->
+        <div style="text-align: center; padding: 40px; color: #666;">
+            <p>No habits yet. Click + to add one!</p>
+        </div>
+    </div>
+
+    <div class="quote-section">
+        <p class="quote-text">"Excellence is not an act, but a habit. You are what you repeatedly do."</p>
+    </div>
+</div>
+
+<!-- Add Habit Modal -->
+<div id="addModal" class="modal">
+    <div class="modal-content">
+        <h2 style="margin: 0 0 20px 0; font-size: 1.2rem;">Add New Habit</h2>
+
+        <div class="form-group">
+            <label class="form-label" style="display:flex; justify-content:space-between; align-items:center;">
+                Title
+                <button onclick="askAIForHabit()"
+                    style="background:none; border:none; color:#8b5cf6; cursor:pointer; font-size:12px; font-weight:600;">✨
+                    AI Suggest</button>
+            </label>
+            <input type="text" id="habitTitle" class="form-input" placeholder="e.g. Read 10 pages">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Time of Day</label>
+            <select id="habitTime" class="form-input">
+                <option value="Morning">Morning</option>
+                <option value="Afternoon">Afternoon</option>
+                <option value="Evening">Evening</option>
+                <option value="Anytime">Anytime</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Icon</label>
+            <div class="icon-grid" id="iconPicker">
+                <!-- Icons -->
+                <div class="icon-option selected" onclick="selectIcon(this)">📝</div>
+                <div class="icon-option" onclick="selectIcon(this)">💧</div>
+                <div class="icon-option" onclick="selectIcon(this)">🏃</div>
+                <div class="icon-option" onclick="selectIcon(this)">🧘</div>
+                <div class="icon-option" onclick="selectIcon(this)">🍎</div>
+                <div class="icon-option" onclick="selectIcon(this)">💤</div>
+                <div class="icon-option" onclick="selectIcon(this)">💻</div>
+                <div class="icon-option" onclick="selectIcon(this)">📚</div>
+                <div class="icon-option" onclick="selectIcon(this)">🧹</div>
+                <div class="icon-option" onclick="selectIcon(this)">🎵</div>
+                <div class="icon-option" onclick="selectIcon(this)">💊</div>
+                <div class="icon-option" onclick="selectIcon(this)">💰</div>
+            </div>
+        </div>
+
+        <div id="aiSuggestions"
+            style="display:none; margin-bottom: 20px; background: #2c2c35; padding: 10px; border-radius: 12px;">
+            <p style="font-size:12px; color:#888; margin-bottom:8px;">AI Suggestions:</p>
+            <div id="suggestionList" style="display:flex; flex-direction:column; gap:8px;"></div>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 30px;">
+            <button onclick="closeAddModal()" class="btn"
+                style="flex:1; background:#2c2c35; color:white;">Cancel</button>
+            <button onclick="saveHabit()" class="btn btn-primary" style="flex:1;">Create</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- STATE ---
+    let habits = [];
+    let selectedIcon = '📝';
+
+    // --- INIT ---
+    document.addEventListener('DOMContentLoaded', () => {
+        updateDate();
+        fetchHabits();
+        fetchStats();
+        fetchAIAnalysis();
+    });
+
+    function updateDate() {
+        const dateOptions = { weekday: 'long', month: 'short', day: 'numeric' };
+        document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-US', dateOptions).toUpperCase();
+    }
+
+    // --- API CALLS ---
+
+    async function fetchHabits() {
+        // Add timestamp to prevent caching
+        const res = await fetch(`/api/habits?t=${Date.now()}`, {
+            headers: { 'Cache-Control': 'no-cache' }
+        });
+        habits = await res.json();
+        renderHabits();
+    }
+
+    async function fetchStats() {
+        const res = await fetch(`/api/habits/stats?t=${Date.now()}`, {
+            headers: { 'Cache-Control': 'no-cache' }
+        });
+        const stats = await res.json();
+        renderChart(stats.chart_data);
+        document.getElementById('completionRate').textContent = (stats.today_rate !== undefined ? stats.today_rate : stats.completion_rate) + '%';
+    }
+
+    async function fetchAIAnalysis(forceUpdate = false) {
+        document.getElementById('aiMessage').textContent = forceUpdate ? "Consulting AI Mentor..." : "Loading insights...";
+
+        try {
+            let data;
+
+            if (!forceUpdate) {
+                // Try fetching stored insight first
+                const res = await fetch(`/api/habits/insights?t=${Date.now()}`, { headers: { 'Cache-Control': 'no-cache' } });
+                data = await res.json();
+
+                // If empty (no stored insight), we might want to auto-generate OR just show default
+                if (!data.pattern && !data.insight) {
+                    if (habits.length > 0) {
+                        // Use default placeholder asking to click update
+                        document.getElementById('aiMessage').textContent = "Click 'Update Analysis' to get personalized insights.";
+                        return;
+                    } else {
+                        document.getElementById('aiMessage').textContent = "Start tracking to unlock insights.";
+                        return;
+                    }
+                }
+            } else {
+                // Force Generation (POST)
+                const statsRes = await fetch('/api/habits/stats');
+                const statsWrapper = await statsRes.json();
+                const habitNames = habits.map(h => ({ name: h.title }));
+
+                const res = await fetch('/api/habits/insights', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        habits: habitNames,
+                        stats: {
+                            completionRate: statsWrapper.completion_rate,
+                            currentStreak: 0
+                        }
+                    })
+                });
+                data = await res.json();
+            }
+
+            if (data.pattern) {
+                let html = `<strong>${data.tip}</strong><br><br>${data.pattern}<br><br><em>Recommendation: ${data.recommendation}</em>`;
+                document.getElementById('aiMessage').innerHTML = html;
+            } else if (data.insight) {
+                document.getElementById('aiMessage').textContent = data.insight;
+            }
+        } catch (e) {
+            console.error(e);
+            document.getElementById('aiMessage').textContent = "Insight currently unavailable.";
+        }
+    }
+
+    async function askAIForHabit() {
+        const btn = document.querySelector('button[onclick="askAIForHabit()"]');
+        btn.textContent = "Thinking...";
+        btn.disabled = true;
+
+        try {
+            const res = await fetch('/api/habits/suggest', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await res.json();
+            const list = document.getElementById('suggestionList');
+            document.getElementById('aiSuggestions').style.display = 'block';
+            list.innerHTML = '';
+
+            if (data.suggestions) {
+                data.suggestions.forEach(s => {
+                    const el = document.createElement('div');
+                    el.style.cssText = "background: #1e1e24; padding: 8px; border-radius: 6px; cursor: pointer; border: 1px solid #333; font-size: 13px;";
+                    el.innerHTML = `<strong>${s.name}</strong> - ${s.time}`;
+                    el.onclick = () => {
+                        document.getElementById('habitTitle').value = s.name;
+                        document.getElementById('habitTime').value = s.time_of_day || 'Anytime';
+                    };
+                    list.appendChild(el);
+                });
+            }
+        } catch (e) {
+            alert('AI unavailable');
+        } finally {
+            btn.textContent = "✨ AI Suggest";
+            btn.disabled = false;
+        }
+    }
+
+    async function toggleHabit(id, el) {
+        // Optimistic UI for new Structure
+        const checkEl = el.querySelector('.habit-check');
+        const titleEl = el.querySelector('.habit-title');
+
+        // 1. Toggle Visuals
+        const isNowCompleted = checkEl.classList.toggle('completed');
+
+        if (isNowCompleted) {
+            titleEl.style.textDecoration = 'line-through';
+            titleEl.style.color = '#666';
+        } else {
+            titleEl.style.textDecoration = 'none';
+            titleEl.style.color = 'white';
+        }
+
+        // 2. Update Internal State & Count
+        const habit = habits.find(h => h.id === id);
+        if (habit) {
+            habit.completed_today = isNowCompleted;
+        }
+
+        const completedCount = habits.filter(h => h.completed_today).length;
+        document.getElementById('dailyProgress').textContent = `${completedCount} of ${habits.length} completed`;
+
+        // 3. Send to Server
+        await fetch(`/api/habits/${id}/toggle`, { method: 'POST' });
+
+        // 4. Refresh background stats (chart)
+        fetchStats();
+        // No need to re-fetch list immediately since we updated state manually, 
+        // but we can do it silently to sync streaks
+        setTimeout(() => fetchHabits(), 1000);
+    }
+
+    async function saveHabit() {
+        const title = document.getElementById('habitTitle').value;
+        const time = document.getElementById('habitTime').value;
+
+        if (!title) return alert('Title required');
+
+        await fetch('/api/habits', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                title: title,
+                time_of_day: time,
+                icon: selectedIcon
+            })
+        });
+
+        closeAddModal();
+        fetchHabits();
+    }
+
+    // --- RENDER ---
+
+    function renderHabits() {
+        const list = document.getElementById('habitList');
+
+        if (habits.length === 0) {
+            list.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;"><p>No habits yet. Click + to add one!</p></div>';
+            document.getElementById('dailyProgress').textContent = '0 of 0 completed';
+            return;
+        }
+
+        let completedCount = 0;
+
+        list.innerHTML = habits.map(h => {
+            if (h.completed_today) completedCount++;
+            const isDone = h.completed_today;
+
+            return `
+            <div class="habit-card" onclick="toggleHabit(${h.id}, this)">
+                <!-- Checkbox Left -->
+                <div class="habit-check ${isDone ? 'completed' : ''}">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                </div>
+                
+                <!-- Content Middle -->
+                <div class="habit-content">
+                    <div class="habit-title" style="${isDone ? 'text-decoration: line-through; color: #666;' : ''}">
+                        ${h.title}
+                    </div>
+                    <div class="habit-subtitle">
+                        <span>${h.time_of_day} • Streak: ${h.streak}🔥</span>
+                    </div>
+                </div>
+                
+                <!-- Menu/Icon Right -->
+                <div class="habit-menu-container" style="position: relative;" onclick="event.stopPropagation()">
+                    <div class="habit-menu" onclick="toggleMenu(${h.id})">
+                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                    </div>
+                    <!-- Dropdown -->
+                    <div id="menu-${h.id}" class="habit-dropdown" style="display:none; position:absolute; right:0; top:30px; background:#2c2c35; border:1px solid #444; border-radius:8px; padding:4px; z-index:10; min-width:120px;">
+                        <div onclick="deleteHabit(${h.id})" style="padding:8px 12px; color:#ef4444; cursor:pointer; font-size:13px; display:flex; align-items:center; gap:8px;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                            Delete
+                        </div>
+                    </div>
+                </div>
+            </div>
+            `;
+        }).join('');
+
+        document.getElementById('dailyProgress').textContent = `${completedCount} of ${habits.length} completed`;
+    }
+
+    // Toggle Menu Visibility
+    function toggleMenu(id) {
+        // Close others
+        document.querySelectorAll('.habit-dropdown').forEach(el => {
+            if (el.id !== `menu-${id}`) el.style.display = 'none';
+        });
+
+        const menu = document.getElementById(`menu-${id}`);
+        menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    }
+
+    // Close menus when clicking outside
+    window.addEventListener('click', () => {
+        document.querySelectorAll('.habit-dropdown').forEach(el => el.style.display = 'none');
+    });
+
+    async function deleteHabit(id) {
+        if (!confirm('Are you sure you want to delete this habit?')) return;
+
+        await fetch(`/api/habits/${id}`, { method: 'DELETE' });
+        fetchHabits(); // Refresh list
+        fetchStats();  // Refresh stats
+    }
+
+    function renderChart(data) {
+        const chart = document.getElementById('weekChart');
+        if (!data) return;
+
+        chart.innerHTML = data.map(d => `
+            <div class="day-column">
+                <div class="bar ${d.value === 100 ? 'filled' : 'partial'}" 
+                     style="height: ${Math.max(10, d.value)}%; opacity: ${d.value ? 1 : 0.2};"></div>
+                <span class="day-label ${d.is_today ? 'active' : ''}">${d.label}</span>
+            </div>
+        `).join('');
+    }
+
+    // --- MODAL ---
+
+    function openAddModal() {
+        document.getElementById('addModal').style.display = 'flex';
+        document.getElementById('habitTitle').focus();
+    }
+
+    function closeAddModal() {
+        document.getElementById('addModal').style.display = 'none';
+        document.getElementById('habitTitle').value = '';
+    }
+
+    function selectIcon(el) {
+        document.querySelectorAll('.icon-option').forEach(e => e.classList.remove('selected'));
+        el.classList.add('selected');
+        selectedIcon = el.textContent;
+    }
+
+    window.onclick = function (event) {
+        if (event.target == document.getElementById('addModal')) {
+            closeAddModal();
+        }
+    }
+</script>
+{% endblock %}
