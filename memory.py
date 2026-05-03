@@ -34,6 +34,10 @@ DB_NAME = _default_db_path()
 def get_db():
     # Priority: 1. DATABASE_URL (PostgreSQL), 2. Local SQLite
     db_url = os.getenv("DATABASE_URL")
+    if db_url:
+        # Clean common mistakes like brackets in env vars
+        db_url = db_url.replace('[', '').replace(']', '')
+        
     if db_url and (db_url.startswith("postgres") or db_url.startswith("postgresql")):
         try:
             import psycopg2
@@ -74,15 +78,18 @@ def init_db():
                 # Column likely exists
                 pass 
 
+        # Determine ID type for auto-increment based on DB connection type
+        # PostgreSQL uses SERIAL, SQLite uses INTEGER PRIMARY KEY AUTOINCREMENT
+        is_pg = "psycopg2" in str(type(conn))
+        id_type_ai = "SERIAL PRIMARY KEY" if is_pg else "INTEGER PRIMARY KEY AUTOINCREMENT"
+
         # 1. Base Users Table
-        cursor.execute("""
+        cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS users (
-            user_id SERIAL PRIMARY KEY,
+            user_id {id_type_ai},
             name TEXT
         )
         """)
-        # For SQLite fallback
-        if "SERIAL" in str(cursor.description): pass # serial is PG
         
         # 2. Add columns
         add_column('users', 'career', 'TEXT')
@@ -103,45 +110,6 @@ def init_db():
         add_column('users', 'password', 'TEXT')
         add_column('users', 'email', 'TEXT')
         add_column('users', 'flow_day', 'INTEGER', 0)
-
-        # 3. Community / Groups
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS community_posts (
-            id SERIAL PRIMARY KEY,
-            user_name TEXT,
-            content TEXT,
-            timestamp TEXT
-        )
-        """)
-        
-        
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS groups (
-            id SERIAL PRIMARY KEY,
-            name TEXT,
-            leader_id INTEGER,
-            status TEXT DEFAULT 'PLANNING',
-            goal TEXT
-        )
-        """)
-        
-        # Add new team collaboration columns to groups
-        add_column('groups', 'project_name', 'TEXT')
-        add_column('groups', 'deadline', 'TEXT')
-        add_column('groups', 'invite_code', 'TEXT')
-        add_column('groups', 'created_at', 'TEXT')
-
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS group_members (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            group_id INTEGER,
-            user_id INTEGER
-        )
-        """)
-        
-        # Add role tracking for members
-        add_column('group_members', 'role', 'TEXT', "'member'")
-        add_column('group_members', 'joined_at', 'TEXT')
 
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS group_tasks (
@@ -177,200 +145,45 @@ def init_db():
             user_id INTEGER,
             role TEXT,
             content TEXT,
-            timestamp TEXT
-        )
-        """)
+        cursor.execute(f"CREATE TABLE IF NOT EXISTS group_chat_messages (id {id_type_ai}, group_id INTEGER, user_id INTEGER, role TEXT, content TEXT, timestamp TEXT)")
         
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS chat_history (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            role TEXT,
-            content TEXT,
-            timestamp TEXT
-        )
-        """)
+        cursor.execute(f"CREATE TABLE IF NOT EXISTS chat_history (id {id_type_ai}, user_id INTEGER, role TEXT, content TEXT, timestamp TEXT)")
         
         # Rewards & Daily
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS user_rewards (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            reward_type TEXT,
-            earned_at TEXT
-        )
-        """)
+        cursor.execute(f"CREATE TABLE IF NOT EXISTS user_rewards (id {id_type_ai}, user_id INTEGER, reward_type TEXT, earned_at TEXT)")
         
         # Add duration column
         add_column('user_rewards', 'duration_minutes', 'INTEGER', 25)
         
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS daily_tasks (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            task_content TEXT,
-            is_completed INTEGER DEFAULT 0,
-            created_at TEXT
-        )
-        """)
+        cursor.execute(f"CREATE TABLE IF NOT EXISTS daily_tasks (id {id_type_ai}, user_id INTEGER, task_content TEXT, is_completed INTEGER DEFAULT 0, created_at TEXT)")
         
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS daily_articles (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            content TEXT,
-            created_at TEXT
-        )
-        """)
+        cursor.execute(f"CREATE TABLE IF NOT EXISTS daily_articles (id {id_type_ai}, user_id INTEGER, content TEXT, created_at TEXT)")
         
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS daily_news (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            news_json TEXT,
-            created_at TEXT
-        )
-        """)
+        cursor.execute(f"CREATE TABLE IF NOT EXISTS daily_news (id {id_type_ai}, user_id INTEGER, news_json TEXT, created_at TEXT)")
         
         # --- SMART BLOCKS SYSTEM ---
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS smart_blocks (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            block_type TEXT NOT NULL,
-            title TEXT,
-            content TEXT,
-            metadata TEXT,
-            created_at TEXT,
-            updated_at TEXT,
-            FOREIGN KEY (user_id) REFERENCES users(user_id)
-        )
-        """)
+        cursor.execute(f"CREATE TABLE IF NOT EXISTS smart_blocks (id {id_type_ai}, user_id INTEGER NOT NULL, block_type TEXT NOT NULL, title TEXT, content TEXT, metadata TEXT, created_at TEXT, updated_at TEXT, FOREIGN KEY (user_id) REFERENCES users(user_id))")
         
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS block_relationships (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            block_id_1 INTEGER NOT NULL,
-            block_id_2 INTEGER NOT NULL,
-            relationship_type TEXT,
-            created_at TEXT,
-            FOREIGN KEY (block_id_1) REFERENCES smart_blocks(id),
-            FOREIGN KEY (block_id_2) REFERENCES smart_blocks(id)
-        )
-        """)
+        cursor.execute(f"CREATE TABLE IF NOT EXISTS block_relationships (id {id_type_ai}, block_id_1 INTEGER NOT NULL, block_id_2 INTEGER NOT NULL, relationship_type TEXT, created_at TEXT, FOREIGN KEY (block_id_1) REFERENCES smart_blocks(id), FOREIGN KEY (block_id_2) REFERENCES smart_blocks(id))")
         
         # --- AI MEMORY SYSTEM ---
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS ai_user_memory (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            memory_key TEXT NOT NULL,
-            memory_value TEXT,
-            confidence_score REAL DEFAULT 0.5,
-            last_updated TEXT,
-            FOREIGN KEY (user_id) REFERENCES users(user_id)
-        )
-        """)
+        cursor.execute(f"CREATE TABLE IF NOT EXISTS ai_user_memory (id {id_type_ai}, user_id INTEGER NOT NULL, memory_key TEXT NOT NULL, memory_value TEXT, confidence_score REAL DEFAULT 0.5, last_updated TEXT, FOREIGN KEY (user_id) REFERENCES users(user_id))")
         
         # --- HABIT ANALYTICS ---
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS habit_analytics (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            habit_name TEXT NOT NULL,
-            completed INTEGER DEFAULT 0,
-            scheduled_time TEXT,
-            actual_time TEXT,
-            completion_duration INTEGER,
-            created_at TEXT,
-            FOREIGN KEY (user_id) REFERENCES users(user_id)
-        )
-        """)
+        cursor.execute(f"CREATE TABLE IF NOT EXISTS habit_analytics (id {id_type_ai}, user_id INTEGER NOT NULL, habit_name TEXT NOT NULL, completed INTEGER DEFAULT 0, scheduled_time TEXT, actual_time TEXT, completion_duration INTEGER, created_at TEXT, FOREIGN KEY (user_id) REFERENCES users(user_id))")
         
         # --- WEEKLY REPORTS ---
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS weekly_reports (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            week_start_date TEXT,
-            progress_score INTEGER,
-            strengths TEXT,
-            weaknesses TEXT,
-            strategy TEXT,
-            report_data TEXT,
-            created_at TEXT,
-            FOREIGN KEY (user_id) REFERENCES users(user_id)
-        )
-        """)
+        cursor.execute(f"CREATE TABLE IF NOT EXISTS weekly_reports (id {id_type_ai}, user_id INTEGER NOT NULL, week_start_date TEXT, progress_score INTEGER, strengths TEXT, weaknesses TEXT, strategy TEXT, report_data TEXT, created_at TEXT, FOREIGN KEY (user_id) REFERENCES users(user_id))")
         
         # --- FOCUS SESSIONS ---
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS focus_sessions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            task_description TEXT,
-            micro_tasks TEXT,
-            duration_minutes INTEGER,
-            completed_tasks INTEGER,
-            focus_score REAL,
-            feedback TEXT,
-            started_at TEXT,
-            completed_at TEXT,
-            FOREIGN KEY (user_id) REFERENCES users(user_id)
-        )
-        """)
+        cursor.execute(f"CREATE TABLE IF NOT EXISTS focus_sessions (id {id_type_ai}, user_id INTEGER NOT NULL, task_description TEXT, micro_tasks TEXT, duration_minutes INTEGER, completed_tasks INTEGER, focus_score REAL, feedback TEXT, started_at TEXT, completed_at TEXT, FOREIGN KEY (user_id) REFERENCES users(user_id))")
         
         # --- AI DAILY TASKS ---
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS ai_daily_tasks (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            task_content TEXT NOT NULL,
-            task_date TEXT NOT NULL,
-            status TEXT DEFAULT 'pending',
-            created_at TEXT,
-            completed_at TEXT,
-            FOREIGN KEY (user_id) REFERENCES users(user_id)
-        )
-        """)
+        cursor.execute(f"CREATE TABLE IF NOT EXISTS ai_daily_tasks (id {id_type_ai}, user_id INTEGER NOT NULL, task_content TEXT NOT NULL, task_date TEXT NOT NULL, status TEXT DEFAULT 'pending', created_at TEXT, completed_at TEXT, FOREIGN KEY (user_id) REFERENCES users(user_id))")
         
         # --- IN-APP REMINDERS ---
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS reminders (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            content TEXT NOT NULL,
-            trigger_at TEXT NOT NULL,
-            triggered INTEGER DEFAULT 0,
-            dismissed INTEGER DEFAULT 0,
-            created_at TEXT,
-            FOREIGN KEY (user_id) REFERENCES users(user_id)
-        )
-        """)
+        cursor.execute(f"CREATE TABLE IF NOT EXISTS reminders (id {id_type_ai}, user_id INTEGER NOT NULL, content TEXT NOT NULL, trigger_at TEXT NOT NULL, triggered INTEGER DEFAULT 0, dismissed INTEGER DEFAULT 0, created_at TEXT, FOREIGN KEY (user_id) REFERENCES users(user_id))")
 
-        # Check if we are on PostgreSQL
-        id_type_ai = "SERIAL PRIMARY KEY" if "psycopg2" in str(type(conn)) else "INTEGER PRIMARY KEY AUTOINCREMENT"
-
-        # 3. Community / Groups
-        cursor.execute(f"""
-        CREATE TABLE IF NOT EXISTS community_posts (
-            id {id_type_ai},
-            user_name TEXT,
-            content TEXT,
-            timestamp TEXT
-        )
-        """)
-        
-        cursor.execute(f"""
-        CREATE TABLE IF NOT EXISTS groups (
-            id {id_type_ai},
-            name TEXT,
-            leader_id INTEGER,
-            status TEXT DEFAULT 'PLANNING',
-            goal TEXT
-        )
-        """)
-        
         # --- AUTH VERIFICATIONS ---
         cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS signup_verifications (

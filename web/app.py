@@ -293,8 +293,21 @@ def handle_500(e):
 @app.errorhandler(Exception)
 def handle_exception(e):
     """Handle all unhandled exceptions"""
-    logging.error(f"Unhandled exception: {e}", exc_info=True)
-    return jsonify({'error': 'An error occurred', 'status': 500}), 500
+    import traceback
+    error_msg = str(e)
+    stack_trace = traceback.format_exc()
+    logging.error(f"Unhandled exception: {error_msg}\n{stack_trace}")
+    
+    # In production, show the error message for debugging
+    response = {
+        'error': 'Internal Server Error',
+        'message': error_msg,
+        'status': 500
+    }
+    if not os.getenv('VERCEL'): # Show stack trace locally
+        response['traceback'] = stack_trace
+        
+    return jsonify(response), 500
 
 # Extreme session persistence
 app.permanent_session_lifetime = timedelta(days=365)
