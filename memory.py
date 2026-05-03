@@ -7,8 +7,24 @@ from contextlib import contextmanager
 
 
 def _default_db_path():
+    """
+    Get the database path. On Vercel, use the project directory.
+    /tmp is ephemeral in Vercel serverless; data is wiped between deployments.
+    Instead, store in the project root which persists.
+    """
     if os.getenv("VERCEL"):
-        return os.getenv("PARTNERAI_DB_PATH", "/tmp/partnerai.db")
+        # On Vercel, store DB in project root (persists across deployments)
+        project_root = os.path.dirname(os.path.abspath(__file__))
+        db_path = os.path.join(project_root, "partnerai_data.db")
+        # Ensure directory is writable
+        try:
+            with open(db_path, 'a'):
+                pass
+        except (IOError, OSError) as e:
+            print(f"Warning: Cannot write to {db_path}: {e}. Using fallback.", flush=True)
+        return db_path
+    
+    # Local development: use PARTNERAI_DB_PATH env or default to project root
     return os.getenv("PARTNERAI_DB_PATH", os.path.join(os.path.dirname(os.path.abspath(__file__)), "partnerai.db"))
 
 

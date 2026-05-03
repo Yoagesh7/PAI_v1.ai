@@ -201,21 +201,29 @@ def auto_adjust_habit(user_id, habit_name):
     }
 
 app = Flask(__name__, template_folder=os.path.join(BASE_DIR, 'templates'), static_folder=os.path.join(BASE_DIR, 'static'))
-app.secret_key = 'partnerai_secret_key'  # Needed for session
-# Security/session: persist login until explicit logout
-_env_cookie_secure = os.getenv('SESSION_COOKIE_SECURE')
-if _env_cookie_secure is None:
-    # Default secure cookie on cloud HTTPS, relaxed for local HTTP dev
-    cookie_secure = bool(os.getenv('VERCEL'))
-else:
-    cookie_secure = _env_cookie_secure.strip().lower() in ('1', 'true', 'yes', 'on')
+app.secret_key = 'partnerai_secret_key_2024_v1'  # Change key periodically for security
 
+# CRITICAL: Vercel is serverless. Sessions must use signed cookies (default).
+# In-memory sessions don't persist across container restarts.
+# Session data is encoded in the cookie itself, signed with secret_key.
+# When VERCEL env var is set, enforce secure cookies for HTTPS traffic.
+_env_cookie_secure = os.getenv('SESSION_COOKIE_SECURE')
+if _env_cookie_secure is not None:
+    # Explicit override via environment variable
+    cookie_secure = _env_cookie_secure.strip().lower() in ('1', 'true', 'yes', 'on')
+else:
+    # Auto-detect: HTTPS (Vercel) requires secure cookies; local dev uses HTTP
+    cookie_secure = bool(os.getenv('VERCEL')) or os.getenv('FLASK_ENV') == 'production'
+
+# SameSite must be 'Lax' or 'Strict' for cross-site cookie handling
+# Lax allows top-level navigation (user clicking link) but blocks <img>, <script>, etc.
 app.config.update({
     'PERMANENT_SESSION_LIFETIME': timedelta(days=30),
     'SESSION_REFRESH_EACH_REQUEST': True,
     'SESSION_COOKIE_HTTPONLY': True,
     'SESSION_COOKIE_SAMESITE': 'Lax',
     'SESSION_COOKIE_SECURE': cookie_secure,
+    'SESSION_COOKIE_NAME': 'partnerai_session',  # Explicit name for debugging
 })
 
 
@@ -498,6 +506,29 @@ def health_check():
     return jsonify({'status': 'healthy', 'time': datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
 
 
+@app.route('/api/debug/db', methods=['GET'])
+def debug_db():
+    """Check database health and list users for debugging."""
+    try:
+        from memory import get_db
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM users")
+            user_count = cursor.fetchone()[0]
+            
+            cursor.execute("SELECT user_id, username, email FROM users LIMIT 10")
+            users = cursor.fetchall()
+            
+            return jsonify({
+                'status': 'ok',
+                'user_count': user_count,
+                'sample_users': [{'user_id': u[0], 'username': u[1], 'email': u[2]} for u in users]
+            })
+    except Exception as e:
+        logging.error(f"DB debug error: {e}")
+        return jsonify({'status': 'error', 'error': str(e)}), 500
+
+
 @app.route('/api/debug/ai-key')
 def debug_ai_key():
     """Return whether the NVIDIA API key is present on the running server.
@@ -723,10 +754,13 @@ def login():
 
     user_row = get_user_by_username(identifier)
     if not user_row:
+        # Debug: Log the lookup failure
+        logging.warning(f"Login lookup failed for identifier: {identifier}")
         return jsonify({'error': 'Account not found. Please create an account.'}), 404
 
     user_id = verify_user(identifier, password)
     if not user_id:
+        logging.warning(f"Password verification failed for identifier: {identifier}")
         return jsonify({'error': 'Invalid credentials. If you are new, please create an account.'}), 401
 
     # Canonical values from DB (tuple mapping in memory.get_user_by_username)
@@ -750,11 +784,11 @@ def login():
                 if to:
                     send_email(to, subject, body)
             except Exception as e:
-                print(f"DEBUG: Login email failed: {e}", flush=True)
+                logging.error(f"Login email failed: {e}")
 
         threading.Thread(target=send_login_email, args=(user_email,), daemon=True).start()
     except Exception as e:
-        print(f"DEBUG: Login verification generation failed: {e}", flush=True)
+        logging.error(f"Login verification generation failed: {e}")
 
     return jsonify({
         'success': True,
