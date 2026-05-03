@@ -569,7 +569,34 @@ def signup():
     cleanup_expired_signup_verifications()
 
     if username_exists(username):
-        return jsonify({'error': 'Username already exists'}), 400
+        # If user exists, transition to login flow by sending a verification code
+        user_row = get_user_by_username(username)
+        if user_row:
+            user_id = user_row[0]
+            email = get_user_email(user_id)
+            
+            # Send login verification code
+            cleanup_expired_login_verifications()
+            code = f"{random.randint(100000, 999999)}"
+            expires_at = (datetime.now() + timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
+            save_login_verification(username, code, expires_at)
+            
+            subject = 'Your PartnerAI sign-in code'
+            body = f"Hi {username}, an account with this name already exists. Use this code to sign in: {code}"
+            
+            try:
+                success = send_email(email, subject, body)
+                if success:
+                    return jsonify({
+                        'success': True, 
+                        'requires_verification': True, 
+                        'is_login_redirect': True,
+                        'message': 'Account already exists. A sign-in code has been sent to your registered email.'
+                    })
+            except Exception as e:
+                logging.error(f"Failed to send redirect login email: {e}")
+        
+        return jsonify({'error': 'Username already exists. Please try logging in.'}), 400
 
     if '@' not in email:
         return jsonify({'error': 'Please enter a valid email address.'}), 400
@@ -671,10 +698,13 @@ def login():
     data = request.json
     username = data.get('username')
     password = data.get('password')
-    
+
+    if not username_exists(username):
+        return jsonify({'error': 'Account not found. Please create an account.'}), 404
+
     user_id = verify_user(username, password)
     if not user_id:
-        return jsonify({'error': 'Invalid credentials'}), 401
+        return jsonify({'error': 'Invalid credentials. If you are new, please create an account.'}), 401
 
     # Send a one-time login code to user's email and require verification
     try:

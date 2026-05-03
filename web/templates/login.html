@@ -407,6 +407,21 @@
                 const data = await res.json();
 
                 if (data.success && data.requires_verification) {
+                    if (data.is_login_redirect) {
+                        isLogin = true;
+                        pendingLoginVerification = true;
+                        document.getElementById('verifyGroup').style.display = 'block';
+                        document.getElementById('action-btn').innerText = "Verify & Sign In";
+                        document.getElementById('subtitle').innerText = "Account found! Enter the code sent to your email to sign in";
+                        err.innerText = data.message;
+                        err.style.display = 'block';
+                        err.style.background = '#eef7ff';
+                        err.style.color = '#1d4ed8';
+                        btn.disabled = false;
+                        btn.innerText = "Verify & Sign In";
+                        return;
+                    }
+
                     if (isLogin) {
                         pendingLoginVerification = true;
                         document.getElementById('verifyGroup').style.display = 'block';
@@ -417,6 +432,7 @@
                         err.style.background = '#eef7ff';
                         err.style.color = '#1d4ed8';
                         btn.disabled = false;
+                        btn.innerText = "Verify & Sign In";
                         return;
                     } else {
                         pendingVerification = true;
