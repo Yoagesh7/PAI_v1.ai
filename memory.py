@@ -380,12 +380,13 @@ def save_signup_verification(username, password, email, code, expires_at):
         cursor = conn.cursor()
         # Delete any existing verification for this email/username to avoid duplicates
         cursor.execute(f"DELETE FROM signup_verifications WHERE username={PL} OR email={PL}", (username, email))
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         cursor.execute(
             f"""
-            INSERT INTO signup_verifications (username, password, email, code, expires_at)
-            VALUES ({PL}, {PL}, {PL}, {PL}, {PL})
+            INSERT INTO signup_verifications (username, password, email, code, expires_at, created_at)
+            VALUES ({PL}, {PL}, {PL}, {PL}, {PL}, {PL})
             """,
-            (username, password, email, code, expires_at),
+            (username, password, email, code, expires_at, now),
         )
         conn.commit()
 
@@ -451,9 +452,10 @@ def save_login_verification(username, code, expires_at):
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(f"DELETE FROM login_verifications WHERE LOWER(username)=LOWER({PL})", (username,))
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         cursor.execute(
-            f"INSERT INTO login_verifications (username, code, expires_at) VALUES ({PL}, {PL}, {PL})",
-            (username, code, expires_at)
+            f"INSERT INTO login_verifications (username, code, expires_at, created_at) VALUES ({PL}, {PL}, {PL}, {PL})",
+            (username, code, expires_at, now),
         )
         conn.commit()
 
@@ -506,9 +508,10 @@ def save_password_reset(username, email, code, expires_at):
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(f"DELETE FROM password_resets WHERE username={PL} OR email={PL}", (username, email))
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         cursor.execute(
-            f"INSERT INTO password_resets (username, email, code, expires_at) VALUES ({PL}, {PL}, {PL}, {PL})",
-            (username, email, code, expires_at)
+            f"INSERT INTO password_resets (username, email, code, expires_at, created_at) VALUES ({PL}, {PL}, {PL}, {PL}, {PL})",
+            (username, email, code, expires_at, now),
         )
         conn.commit()
 

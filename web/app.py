@@ -340,8 +340,11 @@ def rate_limit(key_prefix, limit=10, window=60):
                     return jsonify({'error': 'Too many requests'}), 429
                 return f(*args, **kwargs)
             except Exception as e:
-                logging.error(f"Error in rate_limit decorator: {e}")
-                return f(*args, **kwargs) # Fallback to executing function without limit
+                import traceback
+                logging.error(f"Error in rate_limit decorator: {e}\n{traceback.format_exc()}")
+                # Don't re-call f here, just let the exception propagate to the global handler
+                raise e
+
         wrapped.__name__ = f.__name__
         return wrapped
     return decorator
@@ -1481,8 +1484,13 @@ def chat():
     if not user_id:
         return jsonify({'error': 'Not authenticated'}), 401
     
-            # SAVE USER MESSAGE TO HISTORY
-    save_chat_message(user_id, 'user', text)
+    try:
+        # SAVE USER MESSAGE TO HISTORY
+        save_chat_message(user_id, 'user', text)
+    except Exception as e:
+        logging.error(f"Error saving user message: {e}")
+        # Non-fatal, but good to know
+        pass
     
     user = get_user(user_id)
     logging.info(f"DEBUG: chat user object type={type(user)}, content={user}")
@@ -2101,7 +2109,7 @@ CONVERSATION RULES (follow naturally, don't state them):
             role = 'assistant' if h['role'] == 'ai' else 'user'
             content = h['content']
             # skip empty or very long command outputs to save context
-            if content and len(content.strip()) > 0 and not content.startswith('') and len(content) < 1200:
+            if content and len(content.strip()) > 0 and not content.startswith('/') and len(content) < 1200:
                 history_messages.append({"role": role, "content": content})
         # Cap to last 10 turns to stay within context window
         history_messages = history_messages[-10:]
@@ -2138,9 +2146,11 @@ CONVERSATION RULES (follow naturally, don't state them):
         return Response(stream_with_context(stream_chat_response()), mimetype='text/plain')
         
     except AIConnectionError as e:
+        logging.error(f"Chat AIConnectionError: {e}")
         print(f"Chat AIConnectionError: {e}", flush=True)
         return Response(_OFFLINE_MSG, mimetype='text/plain')
     except Exception as e:
+        logging.exception("Detailed Chat Error:")
         print(f"Chat Error: {e}", flush=True)
         return Response(f"I'm having a bit of trouble connecting to my brain right now. \n\nDebug: {e}", mimetype='text/plain')
 
