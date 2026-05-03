@@ -878,6 +878,46 @@ def _extract_tasks_from_chat(user_id: int, user_message: str, ai_reply: str, use
         print(f"DEBUG: Task extraction error (non-fatal): {e}", flush=True)
 
 
+def _extract_plan_items(plan_text: str):
+    """Extract actionable plan steps from markdown/plain plan text."""
+    import re
+
+    if not plan_text:
+        return []
+
+    items = []
+    for raw in str(plan_text).splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        # Bullet lines: -, *, •
+        m_bullet = re.match(r'^[-*•]\s+(.+)$', line)
+        if m_bullet:
+            items.append(m_bullet.group(1).strip())
+            continue
+        # Numbered lines: 1. ..., 2) ...
+        m_num = re.match(r'^\d+[\.)]\s+(.+)$', line)
+        if m_num:
+            items.append(m_num.group(1).strip())
+
+    cleaned = []
+    for item in items:
+        text = re.sub(r'[`*_#>]+', '', item).strip()
+        if text and len(text) > 2:
+            cleaned.append(text[:160])
+
+    # Deduplicate while preserving order
+    seen = set()
+    out = []
+    for c in cleaned:
+        key = c.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(c)
+    return out[:8]
+
+
 @app.route('/api/chat', methods=['POST'])
 def chat():
     print("DEBUG: /api/chat endpoint HIT (Start)", flush=True)
@@ -1470,6 +1510,7 @@ CONVERSATION RULES (follow naturally, don't state them):
 - Keep tone warm and motivating; use 1-3 relevant emojis naturally.
 - When giving steps, tips, or plans, prefer short bullet points (•) for clarity.
 - Use plain text. No markdown headers (#, ##). Bold is fine for key words.
+- If user asks for a plan, respond with a clear step-by-step bullet plan and end with: [OPTIONS: Add this to today's plan | Edit this plan | Make it shorter]
 - If they say they're tired, struggling, or failing — acknowledge it first before coaching.
 - Never lecture. Never moralize. Give the next smallest step forward."""
 
@@ -1539,6 +1580,76 @@ CONVERSATION RULES (follow naturally, don't state them):
     except Exception as e:
         print(f"Chat Error: {e}", flush=True)
         return Response(f"I'm having a bit of trouble connecting to my brain right now. 🧠\n\nDebug: {e}", mimetype='text/plain')
+
+
+@app.route('/api/chat/plan/add', methods=['POST'])
+def add_plan_to_today():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.json or {}
+    plan_text = (data.get('plan_text') or '').strip()
+    if not plan_text:
+        return jsonify({'error': 'Missing plan text'}), 400
+
+    user_id = session['user_id']
+    plan_items = _extract_plan_items(plan_text)
+    if not plan_items:
+        return jsonify({'error': 'No actionable steps found in plan'}), 400
+
+    existing = get_daily_tasks(user_id)
+    existing_lower = {str(t.get('task', '')).strip().lower() for t in existing}
+
+    added = []
+    for item in plan_items:
+        k = item.lower()
+        if k in existing_lower:
+            continue
+        create_daily_task(user_id, item)
+        existing_lower.add(k)
+        added.append(item)
+
+    msg = f"✅ Added {len(added)} step(s) to today's plan." if added else "ℹ️ All plan steps were already in today's plan."
+    save_chat_message(user_id, 'ai', msg)
+    return jsonify({'success': True, 'added_count': len(added), 'added': added, 'message': msg})
+
+
+@app.route('/api/chat/plan/edit', methods=['POST'])
+def edit_plan_from_chat():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.json or {}
+    plan_text = (data.get('plan_text') or '').strip()
+    edit_request = (data.get('edit_request') or '').strip()
+
+    if not plan_text:
+        return jsonify({'error': 'Missing plan text'}), 400
+
+    if not edit_request:
+        return jsonify({'error': 'Missing edit request'}), 400
+
+    try:
+        prompt = (
+            "Revise the following plan based on the user's edit request. "
+            "Return only the revised plan as short bullet points using •. "
+            "Keep it practical and concise (3-8 bullets).\n\n"
+            f"Original plan:\n{plan_text}\n\n"
+            f"User edit request:\n{edit_request}"
+        )
+
+        res = rag_system.generate_response(messages=[
+            {"role": "system", "content": "You are a planning assistant. Output only the revised plan."},
+            {"role": "user", "content": prompt}
+        ], temperature=0.4)
+
+        edited_plan = (res.get('message', {}) or {}).get('content', '').strip()
+        if not edited_plan:
+            return jsonify({'error': 'Could not generate edited plan'}), 500
+
+        return jsonify({'success': True, 'edited_plan': edited_plan})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 # --- REMINDER NOTIFICATION API ---
 @app.route('/api/reminders/check', methods=['GET'])
