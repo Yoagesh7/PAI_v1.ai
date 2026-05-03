@@ -336,7 +336,7 @@ def save_user(user_id, **fields):
 
 
 # Password hashing utilities using PBKDF2-HMAC
-import os, hashlib, binascii
+import os, hashlib, binascii, hmac
 
 def _hash_password(password: str, iterations: int = 180000) -> str:
     salt = os.urandom(16)
@@ -345,16 +345,20 @@ def _hash_password(password: str, iterations: int = 180000) -> str:
 
 def _verify_password(stored: str, password: str) -> bool:
     try:
-        if '$' not in stored:
+        if not stored or '$' not in stored:
             # Fallback for older plaintext passwords
             return stored == password
             
-        algo, iterations, salt_hex, dk_hex = stored.split('$')
+        parts = stored.split('$')
+        if len(parts) != 4:
+            return stored == password
+            
+        algo, iterations, salt_hex, dk_hex = parts
         iterations = int(iterations)
         salt = binascii.unhexlify(salt_hex)
         expected = binascii.unhexlify(dk_hex)
         test = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, iterations)
-        return hashlib.compare_digest(test, expected)
+        return hmac.compare_digest(test, expected)
     except Exception:
         return False
 
