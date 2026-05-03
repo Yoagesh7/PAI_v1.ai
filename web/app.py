@@ -1069,6 +1069,38 @@ def auth_restore():
         logging.error(f"Restore session error: {e}")
         return jsonify({'error': 'Invalid user data'}), 400
 
+@app.route('/api/auth/check', methods=['GET'])
+def auth_check():
+    """Check if user is currently logged in"""
+    user_id = session.get('user_id')
+    user_name = session.get('user_name')
+    
+    if not user_id:
+        logging.info(f"❌ Auth check: No session (IP={request.remote_addr})")
+        return jsonify({
+            'logged_in': False,
+            'user_id': None,
+            'user_name': None
+        }), 401
+    
+    try:
+        user = get_user(int(user_id))
+        if user:
+            logging.info(f"✅ Auth check: user_id={user_id}, user_name={user_name}")
+            return jsonify({
+                'logged_in': True,
+                'user_id': user_id,
+                'user_name': user_name,
+                'session_expires': session.permanent
+            })
+        else:
+            logging.warning(f"❌ Auth check: User {user_id} not in DB")
+            session.clear()
+            return jsonify({'logged_in': False, 'error': 'User not found'}), 401
+    except Exception as e:
+        logging.error(f"Auth check error: {e}")
+        return jsonify({'logged_in': False, 'error': str(e)}), 500
+
 @app.route('/api/group/status', methods=['GET'])
 def group_status():
     user_id = session.get('user_id', 1)
@@ -2264,59 +2296,82 @@ def settings_page():
 
 @app.route('/api/user/profile', methods=['GET', 'POST'])
 def user_profile_api():
-    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
-    user_id = session['user_id']
-    
-    if request.method == 'GET':
-        user = get_user(user_id)
-        return jsonify({
-            'name': user[1],
-            'career': user[2],
-            'hobbies': user[3],
-            'daily_topic': user[10],
-            'work_time': user[11],
-            'free_time': user[12],
-            'age': user[13]
-        })
+    try:
+        if 'user_id' not in session: 
+            logging.warning(f"❌ Profile API: No session, remote_addr={request.remote_addr}")
+            return jsonify({'error': 'Unauthorized', 'code': 'NO_SESSION'}), 401
+        user_id = session['user_id']
         
-    data = request.json
-    save_user(
-        user_id,
-        name=data.get('name'),
-        career=data.get('career'),
-        hobbies=data.get('hobbies'),
-        daily_topic=data.get('daily_topic'),
-        work_time=data.get('work_time'),
-        free_time=data.get('free_time'),
-        age=data.get('age')
-    )
-    return jsonify({'success': True})
+        if request.method == 'GET':
+            user = get_user(user_id)
+            if not user:
+                logging.warning(f"❌ Profile GET: User {user_id} not found in DB")
+                return jsonify({'error': 'User not found'}), 404
+            
+            profile = {
+                'name': user[1] if len(user) > 1 else '',
+                'career': user[2] if len(user) > 2 else '',
+                'hobbies': user[3] if len(user) > 3 else '',
+                'daily_topic': user[10] if len(user) > 10 else '',
+                'work_time': user[11] if len(user) > 11 else '',
+                'free_time': user[12] if len(user) > 12 else '',
+                'age': user[13] if len(user) > 13 else ''
+            }
+            logging.info(f"✅ Profile GET: user={user_id}")
+            return jsonify(profile)
+        
+        # POST - Save profile
+        data = request.json
+        save_user(
+            user_id,
+            name=data.get('name'),
+            career=data.get('career'),
+            hobbies=data.get('hobbies'),
+            daily_topic=data.get('daily_topic'),
+            work_time=data.get('work_time'),
+            free_time=data.get('free_time'),
+            age=data.get('age')
+        )
+        session.modified = True  # Force session to refresh
+        logging.info(f"✅ Profile POST: user={user_id}, updated fields={list(data.keys())}")
+        return jsonify({'success': True})
+    except Exception as e:
+        logging.error(f"❌ Profile API error: {e}", exc_info=True)
+        return jsonify({'error': str(e), 'code': 'INTERNAL_ERROR'}), 500
 
 @app.route('/api/init')
 def init_chat():
-    user_id = session.get('user_id')
-    print(f"DEBUG: init_chat called. Session user_id={user_id}", flush=True)
-    
-    if not user_id:
-        return jsonify({'is_new_user': True, 'history': []})
+    try:
+        user_id = session.get('user_id')
+        logging.info(f"Init: user_id from session={user_id}")
+        
+        if not user_id:
+            logging.info(f"Init: No session user_id. Returning new_user=true")
+            return jsonify({'is_new_user': True, 'history': []})
 
-    user = get_user(user_id)
-    if not user: 
-        print(f"DEBUG: User {user_id} not found in DB", flush=True)
-        return jsonify({'is_new_user': True, 'history': []})
-    
-    try: name = user[1]
-    except: name = "Friend"
-    
-    # Fetch History
-    history = get_chat_history(user_id)
-    print(f"DEBUG: Retrieved {len(history)} messages for user {user_id}", flush=True)
-    
-    return jsonify({
-        'is_new_user': False, 
-        'name': name,
-        'history': history 
-    })
+        user = get_user(user_id)
+        if not user: 
+            logging.warning(f"Init: User {user_id} not found in DB")
+            session.clear()  # Clear bad session
+            return jsonify({'is_new_user': True, 'history': []})
+        
+        try: 
+            name = user[1] or "Friend"
+        except: 
+            name = "Friend"
+        
+        # Fetch History
+        history = get_chat_history(user_id)
+        logging.info(f"✅ Init complete: user={name}, messages={len(history) if history else 0}")
+        
+        return jsonify({
+            'is_new_user': False, 
+            'name': name,
+            'history': history 
+        })
+    except Exception as e:
+        logging.error(f"❌ Init error: {e}", exc_info=True)
+        return jsonify({'is_new_user': True, 'history': []}), 200  # Return 200 so page doesn't crash
 
 @app.route('/collection')
 def collection_page():
@@ -2524,60 +2579,92 @@ def get_daily_news_api():
 
 @app.route('/api/habits', methods=['GET', 'POST'])
 def manage_habits():
-    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
-    user_id = session['user_id']
-    
-    if request.method == 'POST':
-        data = request.json
-        title = data.get('title')
-        category = data.get('category', 'General')
-        icon = data.get('icon', '📝')
-        time_of_day = data.get('time_of_day', 'Anytime')
+    try:
+        if 'user_id' not in session: 
+            return jsonify({'error': 'Unauthorized', 'code': 'NO_SESSION'}), 401
+        user_id = session['user_id']
         
-        if not title: return jsonify({'error': 'Title required'}), 400
-        
-        habit_id = create_habit(user_id, title, category, icon, time_of_day)
-        return jsonify({'id': habit_id, 'status': 'created'})
-        
-    else:
-        habits = get_user_habits(user_id)
-        return jsonify(habits)
+        if request.method == 'POST':
+            data = request.json
+            title = data.get('title')
+            category = data.get('category', 'General')
+            icon = data.get('icon', '📝')
+            time_of_day = data.get('time_of_day', 'Anytime')
+            
+            if not title: 
+                return jsonify({'error': 'Title required'}), 400
+            
+            habit_id = create_habit(user_id, title, category, icon, time_of_day)
+            logging.info(f"✅ Habit created: id={habit_id}, user={user_id}")
+            return jsonify({'id': habit_id, 'status': 'created'})
+            
+        else:
+            habits = get_user_habits(user_id)
+            logging.info(f"✅ Habits fetched: count={len(habits) if isinstance(habits, list) else 0}, user={user_id}")
+            return jsonify(habits)
+    except Exception as e:
+        logging.error(f"❌ Habits endpoint error: {e}", exc_info=True)
+        return jsonify({'error': str(e), 'code': 'INTERNAL_ERROR'}), 500
 
 @app.route('/api/habits/<int:habit_id>', methods=['DELETE'])
 def remove_habit(habit_id):
-    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
-    
-    from habits_db import delete_habit
-    success = delete_habit(habit_id, session['user_id'])
-    
-    if success:
-        return jsonify({'success': True})
-    else:
-        return jsonify({'error': 'Habit not found or unauthorized'}), 404
+    try:
+        if 'user_id' not in session: 
+            return jsonify({'error': 'Unauthorized'}), 401
+        
+        from habits_db import delete_habit
+        success = delete_habit(habit_id, session['user_id'])
+        
+        if success:
+            logging.info(f"✅ Habit deleted: id={habit_id}, user={session['user_id']}")
+            return jsonify({'success': True})
+        else:
+            return jsonify({'error': 'Habit not found or unauthorized'}), 404
+    except Exception as e:
+        logging.error(f"❌ Delete habit error: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/habits/<int:habit_id>/toggle', methods=['POST'])
 def toggle_habit_route(habit_id):
-    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
-    user_id = session['user_id']
-    
-    completed = toggle_habit(habit_id, user_id)
-    return jsonify({'id': habit_id, 'completed': completed})
+    try:
+        if 'user_id' not in session: 
+            return jsonify({'error': 'Unauthorized'}), 401
+        user_id = session['user_id']
+        
+        completed = toggle_habit(habit_id, user_id)
+        logging.info(f"✅ Habit toggled: id={habit_id}, completed={completed}, user={user_id}")
+        return jsonify({'id': habit_id, 'completed': completed})
+    except Exception as e:
+        logging.error(f"❌ Toggle habit error: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/habits/stats', methods=['GET'])
 def habit_stats():
-    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
-    user_id = session['user_id']
-    
-    stats = get_weekly_stats(user_id)
-    return jsonify(stats)
+    try:
+        if 'user_id' not in session: 
+            return jsonify({'error': 'Unauthorized'}), 401
+        user_id = session['user_id']
+        
+        stats = get_weekly_stats(user_id)
+        logging.info(f"✅ Habit stats fetched: user={user_id}")
+        return jsonify(stats)
+    except Exception as e:
+        logging.error(f"❌ Habit stats error: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/habits/analyze', methods=['GET'])
 def ai_habit_analysis():
-    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
-    user_id = session['user_id']
-    
-    insight = analyze_habits_ai(user_id)
-    return jsonify({'insight': insight})
+    try:
+        if 'user_id' not in session: 
+            return jsonify({'error': 'Unauthorized'}), 401
+        user_id = session['user_id']
+        
+        insight = analyze_habits_ai(user_id)
+        logging.info(f"✅ Habit analysis generated: user={user_id}")
+        return jsonify({'insight': insight})
+    except Exception as e:
+        logging.error(f"❌ Habit analysis error: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
 
 def suggest_habits():
     """AI-powered habit suggestions based on user's goal"""
