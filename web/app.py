@@ -1025,7 +1025,18 @@ def login_verify():
 @app.route('/api/auth/switch', methods=['POST'])
 def switch_user():
     data = request.json
-    user_id = int(data.get('user_id', 1))
+    raw_user_id = data.get('user_id')
+    if raw_user_id is None:
+        return jsonify({'error': 'Missing user_id'}), 400
+
+    try:
+        user_id = int(raw_user_id)
+    except (TypeError, ValueError):
+        return jsonify({'error': 'Invalid user_id'}), 400
+
+    if user_id <= 0:
+        return jsonify({'error': 'Invalid user_id'}), 400
+
     name = f"User {user_id}"
     session['user_id'] = user_id
     session['user_name'] = name
@@ -1033,7 +1044,7 @@ def switch_user():
     
     # Ensure user exists in DB
     if not get_user(user_id):
-        save_user(user_id, name=name, state="ACTIVE")
+        return jsonify({'error': 'User not found'}), 404
         
     return jsonify({'success': True, 'user_name': name})
 
@@ -1103,7 +1114,9 @@ def auth_check():
 
 @app.route('/api/group/status', methods=['GET'])
 def group_status():
-    user_id = session.get('user_id', 1)
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'Not authenticated'}), 401
     group = get_user_group(user_id)
     if not group:
         return jsonify({'in_group': False})
@@ -1127,7 +1140,9 @@ def group_status():
 def create_or_join():
     data = request.json
     action = data.get('action')
-    user_id = session.get('user_id', 1)
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'Not authenticated'}), 401
     
     if action == 'create':
         container_name = data.get('name', 'Squad')
@@ -1147,7 +1162,9 @@ def create_or_join():
 def group_set_goal():
     data = request.json
     goal = data.get('goal')
-    user_id = session.get('user_id', 1)
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'Not authenticated'}), 401
     group = get_user_group(user_id)
     
     if not group or group[3] != user_id: # Only leader
@@ -1335,11 +1352,15 @@ def community_api():
         return jsonify(posts)
     
     if request.method == 'POST':
+        if 'user_id' not in session:
+            return jsonify({'error': 'Not authenticated'}), 401
         data = request.json
         content = data.get('content', '').strip()
         if not content: return jsonify({'error': 'Empty post'}), 400
         
-        current_uid = session.get('user_id', 1)
+        current_uid = session.get('user_id')
+        if not current_uid:
+            return jsonify({'error': 'Not authenticated'}), 401
         user = get_user(current_uid)
         user_name = user[1] if user else f"User {current_uid}"
         
@@ -1514,7 +1535,9 @@ def chat():
     if not text:
         return Response("Error: No message", mimetype='text/plain')
 
-    user_id = session.get('user_id', 1)
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'Not authenticated'}), 401
     
             # SAVE USER MESSAGE TO HISTORY
     save_chat_message(user_id, 'user', text)
