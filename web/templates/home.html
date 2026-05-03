@@ -166,6 +166,27 @@
 </style>
 
 <script>
+    // Recover user session from localStorage if server session is lost (Vercel issue)
+    function recoverSessionFromStorage() {
+        const stored = {
+            user_id: localStorage.getItem('partnerai_user_id'),
+            user_name: localStorage.getItem('partnerai_user_name'),
+            user_email: localStorage.getItem('partnerai_user_email'),
+            login_time: localStorage.getItem('partnerai_login_time')
+        };
+        
+        // Check if localStorage data is valid (logged in within last 30 days)
+        if (stored.user_id && stored.user_name && stored.login_time) {
+            const loginDate = new Date(stored.login_time);
+            const daysSinceLogin = (new Date() - loginDate) / (1000 * 60 * 60 * 24);
+            if (daysSinceLogin < 30) {
+                console.log(`📱 Recovered user from localStorage: ${stored.user_name}`);
+                return stored;
+            }
+        }
+        return null;
+    }
+
     // Set greeting based on time
     function setGreeting() {
         const hour = new Date().getHours();
@@ -278,14 +299,37 @@
     setGreeting();
     loadTasks();
 
-    // Load user info if available
+    // Load user info from API first, fallback to localStorage
     fetch('/api/user')
-        .then(r => r.json())
+        .then(r => {
+            if (r.status === 401) {
+                // Session expired, try to recover from localStorage
+                const recovered = recoverSessionFromStorage();
+                if (recovered) {
+                    console.log(`📱 Using recovered session for ${recovered.user_name}`);
+                    document.getElementById('username-display').textContent = recovered.user_name;
+                } else {
+                    // No valid session and no recovery data, redirect to login
+                    console.log('❌ No session and no recovery data, redirecting to login');
+                    window.location.replace('/login');
+                }
+                return null;
+            }
+            return r.json();
+        })
         .then(data => {
-            if (data.username) {
+            if (data && data.username) {
                 document.getElementById('username-display').textContent = data.username;
             }
         })
-        .catch(() => { });
+        .catch((err) => {
+            console.error('Error loading user:', err);
+            const recovered = recoverSessionFromStorage();
+            if (recovered) {
+                document.getElementById('username-display').textContent = recovered.user_name;
+            } else {
+                window.location.replace('/login');
+            }
+        });
 </script>
 {% endblock %}

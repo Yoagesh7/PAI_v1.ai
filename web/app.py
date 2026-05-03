@@ -775,7 +775,14 @@ def signup_verify():
     session['user_id'] = user_id
     session['user_name'] = username
     session.permanent = True
-    return jsonify({'success': True})
+    
+    # Return user data for frontend to save to localStorage
+    return jsonify({
+        'success': True,
+        'user_id': user_id,
+        'user_name': username,
+        'user_email': email
+    })
 
 @app.route('/api/login', methods=['POST'])
 @rate_limit('login', limit=6, window=60)
@@ -844,11 +851,13 @@ def login_verify():
     # Normalize to canonical username in case user entered email
     user_row = get_user_by_username(username)
     if not user_row:
+        logging.warning(f"User not found during login verify: {username}")
         return jsonify({'error': 'User not found'}), 404
     canonical_username = user_row[15] if len(user_row) > 15 and user_row[15] else username
 
     ok, err = verify_login_code(canonical_username, code)
     if not ok:
+        logging.warning(f"OTP verification failed for {canonical_username}: {err}")
         return jsonify({'error': err}), 400
 
     # Find user id and log them in
@@ -856,9 +865,19 @@ def login_verify():
     session['user_id'] = user_id
     session['user_name'] = canonical_username
     session.permanent = True
+    
+    # Debug logging
+    logging.info(f"✅ Login successful for user_id={user_id}, username={canonical_username}")
 
     clear_login_verification(canonical_username)
-    return jsonify({'success': True})
+    
+    # Return full user data so frontend can save to localStorage
+    return jsonify({
+        'success': True,
+        'user_id': user_id,
+        'user_name': canonical_username,
+        'user_email': user_row[17] if len(user_row) > 17 else None
+    })
 
 @app.route('/api/auth/switch', methods=['POST'])
 def switch_user():
