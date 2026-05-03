@@ -9,14 +9,14 @@
   "theme_color": "#7A66C2",
   "icons": [
     {
-      "src": "/static/images/partnerai-logo.svg",
-      "sizes": "any",
-      "type": "image/svg+xml"
+      "src": "/static/images/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
     },
     {
-      "src": "/static/images/partnerai-logo.svg",
-      "sizes": "any",
-      "type": "image/svg+xml"
+      "src": "/static/images/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
     }
   ]
 }
