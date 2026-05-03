@@ -28,8 +28,6 @@ def _default_db_path():
 DB_NAME = _default_db_path()
 
 
-DB_NAME = _default_db_path()
-
 @contextmanager
 def get_db():
     # Priority: 1. DATABASE_URL (PostgreSQL), 2. Local SQLite
@@ -138,15 +136,7 @@ def init_db():
         """)
         
         # Chat Tables
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS group_chat_messages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            group_id INTEGER,
-            user_id INTEGER,
-            role TEXT,
-            content TEXT,
         cursor.execute(f"CREATE TABLE IF NOT EXISTS group_chat_messages (id {id_type_ai}, group_id INTEGER, user_id INTEGER, role TEXT, content TEXT, timestamp TEXT)")
-        
         cursor.execute(f"CREATE TABLE IF NOT EXISTS chat_history (id {id_type_ai}, user_id INTEGER, role TEXT, content TEXT, timestamp TEXT)")
         
         # Rewards & Daily
