@@ -656,21 +656,65 @@
     // --- API CALLS ---
 
     async function fetchHabits() {
-        // Add timestamp to prevent caching
-        const res = await fetch(`/api/habits?t=${Date.now()}`, {
-            headers: { 'Cache-Control': 'no-cache' }
-        });
-        habits = await res.json();
-        renderHabits();
+        try {
+            // Add timestamp to prevent caching
+            const res = await fetch(`/api/habits?t=${Date.now()}`, {
+                headers: { 'Cache-Control': 'no-cache' }
+            });
+            
+            // Check if response is OK
+            if (!res.ok) {
+                console.error(`❌ Fetch habits failed: ${res.status}`);
+                if (res.status === 401) {
+                    console.warn('Session expired, attempting recovery...');
+                    window.location.reload();
+                    return;
+                }
+                throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+            }
+            
+            const text = await res.text();
+            // Check if response is valid JSON
+            if (!text || text.startsWith('<!')) {
+                console.error('❌ Server returned HTML instead of JSON:', text.substring(0, 100));
+                throw new Error('Server error: received HTML instead of JSON');
+            }
+            
+            habits = JSON.parse(text);
+            renderHabits();
+        } catch (err) {
+            console.error('❌ Error fetching habits:', err);
+            document.getElementById('habitsList').innerHTML = `<div style="padding:20px; color:red;">Error loading habits: ${err.message}</div>`;
+        }
     }
 
     async function fetchStats() {
-        const res = await fetch(`/api/habits/stats?t=${Date.now()}`, {
-            headers: { 'Cache-Control': 'no-cache' }
-        });
-        const stats = await res.json();
-        renderChart(stats.chart_data);
-        document.getElementById('completionRate').textContent = (stats.today_rate !== undefined ? stats.today_rate : stats.completion_rate) + '%';
+        try {
+            const res = await fetch(`/api/habits/stats?t=${Date.now()}`, {
+                headers: { 'Cache-Control': 'no-cache' }
+            });
+            
+            if (!res.ok) {
+                console.error(`❌ Fetch stats failed: ${res.status}`);
+                if (res.status === 401) {
+                    window.location.reload();
+                    return;
+                }
+                throw new Error(`HTTP ${res.status}`);
+            }
+            
+            const text = await res.text();
+            if (!text || text.startsWith('<!')) {
+                console.error('❌ Server returned HTML instead of JSON');
+                return;
+            }
+            
+            const stats = JSON.parse(text);
+            renderChart(stats.chart_data);
+            document.getElementById('completionRate').textContent = (stats.today_rate !== undefined ? stats.today_rate : stats.completion_rate) + '%';
+        } catch (err) {
+            console.error('❌ Error fetching stats:', err);
+        }
     }
 
     async function fetchAIAnalysis(forceUpdate = false) {
@@ -682,7 +726,24 @@
             if (!forceUpdate) {
                 // Try fetching stored insight first
                 const res = await fetch(`/api/habits/insights?t=${Date.now()}`, { headers: { 'Cache-Control': 'no-cache' } });
-                data = await res.json();
+                
+                if (!res.ok) {
+                    console.error(`❌ Fetch insights failed: ${res.status}`);
+                    if (res.status === 401) {
+                        window.location.reload();
+                        return;
+                    }
+                    throw new Error(`HTTP ${res.status}`);
+                }
+                
+                const text = await res.text();
+                if (!text || text.startsWith('<!')) {
+                    console.error('❌ Server returned HTML instead of JSON');
+                    document.getElementById('aiMessage').textContent = "Error loading insights. Please try again.";
+                    return;
+                }
+                
+                data = JSON.parse(text);
 
                 // If empty (no stored insight), we might want to auto-generate OR just show default
                 if (!data.pattern && !data.insight) {
@@ -698,7 +759,10 @@
             } else {
                 // Force Generation (POST)
                 const statsRes = await fetch('/api/habits/stats');
-                const statsWrapper = await statsRes.json();
+                if (!statsRes.ok) throw new Error('Failed to fetch stats');
+                const statsText = await statsRes.text();
+                if (!statsText || statsText.startsWith('<!')) throw new Error('Server returned HTML');
+                const statsWrapper = JSON.parse(statsText);
                 const habitNames = habits.map(h => ({ name: h.title }));
 
                 const res = await fetch('/api/habits/insights', {
@@ -712,7 +776,19 @@
                         }
                     })
                 });
-                data = await res.json();
+                
+                if (!res.ok) {
+                    console.error(`❌ Generate insights failed: ${res.status}`);
+                    if (res.status === 401) {
+                        window.location.reload();
+                        return;
+                    }
+                    throw new Error(`HTTP ${res.status}`);
+                }
+                
+                const text = await res.text();
+                if (!text || text.startsWith('<!')) throw new Error('Server returned HTML');
+                data = JSON.parse(text);
             }
 
             if (data.pattern) {
@@ -722,7 +798,7 @@
                 document.getElementById('aiMessage').textContent = data.insight;
             }
         } catch (e) {
-            console.error(e);
+            console.error('❌ AI Analysis error:', e);
             document.getElementById('aiMessage').textContent = "Insight currently unavailable.";
         }
     }
@@ -737,7 +813,18 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' }
             });
-            const data = await res.json();
+            
+            if (!res.ok) {
+                if (res.status === 401) {
+                    window.location.reload();
+                    return;
+                }
+                throw new Error(`HTTP ${res.status}`);
+            }
+            
+            const text = await res.text();
+            if (!text || text.startsWith('<!')) throw new Error('Server returned HTML');
+            const data = JSON.parse(text);
             const list = document.getElementById('suggestionList');
             document.getElementById('aiSuggestions').style.display = 'block';
             list.innerHTML = '';
@@ -763,38 +850,53 @@
     }
 
     async function toggleHabit(id, el) {
-        // Optimistic UI for new Structure
-        const checkEl = el.querySelector('.habit-check');
-        const titleEl = el.querySelector('.habit-title');
+        try {
+            // Optimistic UI for new Structure
+            const checkEl = el.querySelector('.habit-check');
+            const titleEl = el.querySelector('.habit-title');
 
-        // 1. Toggle Visuals
-        const isNowCompleted = checkEl.classList.toggle('completed');
+            // 1. Toggle Visuals
+            const isNowCompleted = checkEl.classList.toggle('completed');
 
-        if (isNowCompleted) {
-            titleEl.style.textDecoration = 'line-through';
-            titleEl.style.color = '#666';
-        } else {
-            titleEl.style.textDecoration = 'none';
-            titleEl.style.color = 'white';
+            if (isNowCompleted) {
+                titleEl.style.textDecoration = 'line-through';
+                titleEl.style.color = '#666';
+            } else {
+                titleEl.style.textDecoration = 'none';
+                titleEl.style.color = 'white';
+            }
+
+            // 2. Update Internal State & Count
+            const habit = habits.find(h => h.id === id);
+            if (habit) {
+                habit.completed_today = isNowCompleted;
+            }
+
+            const completedCount = habits.filter(h => h.completed_today).length;
+            document.getElementById('dailyProgress').textContent = `${completedCount} of ${habits.length} completed`;
+
+            // 3. Send to Server
+            const res = await fetch(`/api/habits/${id}/toggle`, { 
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            if (!res.ok) {
+                console.error(`❌ Toggle habit failed: ${res.status}`);
+                if (res.status === 401) {
+                    window.location.reload();
+                }
+            }
+
+            // 4. Refresh background stats (chart)
+            fetchStats();
+            // No need to re-fetch list immediately since we updated state manually, 
+            // but we can do it silently to sync streaks
+            setTimeout(() => fetchHabits(), 1000);
+        } catch (e) {
+            console.error('❌ Toggle habit error:', e);
+            alert('Failed to update habit');
         }
-
-        // 2. Update Internal State & Count
-        const habit = habits.find(h => h.id === id);
-        if (habit) {
-            habit.completed_today = isNowCompleted;
-        }
-
-        const completedCount = habits.filter(h => h.completed_today).length;
-        document.getElementById('dailyProgress').textContent = `${completedCount} of ${habits.length} completed`;
-
-        // 3. Send to Server
-        await fetch(`/api/habits/${id}/toggle`, { method: 'POST' });
-
-        // 4. Refresh background stats (chart)
-        fetchStats();
-        // No need to re-fetch list immediately since we updated state manually, 
-        // but we can do it silently to sync streaks
-        setTimeout(() => fetchHabits(), 1000);
     }
 
     async function saveHabit() {
@@ -803,18 +905,36 @@
 
         if (!title) return alert('Title required');
 
-        await fetch('/api/habits', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                title: title,
-                time_of_day: time,
-                icon: selectedIcon
-            })
-        });
+        try {
+            const res = await fetch('/api/habits', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: title,
+                    time_of_day: time,
+                    icon: selectedIcon
+                })
+            });
+            
+            if (!res.ok) {
+                console.error(`❌ Save habit failed: ${res.status}`);
+                if (res.status === 401) {
+                    window.location.reload();
+                    return;
+                }
+                throw new Error(`HTTP ${res.status}`);
+            }
+            
+            const text = await res.text();
+            if (!text || text.startsWith('<!')) throw new Error('Server returned HTML');
+            const data = JSON.parse(text);
 
-        closeAddModal();
-        fetchHabits();
+            closeAddModal();
+            fetchHabits();
+        } catch (e) {
+            console.error('❌ Save habit error:', e);
+            alert('Failed to save habit: ' + e.message);
+        }
     }
 
     // --- RENDER ---
@@ -892,9 +1012,24 @@
     async function deleteHabit(id) {
         if (!confirm('Are you sure you want to delete this habit?')) return;
 
-        await fetch(`/api/habits/${id}`, { method: 'DELETE' });
-        fetchHabits(); // Refresh list
-        fetchStats();  // Refresh stats
+        try {
+            const res = await fetch(`/api/habits/${id}`, { method: 'DELETE' });
+            
+            if (!res.ok) {
+                console.error(`❌ Delete habit failed: ${res.status}`);
+                if (res.status === 401) {
+                    window.location.reload();
+                    return;
+                }
+                throw new Error(`HTTP ${res.status}`);
+            }
+            
+            fetchHabits(); // Refresh list
+            fetchStats();  // Refresh stats
+        } catch (e) {
+            console.error('❌ Delete habit error:', e);
+            alert('Failed to delete habit: ' + e.message);
+        }
     }
 
     function renderChart(data) {
