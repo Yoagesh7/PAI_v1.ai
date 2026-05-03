@@ -237,9 +237,12 @@
 @media (max-width:768px) {
   /* Page */
   .kb-page {
+    width: 100%;
+    max-width: 100%;
     padding-bottom:120px;
     background:var(--kb-bg);
     overflow-x: hidden; /* Prevent horizontal scroll */
+    box-sizing: border-box;
   }
 
   /* ── Header ── */
@@ -247,6 +250,7 @@
     padding:12px 16px 0;
     position:sticky; top:0;
     width: 100%;
+    max-width: 100%;
     box-sizing: border-box;
   }
   .kb-hdr-top {

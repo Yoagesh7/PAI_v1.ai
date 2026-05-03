@@ -352,14 +352,15 @@ def create_account(username, password, email):
 def verify_user(username_or_email, password):
     with get_db() as conn:
         cursor = conn.cursor()
-        # Check both username and email columns
+        # Fetch all potential matches (important if multiple accounts share an email)
         cursor.execute("SELECT user_id, password FROM users WHERE username=? OR email=?", (username_or_email, username_or_email))
-        row = cursor.fetchone()
-        if not row:
-            return None
-        user_id, stored = row[0], row[1]
-        if _verify_password(stored, password):
-            return user_id
+        rows = cursor.fetchall()
+        
+        for row in rows:
+            user_id, stored = row[0], row[1]
+            if _verify_password(stored, password):
+                return user_id
+                
         return None
 
 
@@ -416,6 +417,10 @@ def _hash_password(password: str, iterations: int = 180000) -> str:
 
 def _verify_password(stored: str, password: str) -> bool:
     try:
+        if '$' not in stored:
+            # Fallback for older plaintext passwords
+            return stored == password
+            
         algo, iterations, salt_hex, dk_hex = stored.split('$')
         iterations = int(iterations)
         salt = binascii.unhexlify(salt_hex)
