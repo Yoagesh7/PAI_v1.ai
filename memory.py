@@ -68,15 +68,19 @@ def init_db():
         
         def add_column(table, column, col_type, default_value=None):
             try:
-                # Check if column exists first (PostgreSQL and SQLite have different syntax for this, so we use a try-except fallback)
                 if default_value is not None:
                      cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_type} DEFAULT {default_value}")
                 else:
                      cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_type}")
                 conn.commit()
-            except Exception:
-                # Column likely exists
-                pass 
+                print(f"Added column {column} to {table}")
+            except Exception as e:
+                # Column likely exists, but let's check the error message
+                err_msg = str(e).lower()
+                if "already exists" in err_msg or "duplicate column" in err_msg:
+                    pass
+                else:
+                    print(f"Error adding column {column} to {table}: {e}")
 
         # Determine ID type for auto-increment based on DB connection type
         # PostgreSQL uses SERIAL, SQLite uses INTEGER PRIMARY KEY AUTOINCREMENT
