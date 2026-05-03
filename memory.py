@@ -376,7 +376,7 @@ def verify_signup_code(username, email, password, code):
             f"""
             SELECT id, expires_at, password, email
             FROM signup_verifications
-            WHERE username={PL} AND code={PL}
+            WHERE LOWER(username)=LOWER({PL}) AND code={PL}
             """,
             (username, code),
         )
@@ -406,7 +406,7 @@ def verify_signup_code(username, email, password, code):
 def clear_signup_verification(username):
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute(f"DELETE FROM signup_verifications WHERE username={PL}", (username,))
+        cursor.execute(f"DELETE FROM signup_verifications WHERE LOWER(username)=LOWER({PL})", (username,))
         conn.commit()
 
 
@@ -422,7 +422,7 @@ def save_login_verification(username, code, expires_at):
     """Store login OTP."""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute(f"DELETE FROM login_verifications WHERE username={PL}", (username,))
+        cursor.execute(f"DELETE FROM login_verifications WHERE LOWER(username)=LOWER({PL})", (username,))
         cursor.execute(
             f"INSERT INTO login_verifications (username, code, expires_at) VALUES ({PL}, {PL}, {PL})",
             (username, code, expires_at)
@@ -434,7 +434,7 @@ def verify_login_code(username, code):
     """Verify login OTP."""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute(f"SELECT id, expires_at FROM login_verifications WHERE username={PL} AND code={PL}", (username, code))
+        cursor.execute(f"SELECT id, expires_at FROM login_verifications WHERE LOWER(username)=LOWER({PL}) AND code={PL}", (username, code))
         row = cursor.fetchone()
         if not row:
             return False, 'Invalid verification code.'
@@ -455,7 +455,7 @@ def verify_login_code(username, code):
 def clear_login_verification(username):
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute(f"DELETE FROM login_verifications WHERE username={PL}", (username,))
+        cursor.execute(f"DELETE FROM login_verifications WHERE LOWER(username)=LOWER({PL})", (username,))
         conn.commit()
 
 
