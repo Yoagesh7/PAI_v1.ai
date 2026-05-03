@@ -411,13 +411,16 @@
         .mobile-more-popup {
             position: absolute;
             bottom: calc(100% + 12px);
-            right: -8px;
+            right: 8px;
+            left: auto;
             background: var(--color-bg-secondary);
             border-radius: 18px;
             padding: 6px;
             box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.13), 0 8px 24px rgba(0, 0, 0, 0.10);
             border: 1px solid var(--color-border-light);
-            min-width: 176px;
+            min-width: 160px;
+            max-width: 320px;
+            width: auto;
             opacity: 0;
             transform: translateY(8px) scale(0.93);
             transform-origin: bottom right;
@@ -425,6 +428,8 @@
                         transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
             pointer-events: none;
             z-index: 200;
+            overflow: hidden;
+            word-break: break-word;
         }
 
         [data-theme="dark"] .mobile-more-popup {
@@ -449,6 +454,20 @@
             border-right: 1px solid var(--color-border-light);
             border-bottom: 1px solid var(--color-border-light);
             transform: rotate(45deg);
+        }
+
+        /* Make popup full-width with margins on very small screens */
+        @media (max-width: 420px) {
+            .mobile-more-popup {
+                left: 8px;
+                right: 8px;
+                min-width: auto;
+                width: calc(100% - 16px);
+                max-width: none;
+                transform-origin: bottom center;
+            }
+
+            .mobile-more-popup::after { right: 28px; }
         }
 
         .popup-item {
@@ -761,6 +780,33 @@
                 }
             });
         });
+
+        // PWA install flow: capture beforeinstallprompt and expose promptInstall()
+        window.deferredInstallPrompt = null;
+        window.isAppInstalled = false;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            window.deferredInstallPrompt = e;
+            // Optionally show an install UI (the Settings page will query this)
+            document.body.dispatchEvent(new CustomEvent('pwa:available'));
+        });
+
+        window.addEventListener('appinstalled', () => {
+            window.isAppInstalled = true;
+            document.body.dispatchEvent(new CustomEvent('pwa:installed'));
+        });
+
+        function promptInstall() {
+            const e = window.deferredInstallPrompt;
+            if (!e) {
+                return Promise.reject(new Error('Install prompt not available'));
+            }
+            return e.prompt().then(() => e.userChoice).then(choice => {
+                window.deferredInstallPrompt = null;
+                return choice;
+            });
+        }
     </script>
 
     {% block scripts %}{% endblock %}

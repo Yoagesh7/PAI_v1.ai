@@ -82,7 +82,7 @@
         }
     </style>
     <div class="page-header" style="margin-bottom: var(--space-8);">
-        <p class="text-secondary text-lg" style="margin-bottom: var(--space-1);">Welcome back,</p>
+        <p id="greetingLine" class="text-secondary text-lg" style="margin-bottom: var(--space-1);">Welcome back,</p>
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <h1 class="text-4xl font-bold" style="color: var(--color-text-primary); margin: 0;">Productivity Dashboard
             </h1>
@@ -193,6 +193,41 @@
         </div>
 
     </div>
+
+    <script>
+        function getTimeGreeting() {
+            const h = new Date().getHours();
+            if (h < 12) return 'Good morning';
+            if (h < 18) return 'Good afternoon';
+            return 'Good evening';
+        }
+
+        async function setGreeting() {
+            try {
+                const res = await fetch('/api/init');
+                const data = await res.json();
+                const name = (data && data.name) ? data.name : 'friend';
+                const greeting = `${getTimeGreeting()}, ${name}`;
+                const el = document.getElementById('greetingLine');
+                if (el) el.textContent = greeting;
+
+                // Secondary encouragement line
+                const header = document.querySelector('.page-header');
+                if (header && !document.getElementById('visionLine')) {
+                    const p = document.createElement('div');
+                    p.id = 'visionLine';
+                    p.className = 'text-lg';
+                    p.style = 'margin-top:8px; color:var(--color-text-tertiary);';
+                    p.textContent = 'Time to focus on your vision.';
+                    header.appendChild(p);
+                }
+            } catch (e) {
+                console.warn('Greeting load failed', e);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', setGreeting);
+    </script>
 </div>
 
 <script>

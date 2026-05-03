@@ -121,6 +121,20 @@
                         placeholder="e.g. Reading, Hiking, Gaming"></textarea>
                 </div>
             </div>
+
+        <!-- Install Web App Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Install Web App</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-sm text-muted">Install PartnerAI to your device for quick access and offline support.</p>
+                <div style="margin-top:12px; display:flex; gap:8px;">
+                    <button id="installBtn" class="btn btn-primary" onclick="handleInstallClick()">Install App</button>
+                    <div id="installStatus" style="align-self:center;color:var(--color-text-tertiary);font-size:14px;">Not installed</div>
+                </div>
+            </div>
+        </div>
         </div>
     </div>
 </div>
@@ -142,6 +156,36 @@
         syncThemeToggle();
         loadProfile();
     });
+
+    // PWA install UI
+    function updateInstallStatus() {
+        const status = document.getElementById('installStatus');
+        if (!status) return;
+        status.textContent = window.isAppInstalled ? 'Installed' : (window.deferredInstallPrompt ? 'Ready to install' : 'Not installed');
+    }
+
+    async function handleInstallClick() {
+        const btn = document.getElementById('installBtn');
+        btn.disabled = true;
+        try {
+            if (!window.deferredInstallPrompt) {
+                // Show helpful instructions modal when browser does not expose install prompt
+                showInstallHelp();
+                btn.disabled = false;
+                return;
+            }
+            await promptInstall();
+        } catch (e) {
+            console.warn('Install prompt not available', e);
+            showInstallHelp();
+        }
+        setTimeout(() => { btn.disabled = false; updateInstallStatus(); }, 800);
+    }
+
+    // Update UI when PWA availability changes
+    document.body.addEventListener('pwa:available', updateInstallStatus);
+    document.body.addEventListener('pwa:installed', updateInstallStatus);
+    window.addEventListener('load', updateInstallStatus);
 
     // Also re-sync if theme changes from somewhere else
     window.addEventListener('themeChanged', syncThemeToggle);
@@ -186,11 +230,50 @@
                 btn.disabled = false;
             }, 2000);
 
+            // If user provided main profile fields, offer to install the web app
+            const name = document.getElementById('profName').value.trim();
+            const career = document.getElementById('profCareer').value.trim();
+            const topic = document.getElementById('profTopic').value.trim();
+            const work = document.getElementById('profWork').value.trim();
+            const free = document.getElementById('profFree').value.trim();
+
+            if (name && career && topic && work && free) {
+                updateInstallStatus();
+                // Attempt to prompt install if available (non-blocking)
+                if (window.deferredInstallPrompt) {
+                    try { await promptInstall(); } catch(e) { console.warn('Install prompt not shown', e); }
+                    updateInstallStatus();
+                }
+            }
+
         } catch (e) {
             console.error(e);
             btn.textContent = 'Error';
             btn.disabled = false;
         }
+    }
+</script>
+<!-- Install help modal -->
+<div id="installHelpModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:var(--color-bg-secondary); padding:18px; border-radius:12px; max-width:420px; width:92%; color:var(--color-text-primary);">
+        <h3 style="margin-top:0;">Install not available</h3>
+        <p style="margin-bottom:12px; color:var(--color-text-tertiary);">Your browser doesn't currently support the automatic install prompt or it's not eligible. Try one of the options below:</p>
+        <ul style="margin-bottom:12px; color:var(--color-text-tertiary);">
+            <li>Use Chrome, Edge, or a Chromium-based browser (mobile or desktop).</li>
+            <li>Open this site over HTTPS and reload the page.</li>
+            <li>On Android Chrome: open the browser menu and choose "Add to Home screen".</li>
+        </ul>
+        <div style="display:flex; justify-content:flex-end; gap:8px;">
+            <button class="btn" onclick="document.getElementById('installHelpModal').style.display='none'">Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function showInstallHelp(){
+        const m = document.getElementById('installHelpModal');
+        if (!m) return alert('Install not available in this browser. Try using Chrome/Edge or use the browser Add to Home Screen option.');
+        m.style.display = 'flex';
     }
 </script>
 {% endblock %}
