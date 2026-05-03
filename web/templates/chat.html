@@ -676,7 +676,7 @@
     <!-- ── Header ── -->
     <div class="chat-header">
         <div class="h-left">
-            <button class="back-btn" onclick="window.location.href='/'">
+            <button class="back-btn" onclick="window.location.replace('/')">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                     <path d="M19 12H5M12 19l-7-7 7-7"/>
                 </svg>
@@ -1053,7 +1053,11 @@
     }
 
     /* ── Typing indicator ── */
+    const CHAT_TIMEOUT_MS = 60000;
+    let activeChatController = null;
+
     function showTyping() {
+        hideTyping();
         const area = document.getElementById('messages');
         const row = document.createElement('div');
         row.className = 'typing-row'; row.id = 'typing';
@@ -1242,15 +1246,44 @@
 
         document.getElementById('sendBtn').disabled = true;
         showTyping();
+        let typingCleared = false;
+        const clearTypingOnce = () => {
+            if (!typingCleared) {
+                hideTyping();
+                typingCleared = true;
+            }
+        };
 
         try {
+            activeChatController = new AbortController();
+            const timeoutId = setTimeout(() => {
+                if (activeChatController) activeChatController.abort();
+            }, CHAT_TIMEOUT_MS);
+
             const res = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: msg, deep_think: deepThink })
+                body: JSON.stringify({ message: msg, deep_think: deepThink }),
+                signal: activeChatController.signal
             });
 
-            hideTyping();
+            clearTimeout(timeoutId);
+
+            if (!res.ok) {
+                let errMsg = 'AI service unavailable. Please try again.';
+                try {
+                    const ct = res.headers.get('content-type') || '';
+                    if (ct.includes('application/json')) {
+                        const j = await res.json();
+                        errMsg = j.error || j.message || errMsg;
+                    } else {
+                        const t = await res.text();
+                        if (t && t.trim()) errMsg = t.trim();
+                    }
+                } catch (_) {}
+                throw new Error(errMsg);
+            }
+
             const area = document.getElementById('messages');
 
             // Build new AI row
@@ -1263,20 +1296,28 @@
             row.appendChild(col);
             area.appendChild(row);
 
-            const reader = res.body.getReader();
-            const dec = new TextDecoder();
             let full = '';
-
             setStatus('Typing…');
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                full += dec.decode(value, { stream: true });
+
+            if (!res.body) {
+                full = await res.text();
+                clearTypingOnce();
                 const display = full.replace(/\[OPTIONS:[^\]]*\]?$/gi, '').trimEnd();
                 span.innerHTML = marked.parse(display);
-                span.querySelectorAll('pre code').forEach(b => hljs.highlightElement(b));
-                addCopyToCodeBlocks(bubble);
-                scrollBottom();
+            } else {
+                const reader = res.body.getReader();
+                const dec = new TextDecoder();
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    clearTypingOnce();
+                    full += dec.decode(value, { stream: true });
+                    const display = full.replace(/\[OPTIONS:[^\]]*\]?$/gi, '').trimEnd();
+                    span.innerHTML = marked.parse(display);
+                    span.querySelectorAll('pre code').forEach(b => hljs.highlightElement(b));
+                    addCopyToCodeBlocks(bubble);
+                    scrollBottom();
+                }
             }
             lastAiText = full.replace(/\[OPTIONS:[^\]]+\]/gi, '').trim();
 
@@ -1325,10 +1366,15 @@
             scrollBottom();
 
         } catch (err) {
-            hideTyping();
             console.error(err);
-            addAiMsgStatic('Something went wrong. Please try again.');
+            const msgText = (err && err.name === 'AbortError')
+                ? 'AI took too long to respond. Please try again.'
+                : (err && err.message ? err.message : 'Something went wrong. Please try again.');
+            addAiMsgStatic(msgText);
+            setStatus('Online · Ready to help');
         } finally {
+            hideTyping();
+            activeChatController = null;
             document.getElementById('sendBtn').disabled = false;
             isStreaming = false;
         }

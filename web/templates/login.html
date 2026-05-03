@@ -287,8 +287,17 @@
         let isLogin = true;
         let pendingVerification = false; // used for signup flow
         let pendingLoginVerification = false; // used for login 2FA
+        let pendingLoginUsername = null; // canonical username for login OTP
         let pendingSignupPayload = null;
         let deferredPrompt = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const saved = localStorage.getItem('partnerai_last_identifier') || '';
+            if (saved) {
+                const input = document.getElementById('username');
+                if (input && !input.value) input.value = saved;
+            }
+        });
 
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
@@ -323,6 +332,8 @@
             event.preventDefault();
             isLogin = !isLogin;
             pendingVerification = false;
+            pendingLoginVerification = false;
+            pendingLoginUsername = null;
             pendingSignupPayload = null;
 
             document.getElementById('title').innerText = isLogin ? "Welcome Back" : "Create Account";
@@ -399,6 +410,7 @@
             if (isLogin) {
                 if (pendingLoginVerification) {
                     endpoint = '/api/login/verify';
+                    payload.username = pendingLoginUsername || user;
                     payload.code = code;
                 } else {
                     endpoint = '/api/login';
@@ -421,6 +433,7 @@
                     if (data.is_login_redirect) {
                         isLogin = true;
                         pendingLoginVerification = true;
+                        pendingLoginUsername = data.login_username || user;
                         document.getElementById('verifyGroup').style.display = 'block';
                         document.getElementById('action-btn').innerText = "Verify & Sign In";
                         document.getElementById('subtitle').innerText = "Account found! Enter the code sent to your email to sign in";
@@ -435,6 +448,7 @@
 
                     if (isLogin) {
                         pendingLoginVerification = true;
+                        pendingLoginUsername = data.login_username || user;
                         document.getElementById('verifyGroup').style.display = 'block';
                         document.getElementById('action-btn').innerText = "Verify & Sign In";
                         document.getElementById('subtitle').innerText = "Enter the code sent to your email to sign in";
@@ -463,6 +477,9 @@
                 }
 
                 if (data.success) {
+                    try {
+                        if (user) localStorage.setItem('partnerai_last_identifier', user);
+                    } catch (_) {}
                     // Redirect to onboarding wizard after signup, otherwise to home
                     window.location.href = isLogin ? '/' : '/onboarding';
                 } else {

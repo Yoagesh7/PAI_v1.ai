@@ -202,12 +202,29 @@ def auto_adjust_habit(user_id, habit_name):
 
 app = Flask(__name__, template_folder=os.path.join(BASE_DIR, 'templates'), static_folder=os.path.join(BASE_DIR, 'static'))
 app.secret_key = 'partnerai_secret_key'  # Needed for session
-# Security: session cookie settings
+# Security/session: persist login until explicit logout
+_env_cookie_secure = os.getenv('SESSION_COOKIE_SECURE')
+if _env_cookie_secure is None:
+    # Default secure cookie on cloud HTTPS, relaxed for local HTTP dev
+    cookie_secure = bool(os.getenv('VERCEL'))
+else:
+    cookie_secure = _env_cookie_secure.strip().lower() in ('1', 'true', 'yes', 'on')
+
 app.config.update({
+    'PERMANENT_SESSION_LIFETIME': timedelta(days=30),
+    'SESSION_REFRESH_EACH_REQUEST': True,
     'SESSION_COOKIE_HTTPONLY': True,
     'SESSION_COOKIE_SAMESITE': 'Lax',
-    'SESSION_COOKIE_SECURE': True,
+    'SESSION_COOKIE_SECURE': cookie_secure,
 })
+
+
+@app.before_request
+def _refresh_persistent_session():
+    # Keep signed-in users logged in until they explicitly click logout
+    if 'user_id' in session:
+        session.permanent = True
+        session.modified = True
 
 # Simple in-memory rate limiter (per-IP). Not durable across processes; suitable for single-instance deployments.
 _rate_buckets = {}
@@ -691,21 +708,30 @@ def signup_verify():
 
     session['user_id'] = user_id
     session['user_name'] = username
+    session.permanent = True
     return jsonify({'success': True})
 
 @app.route('/api/login', methods=['POST'])
 @rate_limit('login', limit=6, window=60)
 def login():
     data = request.json
-    username = data.get('username')
-    password = data.get('password')
+    identifier = (data.get('username') or data.get('email') or '').strip()
+    password = (data.get('password') or '').strip()
 
-    if not username_exists(username):
+    if not identifier or not password:
+        return jsonify({'error': 'Email/username and password are required.'}), 400
+
+    user_row = get_user_by_username(identifier)
+    if not user_row:
         return jsonify({'error': 'Account not found. Please create an account.'}), 404
 
-    user_id = verify_user(username, password)
+    user_id = verify_user(identifier, password)
     if not user_id:
         return jsonify({'error': 'Invalid credentials. If you are new, please create an account.'}), 401
+
+    # Canonical values from DB (tuple mapping in memory.get_user_by_username)
+    canonical_username = user_row[15] if len(user_row) > 15 else identifier
+    user_email = user_row[17] if len(user_row) > 17 else None
 
     # Send a one-time login code to user's email and require verification
     try:
@@ -713,10 +739,7 @@ def login():
         cleanup_expired_login_verifications()
         code = f"{random.randint(100000, 999999)}"
         expires_at = (datetime.now() + timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
-        save_login_verification(username, code, expires_at)
-
-        # Fetch user's email using helper
-        email = get_user_email(user_id)
+        save_login_verification(canonical_username, code, expires_at)
 
         subject = 'Your PartnerAI sign-in code'
         body = f"Your sign-in code is: {code}. It expires in 10 minutes."
@@ -729,35 +752,43 @@ def login():
             except Exception as e:
                 print(f"DEBUG: Login email failed: {e}", flush=True)
 
-        threading.Thread(target=send_login_email, args=(email,), daemon=True).start()
+        threading.Thread(target=send_login_email, args=(user_email,), daemon=True).start()
     except Exception as e:
         print(f"DEBUG: Login verification generation failed: {e}", flush=True)
 
-    return jsonify({'success': True, 'requires_verification': True, 'message': 'A verification code was sent to your email.'})
+    return jsonify({
+        'success': True,
+        'requires_verification': True,
+        'login_username': canonical_username,
+        'message': 'A verification code was sent to your email.'
+    })
 
 
 @app.route('/api/login/verify', methods=['POST'])
 def login_verify():
     data = request.json
-    username = (data.get('username') or '').strip()
+    username = (data.get('username') or data.get('login_username') or '').strip()
     code = (data.get('code') or '').strip()
     if not username or not code:
         return jsonify({'error': 'Missing verification details'}), 400
 
-    ok, err = verify_login_code(username, code)
+    # Normalize to canonical username in case user entered email
+    user_row = get_user_by_username(username)
+    if not user_row:
+        return jsonify({'error': 'User not found'}), 404
+    canonical_username = user_row[15] if len(user_row) > 15 and user_row[15] else username
+
+    ok, err = verify_login_code(canonical_username, code)
     if not ok:
         return jsonify({'error': err}), 400
 
     # Find user id and log them in
-    user_row = get_user_by_username(username)
-    if not user_row:
-        return jsonify({'error': 'User not found'}), 404
-
     user_id = user_row[0]
     session['user_id'] = user_id
-    session['user_name'] = username
+    session['user_name'] = canonical_username
+    session.permanent = True
 
-    clear_login_verification(username)
+    clear_login_verification(canonical_username)
     return jsonify({'success': True})
 
 @app.route('/api/auth/switch', methods=['POST'])
@@ -767,6 +798,7 @@ def switch_user():
     name = f"User {user_id}"
     session['user_id'] = user_id
     session['user_name'] = name
+    session.permanent = True
     
     # Ensure user exists in DB
     if not get_user(user_id):
@@ -3675,46 +3707,6 @@ PREDICTION: [Expected outcome if they continue current habits]"""
             'ai_task_completion_rate': 0
         })
 
-
-# ===== HABITS API (NEW) =====
-@app.route('/api/habits', methods=['GET', 'POST'])
-def habits_api():
-    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
-    user_id = session['user_id']
-    
-    if request.method == 'GET':
-        habits = get_user_habits(user_id)
-        return jsonify(habits)
-    
-    elif request.method == 'POST':
-        data = request.json
-        title = data.get('title')
-        category = data.get('category', 'General')
-        time_of_day = data.get('time_of_day', 'Anytime')
-        
-        if not title: return jsonify({'error': 'Title is required'}), 400
-        
-        habit_id = create_habit(user_id, title, category, time_of_day=time_of_day)
-        return jsonify({'id': habit_id, 'status': 'created'})
-
-@app.route('/api/habits/<int:habit_id>', methods=['DELETE'])
-def delete_habit_api(habit_id):
-    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
-    if delete_habit(habit_id, session['user_id']):
-        return jsonify({'status': 'deleted'})
-    return jsonify({'error': 'Failed to delete'}), 400
-
-@app.route('/api/habits/<int:habit_id>/toggle', methods=['POST'])
-def toggle_habit_api(habit_id):
-    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
-    status = toggle_habit(habit_id, session['user_id'])
-    return jsonify({'completed': status})
-
-@app.route('/api/habits/stats', methods=['GET'])
-def habit_stats_api():
-    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
-    stats = get_weekly_stats(session['user_id'])
-    return jsonify(stats)
 
 # ===== AI TASK API (NEW) =====
 @app.route('/api/ai-tasks/<int:task_id>/complete', methods=['POST'])
