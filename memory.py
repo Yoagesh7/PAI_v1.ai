@@ -320,6 +320,17 @@ def init_db():
         )
         """)
         
+        # Login verification codes (for sign-in 2FA)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS login_verifications (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL,
+            code TEXT NOT NULL,
+            expires_at TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+        """)
+        
         conn.commit()
 
 # Initialize DB immediately
@@ -332,16 +343,90 @@ def create_account(username, password, email):
         cursor = conn.cursor()
         cursor.execute("SELECT user_id FROM users WHERE username=?", (username,))
         if cursor.fetchone(): return None
-        cursor.execute("INSERT INTO users (username, password, email, name) VALUES (?, ?, ?, ?)", (username, password, email, username))
+        # Hash password before storing
+        hashed = _hash_password(password)
+        cursor.execute("INSERT INTO users (username, password, email, name) VALUES (?, ?, ?, ?)", (username, hashed, email, username))
         conn.commit()
         return cursor.lastrowid
 
 def verify_user(username, password):
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT user_id FROM users WHERE username=? AND password=?", (username, password))
+        cursor.execute("SELECT user_id, password FROM users WHERE username=?", (username,))
         row = cursor.fetchone()
-        return row[0] if row else None
+        if not row:
+            return None
+        user_id, stored = row[0], row[1]
+        if _verify_password(stored, password):
+            return user_id
+        return None
+
+
+def get_user(user_id):
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT user_id, name, career, hobbies, last_task, task_status, state, tasks_completed, streak, last_active_date, daily_topic, work_time, free_time, age, last_task_date, username, password, email, flow_day FROM users WHERE user_id=?",
+            (user_id,)
+        )
+        row = cursor.fetchone()
+        if not row:
+            return None
+        keys = [
+            'user_id', 'name', 'career', 'hobbies', 'last_task', 'task_status', 'state',
+            'tasks_completed', 'streak', 'last_active_date', 'daily_topic', 'work_time',
+            'free_time', 'age', 'last_task_date', 'username', 'password', 'email', 'flow_day'
+        ]
+        return dict(zip(keys, row))
+
+
+def save_user(user_id, **fields):
+    if not fields:
+        return True
+    allowed = {
+        'name', 'career', 'hobbies', 'last_task', 'task_status', 'state', 'tasks_completed',
+        'streak', 'last_active_date', 'daily_topic', 'work_time', 'free_time', 'age',
+        'last_task_date', 'username', 'password', 'email', 'flow_day'
+    }
+    updates = []
+    values = []
+    for key, value in fields.items():
+        if key in allowed:
+            updates.append(f"{key}=?")
+            values.append(value)
+    if not updates:
+        return True
+    values.append(user_id)
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(f"UPDATE users SET {', '.join(updates)} WHERE user_id=?", values)
+        if cursor.rowcount == 0:
+            cursor.execute(
+                "INSERT INTO users (user_id, name, career, hobbies, last_task, task_status, state, tasks_completed, streak, last_active_date, daily_topic, work_time, free_time, age, last_task_date, username, password, email, flow_day) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                [user_id] + [fields.get(k) for k in ['name', 'career', 'hobbies', 'last_task', 'task_status', 'state', 'tasks_completed', 'streak', 'last_active_date', 'daily_topic', 'work_time', 'free_time', 'age', 'last_task_date', 'username', 'password', 'email', 'flow_day']]
+            )
+        conn.commit()
+    return True
+
+
+# Password hashing utilities using PBKDF2-HMAC
+import os, hashlib, binascii
+
+def _hash_password(password: str, iterations: int = 180000) -> str:
+    salt = os.urandom(16)
+    dk = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, iterations)
+    return f"pbkdf2_sha256${iterations}${binascii.hexlify(salt).decode()}${binascii.hexlify(dk).decode()}"
+
+def _verify_password(stored: str, password: str) -> bool:
+    try:
+        algo, iterations, salt_hex, dk_hex = stored.split('$')
+        iterations = int(iterations)
+        salt = binascii.unhexlify(salt_hex)
+        expected = binascii.unhexlify(dk_hex)
+        test = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, iterations)
+        return hashlib.compare_digest(test, expected)
+    except Exception:
+        return False
 
 
 def username_exists(username):
@@ -419,62 +504,94 @@ def cleanup_expired_signup_verifications():
         cursor.execute("DELETE FROM signup_verifications WHERE expires_at < ?", (now_str,))
         conn.commit()
 
-# --- USER ---
-def get_user(user_id):
+
+def save_login_verification(username, code, expires_at):
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM users WHERE user_id=?", (user_id,))
-        return cursor.fetchone()
+        cursor.execute(
+            "INSERT INTO login_verifications (username, code, expires_at, created_at) VALUES (?, ?, ?, ?)",
+            (username, code, expires_at, now_str)
+        )
+        conn.commit()
+
+
+def verify_login_code(username, code):
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, expires_at FROM login_verifications WHERE username=? AND code=?", (username, code))
+        row = cursor.fetchone()
+        if not row:
+            return False, 'Invalid verification code.'
+
+        vid, expires_at = row
+        try:
+            exp_dt = datetime.strptime(expires_at, "%Y-%m-%d %H:%M:%S")
+        except Exception:
+            return False, 'Verification code invalid.'
+
+        if datetime.now() > exp_dt:
+            return False, 'Code expired.'
+
+        return True, None
+
+
+def clear_login_verification(username):
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM login_verifications WHERE username=?", (username,))
+        conn.commit()
+
+
+def cleanup_expired_login_verifications():
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM login_verifications WHERE expires_at < ?", (now_str,))
+        conn.commit()
+
+
+def get_user_email(user_id):
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT email FROM users WHERE user_id=?", (user_id,))
+        row = cursor.fetchone()
+        return row[0] if row and row[0] else None
+
+
+def get_user_by_username(username):
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT user_id, name, career, hobbies, last_task, task_status, state, tasks_completed, streak, last_active_date, daily_topic, work_time, free_time, age, last_task_date, username, password, email, flow_day FROM users WHERE username=?",
+            (username,)
+        )
+        row = cursor.fetchone()
+        if not row:
+            return None
+        keys = [
+            'user_id', 'name', 'career', 'hobbies', 'last_task', 'task_status', 'state',
+            'tasks_completed', 'streak', 'last_active_date', 'daily_topic', 'work_time',
+            'free_time', 'age', 'last_task_date', 'username', 'password', 'email', 'flow_day'
+        ]
+        return dict(zip(keys, row))
+
 
 def get_flow_day(user_id):
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT flow_day FROM users WHERE user_id=?", (user_id,))
-        row = cursor.fetchone()
-        return row[0] if row else 0
+    user = get_user(user_id)
+    if not user:
+        return 0
+    try:
+        return int(user.get('flow_day') or 0)
+    except Exception:
+        return 0
+
 
 def increment_flow_day(user_id):
-    with get_db() as conn:
-        conn.execute("UPDATE users SET flow_day = flow_day + 1 WHERE user_id=?", (user_id,))
-        conn.commit()
-
-def save_user(user_id, name=None, career=None, hobbies=None, last_task=None, task_status=None, state=None, tasks_completed=None, streak=None, last_active_date=None, daily_topic=None, work_time=None, free_time=None, age=None, last_task_date=None):
-    # This function is tricky because it does a read then write.
-    # To avoid locks, we do it carefully.
-    
-    # Check existence
-    user = get_user(user_id) # separate connection
-    
-    with get_db() as conn:
-        cursor = conn.cursor()
-        if user:
-            fields = []
-            values = []
-            if name is not None: fields.append("name=?"); values.append(name)
-            if career is not None: fields.append("career=?"); values.append(career)
-            if hobbies is not None: fields.append("hobbies=?"); values.append(hobbies)
-            if last_task is not None: fields.append("last_task=?"); values.append(last_task)
-            if task_status is not None: fields.append("task_status=?"); values.append(task_status)
-            if state is not None: fields.append("state=?"); values.append(state)
-            if tasks_completed is not None: fields.append("tasks_completed=?"); values.append(tasks_completed)
-            if streak is not None: fields.append("streak=?"); values.append(streak)
-            if last_active_date is not None: fields.append("last_active_date=?"); values.append(last_active_date)
-            if daily_topic is not None: fields.append("daily_topic=?"); values.append(daily_topic)
-            if work_time is not None: fields.append("work_time=?"); values.append(work_time)
-            if free_time is not None: fields.append("free_time=?"); values.append(free_time)
-            if age is not None: fields.append("age=?"); values.append(age)
-            if last_task_date is not None: fields.append("last_task_date=?"); values.append(last_task_date)
-            
-            if fields:
-                values.append(user_id)
-                cursor.execute(f"UPDATE users SET {', '.join(fields)} WHERE user_id=?", tuple(values))
-        else:
-            cursor.execute("INSERT INTO users (user_id, name) VALUES (?, ?)", (user_id, name if name else f"User {user_id}"))
-            conn.commit()
-            # If new params provided, update them. Recursive call is okay if it uses fresh connection
-            if any([career, hobbies, last_task, task_status, state]):
-                save_user(user_id, name, career, hobbies, last_task, task_status, state, tasks_completed, streak, last_active_date, daily_topic, work_time, free_time, age, last_task_date)
-        conn.commit()
+    current = get_flow_day(user_id)
+    new_value = current + 1
+    save_user(user_id, flow_day=new_value)
+    return new_value
 
 def reset_user(user_id):
     with get_db() as conn:

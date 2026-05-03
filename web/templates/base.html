@@ -14,6 +14,14 @@
     <!-- Design System -->
     <link rel="stylesheet" href="/static/css/design-system.css">
 
+    <!-- App Icon -->
+    <link rel="icon" type="image/svg+xml" href="/static/images/partnerai-logo.svg">
+    <link rel="apple-touch-icon" href="/static/images/partnerai-logo.svg">
+
+    <!-- PWA manifest -->
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#7A66C2">
+
     <!-- Theme Initialization (Prevents Flash) -->
     <script>
         (function () {
@@ -87,14 +95,9 @@
         .logo-icon {
             width: 32px;
             height: 32px;
-            background: var(--color-primary-500);
-            border-radius: var(--radius-md);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 700;
-            font-size: var(--text-sm);
+            display: block;
+            border-radius: 10px;
+            object-fit: cover;
         }
 
         /* Navigation */
@@ -524,7 +527,7 @@
         <aside class="left-sidebar" id="sidebar">
             <div class="sidebar-header">
                 <a href="/" class="sidebar-logo">
-                    <div class="logo-icon">PA</div>
+                    <img class="logo-icon" src="/static/images/partnerai-logo.svg" alt="PartnerAI">
                     <span>PartnerAI</span>
                 </a>
             </div>
@@ -805,6 +808,17 @@
             return e.prompt().then(() => e.userChoice).then(choice => {
                 window.deferredInstallPrompt = null;
                 return choice;
+            });
+        }
+
+        // Register service worker if supported
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/service-worker.js').then(reg => {
+                    console.log('ServiceWorker registered', reg);
+                }).catch(err => {
+                    console.warn('ServiceWorker registration failed:', err);
+                });
             });
         }
     </script>

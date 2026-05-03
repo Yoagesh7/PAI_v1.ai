@@ -7,6 +7,8 @@
     <title>Sign In - PartnerAI</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/design-system.css">
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#7A66C2">
 
     <style>
         body {
@@ -33,16 +35,12 @@
         }
 
         .brand-logo {
-            width: 64px;
-            height: 64px;
-            margin: 0 auto var(--space-5);
-            background: var(--color-primary-500);
-            border-radius: var(--radius-lg);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: var(--text-2xl);
+            width: 88px;
+            height: 88px;
+            display: block;
+            margin: 0 auto 18px;
+            border-radius: 22px;
+            box-shadow: 0 16px 40px rgba(79, 92, 255, 0.14);
             font-weight: 700;
         }
 
@@ -144,6 +142,74 @@
             text-align: left;
         }
 
+        .install-prompt {
+            display: none;
+            position: fixed;
+            left: 16px;
+            right: 16px;
+            bottom: 16px;
+            z-index: 9999;
+            background: rgba(255, 255, 255, 0.96);
+            border: 1px solid rgba(122, 102, 194, 0.22);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(15, 23, 42, 0.18);
+            padding: 16px;
+            backdrop-filter: blur(14px);
+        }
+
+        .install-prompt-inner {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .install-prompt-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            flex-shrink: 0;
+            box-shadow: 0 10px 24px rgba(79, 92, 255, 0.16);
+        }
+
+        .install-prompt h3 {
+            margin: 0 0 4px 0;
+            font-size: 1rem;
+            color: var(--color-text-primary);
+        }
+
+        .install-prompt p {
+            margin: 0;
+            font-size: 0.92rem;
+            color: var(--color-text-secondary);
+        }
+
+        .install-prompt-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            justify-content: flex-end;
+        }
+
+        .install-prompt .btn-mini {
+            padding: 10px 14px;
+            border-radius: 12px;
+            border: 1px solid transparent;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .install-prompt .btn-primary-mini {
+            background: var(--color-primary-500);
+            color: #fff;
+        }
+
+        .install-prompt .btn-secondary-mini {
+            background: transparent;
+            color: var(--color-text-secondary);
+            border-color: var(--color-border-default);
+        }
+
         @media (max-width: 480px) {
             .login-card {
                 padding: var(--space-8) var(--space-6);
@@ -159,7 +225,7 @@
 <body>
     <div class="login-container">
         <div class="login-card">
-            <div class="brand-logo">PA</div>
+            <img class="brand-logo" src="/static/images/partnerai-logo.svg" alt="PartnerAI logo">
             <h1 id="title">Welcome Back</h1>
             <p class="subtitle" id="subtitle">Sign in to continue to PartnerAI</p>
 
@@ -202,10 +268,55 @@
         </div>
     </div>
 
+    <div class="install-prompt" id="installPrompt">
+        <div class="install-prompt-inner">
+            <img src="/static/images/partnerai-logo.svg" alt="PartnerAI" class="install-prompt-icon">
+            <div style="flex:1; text-align:left;">
+                <h3>Install PartnerAI</h3>
+                <p>Get quick access from your home screen and use it like an app.</p>
+                <div class="install-prompt-actions">
+                    <button class="btn-mini btn-secondary-mini" onclick="dismissInstallPrompt()">Not now</button>
+                    <button class="btn-mini btn-primary-mini" onclick="triggerInstall()">Install</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         let isLogin = true;
-        let pendingVerification = false;
+        let pendingVerification = false; // used for signup flow
+        let pendingLoginVerification = false; // used for login 2FA
         let pendingSignupPayload = null;
+        let deferredPrompt = null;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const prompt = document.getElementById('installPrompt');
+            if (prompt) prompt.style.display = 'block';
+        });
+
+        window.addEventListener('appinstalled', () => {
+            const prompt = document.getElementById('installPrompt');
+            if (prompt) prompt.style.display = 'none';
+            deferredPrompt = null;
+        });
+
+        function dismissInstallPrompt() {
+            const prompt = document.getElementById('installPrompt');
+            if (prompt) prompt.style.display = 'none';
+        }
+
+        async function triggerInstall() {
+            if (!deferredPrompt) {
+                alert('Use your browser menu to install the app.');
+                return;
+            }
+            deferredPrompt.prompt();
+            await deferredPrompt.userChoice;
+            deferredPrompt = null;
+            dismissInstallPrompt();
+        }
 
         function toggleMode(event) {
             event.preventDefault();
@@ -270,12 +381,17 @@
             btn.disabled = true;
             err.style.display = 'none';
 
-            const endpoint = isLogin
-                ? '/api/login'
-                : (pendingVerification ? '/api/signup/verify' : '/api/signup');
-
+            let endpoint;
             const payload = { username: user, password: pass };
-            if (!isLogin) {
+            if (isLogin) {
+                if (pendingLoginVerification) {
+                    endpoint = '/api/login/verify';
+                    payload.code = code;
+                } else {
+                    endpoint = '/api/login';
+                }
+            } else {
+                endpoint = pendingVerification ? '/api/signup/verify' : '/api/signup';
                 payload.email = email;
                 if (pendingVerification) payload.code = code;
             }
@@ -289,18 +405,31 @@
                 const data = await res.json();
 
                 if (data.success && data.requires_verification) {
-                    pendingVerification = true;
-                    pendingSignupPayload = { username: user, password: pass, email: email };
-                    document.getElementById('verifyGroup').style.display = 'block';
-                    document.getElementById('confirmGroup').style.display = 'none';
-                    document.getElementById('action-btn').innerText = "Verify & Create Account";
-                    document.getElementById('subtitle').innerText = "Enter the code sent to your email to finish signup";
-                    err.innerText = data.message || "Verification code sent.";
-                    err.style.display = 'block';
-                    err.style.background = '#eef7ff';
-                    err.style.color = '#1d4ed8';
-                    btn.disabled = false;
-                    return;
+                    if (isLogin) {
+                        pendingLoginVerification = true;
+                        document.getElementById('verifyGroup').style.display = 'block';
+                        document.getElementById('action-btn').innerText = "Verify & Sign In";
+                        document.getElementById('subtitle').innerText = "Enter the code sent to your email to sign in";
+                        err.innerText = data.message || "Verification code sent.";
+                        err.style.display = 'block';
+                        err.style.background = '#eef7ff';
+                        err.style.color = '#1d4ed8';
+                        btn.disabled = false;
+                        return;
+                    } else {
+                        pendingVerification = true;
+                        pendingSignupPayload = { username: user, password: pass, email: email };
+                        document.getElementById('verifyGroup').style.display = 'block';
+                        document.getElementById('confirmGroup').style.display = 'none';
+                        document.getElementById('action-btn').innerText = "Verify & Create Account";
+                        document.getElementById('subtitle').innerText = "Enter the code sent to your email to finish signup";
+                        err.innerText = data.message || "Verification code sent.";
+                        err.style.display = 'block';
+                        err.style.background = '#eef7ff';
+                        err.style.color = '#1d4ed8';
+                        btn.disabled = false;
+                        return;
+                    }
                 }
 
                 if (data.success) {
@@ -308,7 +437,7 @@
                 } else {
                     err.innerText = data.error || "Authentication failed.";
                     err.style.display = 'block';
-                    btn.innerText = isLogin ? "Sign In" : (pendingVerification ? "Verify & Create Account" : "Create Account");
+                    btn.innerText = isLogin ? (pendingLoginVerification ? 'Verify & Sign In' : 'Sign In') : (pendingVerification ? "Verify & Create Account" : "Create Account");
                     btn.disabled = false;
                 }
             } catch (e) {

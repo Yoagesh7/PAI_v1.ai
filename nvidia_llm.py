@@ -37,8 +37,14 @@ class RAGSystem:
             or ""
         )
         self.model = os.getenv("NVIDIA_MODEL") or _load_config_value("NVIDIA_MODEL", "meta/llama-3.1-8b-instruct")
-        self.max_retries = 1
-        self.retry_delay = 0.8
+        # Tunable retry/backoff settings
+        self.max_retries = int(os.getenv('NVIDIA_MAX_RETRIES', '3'))
+        self.retry_delay = float(os.getenv('NVIDIA_RETRY_DELAY', '0.8'))
+        # Circuit breaker: if many consecutive failures, pause calls for cooldown seconds
+        self._consecutive_failures = 0
+        self._failure_threshold = int(os.getenv('NVIDIA_FAILURE_THRESHOLD', '4'))
+        self._cooldown_seconds = int(os.getenv('NVIDIA_COOLDOWN_SECONDS', '60'))
+        self._last_failure_time = 0
         print(f"rag_system initialized with NVIDIA API model={self.model}", flush=True)
 
     def _headers(self):
@@ -64,16 +70,32 @@ class RAGSystem:
 
     def _request(self, payload, stream=False):
         url = f"{self.base_url}/chat/completions"
+        # Check circuit breaker
+        if self._consecutive_failures >= self._failure_threshold:
+            elapsed = time.time() - self._last_failure_time
+            if elapsed < self._cooldown_seconds:
+                raise AIConnectionError("NVIDIA service temporarily disabled due to repeated errors.")
+            else:
+                # reset after cooldown
+                self._consecutive_failures = 0
         for attempt in range(self.max_retries + 1):
             try:
-                response = requests.post(url, headers=self._headers(), json=payload, timeout=60, stream=stream)
+                timeout = int(os.getenv('NVIDIA_TIMEOUT', '30'))
+                response = requests.post(url, headers=self._headers(), json=payload, timeout=timeout, stream=stream)
                 if response.status_code != 200:
                     detail = response.text[:500]
+                    # record failure
+                    self._consecutive_failures += 1
+                    self._last_failure_time = time.time()
                     raise AIConnectionError(f"NVIDIA API error {response.status_code}: {detail}")
                 return response
             except requests.exceptions.RequestException as exc:
+                # record failure
+                self._consecutive_failures += 1
+                self._last_failure_time = time.time()
                 if attempt < self.max_retries:
-                    time.sleep(self.retry_delay)
+                    # exponential backoff
+                    time.sleep(self.retry_delay * (2 ** attempt))
                     continue
                 raise AIConnectionError(str(exc)) from exc
 

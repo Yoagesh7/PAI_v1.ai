@@ -1,0 +1,22 @@
+{
+  "name": "PartnerAI",
+  "short_name": "PartnerAI",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#7A66C2",
+  "icons": [
+    {
+      "src": "/static/images/partnerai-logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/static/images/partnerai-logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

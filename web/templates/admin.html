@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="max-width:980px;margin:24px auto;padding:16px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;">
+    <h2>Admin Dashboard</h2>
+    <div>
+      <button class="btn btn-secondary" onclick="fetch('/admin-logout',{method:'POST'}).then(()=>location.href='/')">Sign out</button>
+    </div>
+  </div>
+
+  <div style="margin-top:12px; display:flex; gap:8px;">
+    <button class="btn" onclick="loadUsers()">Refresh users</button>
+    <button class="btn btn-danger" onclick="clearAll()">Clear all data</button>
+  </div>
+
+  <div id="usersWrap" style="margin-top:18px;"></div>
+</div>
+
+<script>
+async function loadUsers(){
+  const wrap = document.getElementById('usersWrap');
+  wrap.innerHTML = 'Loading...';
+  try{
+    const res = await fetch('/api/admin/users');
+    if(res.status!==200){ wrap.innerText='Not authorized'; return; }
+    const data = await res.json();
+    if(!data.users) return wrap.innerText='No users';
+    let html = '<table class="table" style="width:100%"><thead><tr><th>id</th><th>username</th><th>email</th><th>name</th></tr></thead><tbody>';
+    for(const u of data.users){ html += `<tr><td>${u.user_id}</td><td>${u.username}</td><td>${u.email||''}</td><td>${u.name||''}</td></tr>` }
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+  }catch(e){ wrap.innerText='Error loading users'; }
+}
+
+async function clearAll(){
+  if(!confirm('Clear all user data? This cannot be undone.')) return;
+  const token = prompt('Enter admin token to confirm');
+  try{
+    const res = await fetch('/api/admin/clear_all', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_token: token})});
+    const data = await res.json();
+    if(data.success){ alert('Cleared'); loadUsers(); } else alert(data.error||'Failed');
+  }catch(e){ alert('Error'); }
+}
+
+document.addEventListener('DOMContentLoaded', loadUsers);
+</script>
+
+{% endblock %}

@@ -12,6 +12,10 @@ from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
 import threading
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for, Response, send_from_directory, stream_with_context
+import logging
+
+# Basic logging configuration
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s', filename=os.path.join(ROOT_DIR, 'partnerai.log'))
 
 
 # ... (Previous imports) ...
@@ -63,6 +67,8 @@ from memory import (
     save_chat_message, get_chat_history, create_account, verify_user,
     username_exists, save_signup_verification, verify_signup_code,
     clear_signup_verification, cleanup_expired_signup_verifications,
+    save_login_verification, verify_login_code, clear_login_verification, cleanup_expired_login_verifications, get_user_email,
+    get_user_by_username, get_db,
     add_reward, get_rewards,
     create_daily_task, get_daily_tasks, toggle_daily_task,
     create_daily_article, get_latest_article,
@@ -195,6 +201,33 @@ def auto_adjust_habit(user_id, habit_name):
 
 app = Flask(__name__, template_folder=os.path.join(BASE_DIR, 'templates'), static_folder=os.path.join(BASE_DIR, 'static'))
 app.secret_key = 'partnerai_secret_key'  # Needed for session
+# Security: session cookie settings
+app.config.update({
+    'SESSION_COOKIE_HTTPONLY': True,
+    'SESSION_COOKIE_SAMESITE': 'Lax',
+    'SESSION_COOKIE_SECURE': True,
+})
+
+# Simple in-memory rate limiter (per-IP). Not durable across processes; suitable for single-instance deployments.
+_rate_buckets = {}
+def rate_limit(key_prefix, limit=10, window=60):
+    def decorator(f):
+        def wrapped(*args, **kwargs):
+            ident = request.remote_addr or 'unknown'
+            key = f"{key_prefix}:{ident}"
+            now = int(time.time())
+            bucket = _rate_buckets.get(key, {'count': 0, 'start': now})
+            if now - bucket['start'] >= window:
+                bucket = {'count': 0, 'start': now}
+            bucket['count'] += 1
+            _rate_buckets[key] = bucket
+            if bucket['count'] > limit:
+                logging.warning(f"Rate limit exceeded for {ident} on {key_prefix}")
+                return jsonify({'error': 'Too many requests'}), 429
+            return f(*args, **kwargs)
+        wrapped.__name__ = f.__name__
+        return wrapped
+    return decorator
 
 QUOTES = [
     "Believe in yourself! 🌟",
@@ -508,6 +541,7 @@ def api_user():
     return jsonify({'error': 'User not found'}), 404
 
 @app.route('/api/signup', methods=['POST'])
+@rate_limit('signup', limit=5, window=60)
 def signup():
     data = request.json
     username = (data.get('username') or '').strip()
@@ -525,23 +559,39 @@ def signup():
     if '@' not in email:
         return jsonify({'error': 'Please enter a valid email address.'}), 400
 
-    verification_code = f"{random.randint(100000, 999999)}"
-    expires_at = (datetime.now() + timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
+    # Create account immediately so the user can sign in right away
+    user_id = create_account(username, password, email)
+    if not user_id:
+        return jsonify({'error': 'Username already exists'}), 400
 
-    save_signup_verification(username, password, email, verification_code, expires_at)
+    # Save a verification record and send code in background (non-blocking)
+    try:
+        verification_code = f"{random.randint(100000, 999999)}"
+        expires_at = (datetime.now() + timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
+        save_signup_verification(username, password, email, verification_code, expires_at)
 
-    subject = "PartnerAI verification code"
-    body = (
-        f"Hi {username},\n\n"
-        f"Your PartnerAI verification code is: {verification_code}\n"
-        "This code will expire in 10 minutes.\n\n"
-        "If you did not request this, please ignore this email."
-    )
-    sent = send_email(email, subject, body)
-    if not sent:
-        return jsonify({'error': 'Could not send verification email. Please try again.'}), 500
+        subject = "PartnerAI verification code"
+        body = (
+            f"Hi {username},\n\n"
+            f"Your PartnerAI verification code is: {verification_code}\n"
+            "This code will expire in 10 minutes.\n\n"
+            "If you did not request this, please ignore this email."
+        )
 
-    return jsonify({'success': True, 'requires_verification': True, 'message': 'Verification code sent to your email.'})
+        def send_verify_email():
+            try:
+                send_email(email, subject, body)
+            except Exception as e:
+                print(f"DEBUG: Email send failed: {e}", flush=True)
+
+        threading.Thread(target=send_verify_email, daemon=True).start()
+    except Exception as e:
+        print(f"DEBUG: Verification background task failed: {e}", flush=True)
+
+    # Log user in immediately
+    session['user_id'] = user_id
+    session['user_name'] = username
+    return jsonify({'success': True, 'requires_verification': True, 'message': 'Account created and logged in. Verification email sent.'})
 
 
 @app.route('/api/signup/verify', methods=['POST'])
@@ -571,18 +621,68 @@ def signup_verify():
     return jsonify({'success': True})
 
 @app.route('/api/login', methods=['POST'])
+@rate_limit('login', limit=6, window=60)
 def login():
     data = request.json
     username = data.get('username')
     password = data.get('password')
     
     user_id = verify_user(username, password)
-    if user_id:
-        session['user_id'] = user_id
-        session['user_name'] = username
-        return jsonify({'success': True})
-    
-    return jsonify({'error': 'Invalid credentials'}), 401
+    if not user_id:
+        return jsonify({'error': 'Invalid credentials'}), 401
+
+    # Send a one-time login code to user's email and require verification
+    try:
+        # Cleanup old codes first
+        cleanup_expired_login_verifications()
+        code = f"{random.randint(100000, 999999)}"
+        expires_at = (datetime.now() + timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
+        save_login_verification(username, code, expires_at)
+
+        # Fetch user's email using helper
+        email = get_user_email(user_id)
+
+        subject = 'Your PartnerAI sign-in code'
+        body = f"Your sign-in code is: {code}. It expires in 10 minutes."
+
+        # Send email in background
+        def send_login_email(to):
+            try:
+                if to:
+                    send_email(to, subject, body)
+            except Exception as e:
+                print(f"DEBUG: Login email failed: {e}", flush=True)
+
+        threading.Thread(target=send_login_email, args=(email,), daemon=True).start()
+    except Exception as e:
+        print(f"DEBUG: Login verification generation failed: {e}", flush=True)
+
+    return jsonify({'success': True, 'requires_verification': True, 'message': 'A verification code was sent to your email.'})
+
+
+@app.route('/api/login/verify', methods=['POST'])
+def login_verify():
+    data = request.json
+    username = (data.get('username') or '').strip()
+    code = (data.get('code') or '').strip()
+    if not username or not code:
+        return jsonify({'error': 'Missing verification details'}), 400
+
+    ok, err = verify_login_code(username, code)
+    if not ok:
+        return jsonify({'error': err}), 400
+
+    # Find user id and log them in
+    user_row = get_user_by_username(username)
+    if not user_row:
+        return jsonify({'error': 'User not found'}), 404
+
+    user_id = user_row[0]
+    session['user_id'] = user_id
+    session['user_name'] = username
+
+    clear_login_verification(username)
+    return jsonify({'success': True})
 
 @app.route('/api/auth/switch', methods=['POST'])
 def switch_user():
@@ -692,6 +792,88 @@ def group_set_goal():
             add_group_task(group_id, member_id, f"Core work on '{goal}'")
 
     return jsonify({'success': True})
+
+
+@app.route('/api/admin/clear_all', methods=['POST'])
+def admin_clear_all():
+    # Protected admin endpoint to wipe user data — requires ADMIN_TOKEN header
+    token = request.headers.get('X-Admin-Token') or request.json.get('admin_token') if request.is_json else None
+    expected = os.getenv('ADMIN_TOKEN')
+    if not expected or token != expected:
+        return jsonify({'error': 'Not authorized'}), 403
+
+    try:
+        tables = [
+            'users','chat_history','community_posts','groups','group_members','group_tasks',
+            'daily_tasks','daily_articles','daily_news','user_rewards','ai_user_memory',
+            'smart_blocks','block_relationships','knowledge_blocks','focus_sessions','ai_daily_tasks',
+            'reminders','signup_verifications','login_verifications'
+        ]
+        with get_db() as conn:
+            cursor = conn.cursor()
+            for t in tables:
+                try:
+                    cursor.execute(f"DELETE FROM {t}")
+                except Exception as e:
+                    print(f"DEBUG: Could not clear table {t}: {e}", flush=True)
+            conn.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        print(f"DEBUG: admin_clear_all failed: {e}", flush=True)
+        return jsonify({'error': 'Failed to clear data'}), 500
+
+
+def _require_admin_session():
+    if session.get('is_admin'): return True
+    return False
+
+
+@app.route('/admin-login', methods=['GET','POST'])
+def admin_login():
+    if request.method == 'GET':
+        return render_template('admin_login.html')
+    data = request.json or {}
+    token = (data.get('token') or '').strip()
+    expected = os.getenv('ADMIN_TOKEN')
+    if expected and token == expected:
+        session['is_admin'] = True
+        return jsonify({'success': True})
+    return jsonify({'error': 'Invalid token'}), 401
+
+
+@app.route('/cod7', methods=['GET','POST'])
+def hidden_admin_login():
+    return admin_login()
+
+
+@app.route('/admin-logout', methods=['POST'])
+def admin_logout():
+    session.pop('is_admin', None)
+    return jsonify({'success': True})
+
+
+@app.route('/admin')
+def admin_dashboard():
+    if not _require_admin_session():
+        return redirect('/admin-login')
+    return render_template('admin.html')
+
+
+@app.route('/api/admin/users')
+def api_admin_users():
+    if not _require_admin_session():
+        return jsonify({'error': 'Not authorized'}), 403
+    # Return basic user list
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT user_id, username, email, name FROM users ORDER BY user_id DESC LIMIT 100')
+            rows = cursor.fetchall()
+            users = [{'user_id': r[0], 'username': r[1], 'email': r[2], 'name': r[3]} for r in rows]
+        return jsonify({'users': users})
+    except Exception as e:
+        print(f"DEBUG: admin users failed: {e}", flush=True)
+        return jsonify({'error': 'Failed to fetch users'}), 500
 
 @app.route('/api/group/complete_task', methods=['POST'])
 def complete_task():
@@ -919,6 +1101,7 @@ def _extract_plan_items(plan_text: str):
 
 
 @app.route('/api/chat', methods=['POST'])
+@rate_limit('chat', limit=30, window=60)
 def chat():
     print("DEBUG: /api/chat endpoint HIT (Start)", flush=True)
     data = request.json
