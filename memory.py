@@ -382,16 +382,23 @@ def verify_signup_code(username, email, password, code):
         )
         row = cursor.fetchone()
         if not row:
-            return False, "Invalid verification code."
+            return False, "Verification code is invalid. Request a new code."
 
         _, expires_at, saved_password, saved_email = row
 
-        try:
-            exp_dt = datetime.strptime(expires_at, "%Y-%m-%d %H:%M:%S")
-        except Exception:
-            return False, "Verification code is invalid. Request a new code."
+        # Handle both string (SQLite) and datetime (PG)
+        if isinstance(expires_at, str):
+            try:
+                exp_dt = datetime.fromisoformat(expires_at)
+            except:
+                try:
+                    exp_dt = datetime.strptime(expires_at, "%Y-%m-%d %H:%M:%S")
+                except:
+                    return False, "Verification code format error."
+        else:
+            exp_dt = expires_at
 
-        if datetime.now() > exp_dt:
+        if exp_dt < datetime.utcnow():
             return False, "Verification code expired. Please request a new code."
 
         if (saved_email or "").strip().lower() != (email or "").strip().lower():
@@ -442,11 +449,17 @@ def verify_login_code(username, code):
         _, expires_at = row
         # Handle both string (SQLite) and datetime (PG)
         if isinstance(expires_at, str):
-            exp_dt = datetime.strptime(expires_at, "%Y-%m-%d %H:%M:%S")
+            try:
+                exp_dt = datetime.fromisoformat(expires_at)
+            except:
+                try:
+                    exp_dt = datetime.strptime(expires_at, "%Y-%m-%d %H:%M:%S")
+                except:
+                    return False, 'Verification code format error.'
         else:
             exp_dt = expires_at
 
-        if datetime.now() > exp_dt:
+        if exp_dt < datetime.utcnow():
             return False, 'Verification code expired.'
 
         return True, None
@@ -494,11 +507,17 @@ def verify_reset_code(username_or_email, code):
         _, expires_at, username = row
         # Handle both string (SQLite) and datetime (PG)
         if isinstance(expires_at, str):
-            exp_dt = datetime.strptime(expires_at, "%Y-%m-%d %H:%M:%S")
+            try:
+                exp_dt = datetime.fromisoformat(expires_at)
+            except:
+                try:
+                    exp_dt = datetime.strptime(expires_at, "%Y-%m-%d %H:%M:%S")
+                except:
+                    return False, "Reset code format error.", None
         else:
             exp_dt = expires_at
 
-        if datetime.now() > exp_dt:
+        if exp_dt < datetime.utcnow():
             return False, "Reset code expired.", None
 
         return True, None, username
