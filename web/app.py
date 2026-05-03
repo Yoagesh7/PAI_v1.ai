@@ -54,7 +54,7 @@ MAIN_MODEL = os.getenv("NVIDIA_MODEL", "meta/llama-3.1-8b-instruct")
 GROUP_MODEL = os.getenv("NVIDIA_MODEL", "meta/llama-3.1-8b-instruct")
 MODEL_NAME = MAIN_MODEL
 # ------------------------------------------------
-from nvidia_llm import rag_system, AIConnectionError
+from nvidia_llm import rag_system, AIConnectionError, _OFFLINE_MSG
 from rag_engine_cloud import init_rag_system, build_rag_context, maybe_extract_memory
 from memory import (
     get_user, save_user, reset_user, create_post, get_posts,
@@ -1423,6 +1423,9 @@ CONVERSATION RULES (follow naturally, don't state them):
 
         return Response(stream_with_context(stream_chat_response()), mimetype='text/plain')
         
+    except AIConnectionError as e:
+        print(f"Chat AIConnectionError: {e}", flush=True)
+        return Response(_OFFLINE_MSG, mimetype='text/plain')
     except Exception as e:
         print(f"Chat Error: {e}", flush=True)
         return Response("I'm having a bit of trouble connecting to my brain right now. 🧠", mimetype='text/plain')
