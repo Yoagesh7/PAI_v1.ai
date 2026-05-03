@@ -215,12 +215,19 @@ def debug_routes():
 
 @app.route('/intro')
 def intro_page():
-    return render_template('intro.html')
+    return render_template('landing.html')
+
+
+@app.route('/try-now')
+def try_now():
+    if 'user_id' in session:
+        return redirect('/')
+    return redirect('/login')
 
 @app.route('/')
 def home():
     if 'user_id' not in session:
-        return render_template('intro.html')
+        return render_template('landing.html')
     
     # Check if user needs onboarding
     user_id = session['user_id']
