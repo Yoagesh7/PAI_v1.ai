@@ -201,38 +201,43 @@ def auto_adjust_habit(user_id, habit_name):
     }
 
 app = Flask(__name__, template_folder=os.path.join(BASE_DIR, 'templates'), static_folder=os.path.join(BASE_DIR, 'static'))
-app.secret_key = 'partnerai_secret_key_2024_v1'  # Change key periodically for security
+app.secret_key = os.getenv('SECRET_KEY', 'partnerai_secret_key_2024_v1_changeme_in_production')  # Change in Vercel env
 
 # CRITICAL: Vercel is serverless. Sessions must use signed cookies (default).
-# In-memory sessions don't persist across container restarts.
 # Session data is encoded in the cookie itself, signed with secret_key.
-# When VERCEL env var is set, enforce secure cookies for HTTPS traffic.
-_env_cookie_secure = os.getenv('SESSION_COOKIE_SECURE')
-if _env_cookie_secure is not None:
-    # Explicit override via environment variable
-    cookie_secure = _env_cookie_secure.strip().lower() in ('1', 'true', 'yes', 'on')
-else:
-    # Auto-detect: HTTPS (Vercel) requires secure cookies; local dev uses HTTP
-    cookie_secure = bool(os.getenv('VERCEL')) or os.getenv('FLASK_ENV') == 'production'
+# For Vercel HTTPS, use SameSite=None (requires Secure=True)
+is_vercel = bool(os.getenv('VERCEL'))
+is_production = os.getenv('FLASK_ENV') == 'production'
 
-# SameSite must be 'Lax' or 'Strict' for cross-site cookie handling
-# Lax allows top-level navigation (user clicking link) but blocks <img>, <script>, etc.
+# Cookie configuration for Vercel HTTPS or local HTTPS
+# SameSite=None is needed for cross-domain requests and Vercel redeployments
 app.config.update({
     'PERMANENT_SESSION_LIFETIME': timedelta(days=30),
     'SESSION_REFRESH_EACH_REQUEST': True,
     'SESSION_COOKIE_HTTPONLY': True,
-    'SESSION_COOKIE_SAMESITE': 'Lax',
-    'SESSION_COOKIE_SECURE': cookie_secure,
-    'SESSION_COOKIE_NAME': 'partnerai_session',  # Explicit name for debugging
+    'SESSION_COOKIE_SAMESITE': 'None' if (is_vercel or is_production) else 'Lax',
+    'SESSION_COOKIE_SECURE': is_vercel or is_production,  # True for HTTPS only
+    'SESSION_COOKIE_NAME': 'partnerai_session',
 })
+
+print(f"🔧 Session Config: SameSite={'None' if (is_vercel or is_production) else 'Lax'}, Secure={is_vercel or is_production}, Environment={'Vercel' if is_vercel else 'Local'}", flush=True)
 
 
 @app.before_request
 def _refresh_persistent_session():
-    # Keep signed-in users logged in until they explicitly click logout
+    """Keep signed-in users logged in until they explicitly click logout"""
     if 'user_id' in session:
         session.permanent = True
         session.modified = True
+
+
+@app.after_request
+def _ensure_session_cookie(response):
+    """Explicitly ensure session cookie is sent in response"""
+    if 'user_id' in session:
+        # Force session to be marked as modified so cookie is sent
+        session.modified = True
+    return response
 
 # Simple in-memory rate limiter (per-IP). Not durable across processes; suitable for single-instance deployments.
 _rate_buckets = {}
@@ -893,6 +898,38 @@ def switch_user():
         save_user(user_id, name=name, state="ACTIVE")
         
     return jsonify({'success': True, 'user_name': name})
+
+@app.route('/api/auth/restore', methods=['POST'])
+def auth_restore():
+    """Restore session from localStorage data (for Vercel session loss recovery)"""
+    data = request.json
+    user_id = data.get('user_id')
+    user_name = data.get('user_name')
+    
+    if not user_id or not user_name:
+        return jsonify({'error': 'Missing user data'}), 400
+    
+    try:
+        user_id = int(user_id)
+        # Verify user exists in DB
+        user = get_user(user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        # Restore session
+        session['user_id'] = user_id
+        session['user_name'] = user_name
+        session.permanent = True
+        
+        logging.info(f"✅ Session restored for user_id={user_id}, user_name={user_name}")
+        return jsonify({
+            'success': True,
+            'user_id': user_id,
+            'user_name': user_name
+        })
+    except (ValueError, TypeError) as e:
+        logging.error(f"Restore session error: {e}")
+        return jsonify({'error': 'Invalid user data'}), 400
 
 @app.route('/api/group/status', methods=['GET'])
 def group_status():

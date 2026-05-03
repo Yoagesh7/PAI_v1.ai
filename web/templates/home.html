@@ -180,11 +180,36 @@
             const loginDate = new Date(stored.login_time);
             const daysSinceLogin = (new Date() - loginDate) / (1000 * 60 * 60 * 24);
             if (daysSinceLogin < 30) {
-                console.log(`📱 Recovered user from localStorage: ${stored.user_name}`);
+                console.log(`📱 Found recovery data: ${stored.user_name}`);
                 return stored;
             }
         }
         return null;
+    }
+
+    async function restoreSessionOnServer(userData) {
+        // Call /api/auth/restore to restore session on server
+        try {
+            const res = await fetch('/api/auth/restore', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: userData.user_id,
+                    user_name: userData.user_name
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                console.log(`✅ Session restored on server for ${userData.user_name}`);
+                return true;
+            } else {
+                console.error(`❌ Server restore failed: ${data.error}`);
+                return false;
+            }
+        } catch (err) {
+            console.error('Server restore error:', err);
+            return false;
+        }
     }
 
     // Set greeting based on time
@@ -299,37 +324,52 @@
     setGreeting();
     loadTasks();
 
-    // Load user info from API first, fallback to localStorage
-    fetch('/api/user')
-        .then(r => {
-            if (r.status === 401) {
-                // Session expired, try to recover from localStorage
+    // Load user info from API first, with multi-layer fallback
+    (async () => {
+        let userLoaded = false;
+        
+        // Layer 1: Try server session
+        try {
+            const res = await fetch('/api/user');
+            if (res.ok) {
+                const data = await res.json();
+                if (data.username) {
+                    console.log(`✅ Loaded user from server: ${data.username}`);
+                    document.getElementById('username-display').textContent = data.username;
+                    userLoaded = true;
+                }
+            } else if (res.status === 401) {
+                console.log('⚠️ Server session not found (401)');
+                // Try to recover
                 const recovered = recoverSessionFromStorage();
                 if (recovered) {
-                    console.log(`📱 Using recovered session for ${recovered.user_name}`);
-                    document.getElementById('username-display').textContent = recovered.user_name;
-                } else {
-                    // No valid session and no recovery data, redirect to login
-                    console.log('❌ No session and no recovery data, redirecting to login');
-                    window.location.replace('/login');
+                    console.log(`🔄 Restoring session for ${recovered.user_name}...`);
+                    const restored = await restoreSessionOnServer(recovered);
+                    if (restored) {
+                        document.getElementById('username-display').textContent = recovered.user_name;
+                        userLoaded = true;
+                    }
                 }
-                return null;
             }
-            return r.json();
-        })
-        .then(data => {
-            if (data && data.username) {
-                document.getElementById('username-display').textContent = data.username;
-            }
-        })
-        .catch((err) => {
-            console.error('Error loading user:', err);
+        } catch (err) {
+            console.error('Error loading user from server:', err);
+        }
+        
+        // Layer 2: If server failed, use localStorage
+        if (!userLoaded) {
             const recovered = recoverSessionFromStorage();
             if (recovered) {
+                console.log(`📱 Using recovered data: ${recovered.user_name}`);
                 document.getElementById('username-display').textContent = recovered.user_name;
-            } else {
-                window.location.replace('/login');
+                userLoaded = true;
             }
-        });
+        }
+        
+        // Layer 3: If all else fails, redirect to login
+        if (!userLoaded) {
+            console.log('❌ No session, no recovery data. Redirecting to login.');
+            setTimeout(() => window.location.replace('/login'), 1000);
+        }
+    })();
 </script>
 {% endblock %}

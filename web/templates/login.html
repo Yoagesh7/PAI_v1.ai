@@ -478,20 +478,30 @@
 
                 if (data.success) {
                     try {
+                        // Always save identifier for auto-fill
                         if (user) localStorage.setItem('partnerai_last_identifier', user);
-                        // Save user data to localStorage as fallback for Vercel persistence
+                        
+                        // Save user data to localStorage as critical fallback
                         if (data.user_id) {
-                            localStorage.setItem('partnerai_user_id', data.user_id);
-                            localStorage.setItem('partnerai_user_name', data.user_name || user);
+                            console.log(`💾 Saving user to localStorage: ${data.user_name}`);
+                            localStorage.setItem('partnerai_user_id', String(data.user_id));
+                            localStorage.setItem('partnerai_user_name', String(data.user_name || user));
                             if (data.user_email) {
-                                localStorage.setItem('partnerai_user_email', data.user_email);
+                                localStorage.setItem('partnerai_user_email', String(data.user_email));
                             }
                             localStorage.setItem('partnerai_login_time', new Date().toISOString());
+                            
+                            // Verify it was saved
+                            const verify_id = localStorage.getItem('partnerai_user_id');
+                            console.log(`✅ Verified localStorage save: ${verify_id}`);
                         }
-                    } catch (_) {}
+                    } catch (e) {
+                        console.warn('localStorage save failed:', e);
+                    }
                     // Redirect to onboarding wizard after signup, to home/dashboard after login
                     const redirectUrl = isLogin ? '/' : '/onboarding';
-                    window.location.replace(redirectUrl);
+                    console.log(`📍 Redirecting to ${redirectUrl}`);
+                    setTimeout(() => window.location.replace(redirectUrl), 500);
                 } else {
                     err.innerText = data.error || "Authentication failed.";
                     err.style.display = 'block';
