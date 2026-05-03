@@ -349,10 +349,11 @@ def create_account(username, password, email):
         conn.commit()
         return cursor.lastrowid
 
-def verify_user(username, password):
+def verify_user(username_or_email, password):
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT user_id, password FROM users WHERE username=?", (username,))
+        # Check both username and email columns
+        cursor.execute("SELECT user_id, password FROM users WHERE username=? OR email=?", (username_or_email, username_or_email))
         row = cursor.fetchone()
         if not row:
             return None
@@ -425,10 +426,11 @@ def _verify_password(stored: str, password: str) -> bool:
         return False
 
 
-def username_exists(username):
+def username_exists(username_or_email):
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT user_id FROM users WHERE username=?", (username,))
+        # Check both username and email to allow login with either
+        cursor.execute("SELECT user_id FROM users WHERE username=? OR email=?", (username_or_email, username_or_email))
         return cursor.fetchone() is not None
 
 
@@ -555,12 +557,12 @@ def get_user_email(user_id):
         return row[0] if row and row[0] else None
 
 
-def get_user_by_username(username):
+def get_user_by_username(username_or_email):
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT user_id, name, career, hobbies, last_task, task_status, state, tasks_completed, streak, last_active_date, daily_topic, work_time, free_time, age, last_task_date, username, password, email, flow_day FROM users WHERE username=?",
-            (username,)
+            "SELECT user_id, name, career, hobbies, last_task, task_status, state, tasks_completed, streak, last_active_date, daily_topic, work_time, free_time, age, last_task_date, username, password, email, flow_day FROM users WHERE username=? OR email=?",
+            (username_or_email, username_or_email)
         )
         row = cursor.fetchone()
         if not row:
@@ -579,6 +581,40 @@ def get_flow_day(user_id):
     except Exception:
         return 0
 
+
+def update_user_streak(user_id):
+    user = get_user(user_id)
+    if not user:
+        return 0
+    
+    # user[8] is streak, user[9] is last_active_date
+    current_streak = user[8] or 0
+    last_date_str = user[9]
+    
+    today = datetime.now().date()
+    yesterday = today - timedelta(days=1)
+    
+    if last_date_str:
+        try:
+            # Assuming last_active_date is stored as YYYY-MM-DD
+            last_date = datetime.strptime(last_date_str.split(' ')[0], "%Y-%m-%d").date()
+        except:
+            last_date = None
+    else:
+        last_date = None
+        
+    if last_date == today:
+        # Already updated today
+        return current_streak
+    elif last_date == yesterday:
+        # Consecutive day!
+        new_streak = current_streak + 1
+    else:
+        # Broke streak or first time
+        new_streak = 1
+        
+    save_user(user_id, streak=new_streak, last_active_date=today.strftime("%Y-%m-%d"))
+    return new_streak
 
 def increment_flow_day(user_id):
     current = get_flow_day(user_id)

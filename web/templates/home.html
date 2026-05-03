@@ -15,11 +15,9 @@
                 </p>
             </div>
         </div>
-        <div class="badge badge-primary" style="display: flex; align-items: center; gap: var(--space-2);">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z" />
-            </svg>
-            <span>14-day flow</span>
+        <div class="badge" style="display: flex; align-items: center; gap: var(--space-2); background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); padding: 4px 12px; border-radius: 20px; font-weight: 700;">
+            <span style="font-size: 18px;">🔥</span>
+            <span id="streak-count">{{ streak or 0 }}</span>
         </div>
     </div>
 
@@ -252,7 +250,11 @@
         })
             .then(r => r.json())
             .then(data => {
-                if (data.success) {
+                if (data.success || data.status === 'completed') {
+                    if (data.streak !== undefined) {
+                        const streakEl = document.getElementById('streak-count');
+                        if (streakEl) streakEl.textContent = data.streak;
+                    }
                     loadTasks(); // Reload to reflect state
                 }
             });

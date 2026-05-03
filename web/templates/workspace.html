@@ -1,4 +1,4 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 
 {% block content %}
 <style>
@@ -239,23 +239,26 @@
   .kb-page {
     padding-bottom:120px;
     background:var(--kb-bg);
+    overflow-x: hidden; /* Prevent horizontal scroll */
   }
 
   /* ── Header ── */
   .kb-hdr {
     padding:12px 16px 0;
     position:sticky; top:0;
+    width: 100%;
+    box-sizing: border-box;
   }
   .kb-hdr-top {
     display:flex; align-items:center; gap:10px;
     margin-bottom:10px;
-    flex-wrap:nowrap;
+    flex-wrap:wrap; /* Allow wrap if screen is very narrow */
   }
   .kb-logo { font-size:18px; flex-shrink:0; }
 
   /* Search: inline, no wrap */
   .kb-srch-wrap {
-    flex:1; max-width:none; margin-left:0;
+    flex:1; min-width: 150px; max-width:none; margin-left:0;
   }
   .kb-srch {
     padding:9px 12px 9px 34px;

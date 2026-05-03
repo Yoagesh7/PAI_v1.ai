@@ -233,8 +233,8 @@
 
             <form onsubmit="submitAuth(event)">
                 <div class="form-group">
-                    <label for="username">Username</label>
-                    <input type="text" id="username" placeholder="Enter your username" autocomplete="username" required>
+                    <label for="username" id="user-label">Username or Email</label>
+                    <input type="text" id="username" placeholder="Enter your username or email" autocomplete="username" required>
                 </div>
 
                 <div class="form-group" id="emailGroup" style="display:none;">
@@ -341,6 +341,17 @@
 
             // Update password autocomplete
             document.getElementById('password').autocomplete = isLogin ? 'current-password' : 'new-password';
+            
+            // Update Username label/placeholder
+            const userLabel = document.getElementById('user-label');
+            const userInput = document.getElementById('username');
+            if (isLogin) {
+                userLabel.innerText = "Username or Email";
+                userInput.placeholder = "Enter your username or email";
+            } else {
+                userLabel.innerText = "Username";
+                userInput.placeholder = "Choose a username";
+            }
         }
 
         async function submitAuth(event) {

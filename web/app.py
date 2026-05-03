@@ -70,7 +70,7 @@ from memory import (
     clear_signup_verification, cleanup_expired_signup_verifications,
     save_login_verification, verify_login_code, clear_login_verification, cleanup_expired_login_verifications, get_user_email,
     get_user_by_username, get_db,
-    add_reward, get_rewards,
+    add_reward, get_rewards, update_user_streak,
     create_daily_task, get_daily_tasks, toggle_daily_task,
     create_daily_article, get_latest_article,
     save_daily_news, get_daily_news,
@@ -283,6 +283,7 @@ def home():
         state = (user[6] if len(user) > 6 and user[6] else "").upper()
         age = user[13] if len(user) > 13 else None
         name = user[1] if len(user) > 1 else "User"
+        streak = user[8] if len(user) > 8 else 0
             
         logging.info(f"HOME: User {user_id} | State: {state} | Goal: {goal}")
 
@@ -292,7 +293,7 @@ def home():
 
         # Treat ACTIVE users as ready
         if state == "ACTIVE" or goal:
-            return render_template('home.html', active_page='home', history=get_chat_history(user_id, limit=50))
+            return render_template('home.html', active_page='home', streak=streak, history=get_chat_history(user_id, limit=50))
         
         # Otherwise onboarding
         return redirect('/onboarding')
@@ -3722,13 +3723,13 @@ def complete_ai_task_api(task_id):
     
     complete_ai_task(task_id)
     
+    # Update daily streak
+    new_streak = update_user_streak(session['user_id'])
+    
     # Increment flow day on completion
-    # Logic: Only increment ONCE per day? Or per task? 
-    # User said: "if user done the daily ai task it was count was increce"
-    # Assuming simply incrementing for now as per request.
     increment_flow_day(session['user_id'])
     
-    return jsonify({'status': 'completed', 'flow_day': get_flow_day(session['user_id'])})
+    return jsonify({'status': 'completed', 'streak': new_streak, 'flow_day': get_flow_day(session['user_id'])})
 
 @app.route('/api/user/flow', methods=['GET'])
 def get_user_flow_api():
