@@ -75,6 +75,12 @@ def init_db():
                 conn.commit()
                 print(f"Added column {column} to {table}")
             except Exception as e:
+                # Rollback transaction to prevent "current transaction is aborted" errors in PG
+                try:
+                    conn.rollback()
+                except:
+                    pass
+                
                 # Column likely exists, but let's check the error message
                 err_msg = str(e).lower()
                 if "already exists" in err_msg or "duplicate column" in err_msg:
@@ -83,8 +89,7 @@ def init_db():
                     print(f"Error adding column {column} to {table}: {e}")
 
         # Determine ID type for auto-increment based on DB connection type
-        # PostgreSQL uses SERIAL, SQLite uses INTEGER PRIMARY KEY AUTOINCREMENT
-        is_pg = "psycopg2" in str(type(conn))
+        is_pg = os.getenv("DATABASE_URL") is not None or "psycopg" in str(type(conn)).lower()
         id_type_ai = "SERIAL PRIMARY KEY" if is_pg else "INTEGER PRIMARY KEY AUTOINCREMENT"
 
         # 1. Base Users Table
@@ -115,9 +120,9 @@ def init_db():
         add_column('users', 'email', 'TEXT')
         add_column('users', 'flow_day', 'INTEGER', 0)
 
-        cursor.execute("""
+        cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS group_tasks (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id {id_type_ai},
             group_id INTEGER,
             assigned_user_id INTEGER,
             task_content TEXT,
@@ -126,9 +131,9 @@ def init_db():
         """)
 
         # 4. Knowledge Blocks (AI Workspace)
-        cursor.execute("""
+        cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS knowledge_blocks (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id {id_type_ai},
             user_id INTEGER,
             type TEXT, -- idea, task, learning, reflection, read
             title TEXT,

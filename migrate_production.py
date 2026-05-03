@@ -46,6 +46,10 @@ def migrate_production():
                 conn.commit()
                 print(f"  Successfully added {col}")
             except Exception as e:
+                try:
+                    conn.rollback()
+                except:
+                    pass
                 err_msg = str(e).lower()
                 if "already exists" in err_msg or "duplicate column" in err_msg:
                     print(f"  Column {col} already exists.")
