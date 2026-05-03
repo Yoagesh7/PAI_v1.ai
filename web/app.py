@@ -59,62 +59,98 @@ MAIN_MODEL = os.getenv("NVIDIA_MODEL", "meta/llama-3.1-8b-instruct")
 GROUP_MODEL = os.getenv("NVIDIA_MODEL", "meta/llama-3.1-8b-instruct")
 MODEL_NAME = MAIN_MODEL
 # ------------------------------------------------
-from nvidia_llm import rag_system, AIConnectionError, _OFFLINE_MSG
-from rag_engine_cloud import init_rag_system, build_rag_context, maybe_extract_memory
-from memory import (
-    get_user, save_user, reset_user, create_post, get_posts,
-    create_group, join_group, get_user_group, get_group_members,
-    set_group_goal, add_group_task, get_group_tasks, complete_group_task,
-    save_chat_message, get_chat_history, create_account, verify_user,
-    username_exists, save_signup_verification, verify_signup_code,
-    clear_signup_verification, cleanup_expired_signup_verifications,
-    save_login_verification, verify_login_code, clear_login_verification, cleanup_expired_login_verifications, get_user_email,
-    get_user_by_username, get_db,
-    add_reward, get_rewards, update_user_streak,
-    create_daily_task, get_daily_tasks, toggle_daily_task,
-    create_daily_article, get_latest_article,
-    save_daily_news, get_daily_news,
-    save_group_message, get_group_messages, update_group,
-    # New team collaboration functions
-    set_group_project, get_or_create_invite_code, join_group_by_invite,
-    update_task_status, get_group_with_details, get_weekly_productivity,
-    get_flow_day, increment_flow_day,
-    save_focus_session, get_focus_stats,
-    aggregate_user_routine,
-    create_ai_task, get_ai_tasks_for_date, complete_ai_task,
-    # Reminder functions
-    save_reminder, get_pending_reminders, dismiss_reminder,
-    clear_chat_history
-)
 
-# Smart Blocks imports
-from smart_blocks import (
-    create_block, validate_block_type, get_block_template,
-    suggest_related_blocks, auto_link_blocks, analyze_block_network, BLOCK_TYPES
-)
-from smart_blocks_db import (
-    get_user_blocks, update_smart_block, delete_smart_block,
-    link_blocks, get_block_relationships, search_blocks
-)
+# Try to import AI/RAG modules, but don't fail if they're not available
+try:
+    from nvidia_llm import rag_system, AIConnectionError, _OFFLINE_MSG
+    from rag_engine_cloud import init_rag_system, build_rag_context, maybe_extract_memory
+    print("✅ AI/RAG modules loaded successfully", flush=True)
+except Exception as e:
+    print(f"⚠️ AI/RAG modules not available: {e}", flush=True)
+    rag_system = None
+    AIConnectionError = Exception
+    _OFFLINE_MSG = "AI system unavailable"
 
-# Habit Intelligence imports
-# Habit Intelligence imports
+# Import core database and auth modules (required for app to function)
+try:
+    from memory import (
+        get_user, save_user, reset_user, create_post, get_posts,
+        create_group, join_group, get_user_group, get_group_members,
+        set_group_goal, add_group_task, get_group_tasks, complete_group_task,
+        save_chat_message, get_chat_history, create_account, verify_user,
+        username_exists, save_signup_verification, verify_signup_code,
+        clear_signup_verification, cleanup_expired_signup_verifications,
+        save_login_verification, verify_login_code, clear_login_verification, cleanup_expired_login_verifications, get_user_email,
+        get_user_by_username, get_db,
+        add_reward, get_rewards, update_user_streak,
+        create_daily_task, get_daily_tasks, toggle_daily_task,
+        create_daily_article, get_latest_article,
+        save_daily_news, get_daily_news,
+        save_group_message, get_group_messages, update_group,
+        # New team collaboration functions
+        set_group_project, get_or_create_invite_code, join_group_by_invite,
+        update_task_status, get_group_with_details, get_weekly_productivity,
+        get_flow_day, increment_flow_day,
+        save_focus_session, get_focus_stats,
+        aggregate_user_routine,
+        create_ai_task, get_ai_tasks_for_date, complete_ai_task,
+        # Reminder functions
+        save_reminder, get_pending_reminders, dismiss_reminder,
+        clear_chat_history
+    )
+    print("✅ Memory/database modules loaded successfully", flush=True)
+except Exception as e:
+    print(f"❌ CRITICAL: Memory modules failed to load: {e}", flush=True)
+    import traceback
+    traceback.print_exc()
+    raise
+
+# Smart Blocks imports (optional)
+try:
+    from smart_blocks import (
+        create_block, validate_block_type, get_block_template,
+        suggest_related_blocks, auto_link_blocks, analyze_block_network, BLOCK_TYPES
+    )
+    from smart_blocks_db import (
+        get_user_blocks, update_smart_block, delete_smart_block,
+        link_blocks, get_block_relationships, search_blocks
+    )
+    print("✅ Smart Blocks modules loaded successfully", flush=True)
+except Exception as e:
+    print(f"⚠️ Smart Blocks modules not available: {e}", flush=True)
+
+# Habit Intelligence imports (optional)
 # from habit_intelligence import (...) # Removed unused imports
 
-# Coach Engine imports
-from coach_engine import create_weekly_report, calculate_progress_score
-
-# RLHF Imports
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../rlhf')))
+# Coach Engine imports (optional)
 try:
-    from rlhf.strategy_selector import StrategySelector
-    from rlhf.feedback_manager import FeedbackManager
-except ImportError:
-    # Fallback if running from root
-    from rlhf.strategy_selector import StrategySelector
-    from rlhf.feedback_manager import FeedbackManager
+    from coach_engine import create_weekly_report, calculate_progress_score
+    print("✅ Coach Engine modules loaded successfully", flush=True)
+except Exception as e:
+    print(f"⚠️ Coach Engine modules not available: {e}", flush=True)
 
-from reminders import parse_reminder_time, IST
+# RLHF Imports (optional)
+try:
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../rlhf')))
+    try:
+        from rlhf.strategy_selector import StrategySelector
+        from rlhf.feedback_manager import FeedbackManager
+    except ImportError:
+        # Fallback if running from root
+        from rlhf.strategy_selector import StrategySelector
+        from rlhf.feedback_manager import FeedbackManager
+    print("✅ RLHF modules loaded successfully", flush=True)
+except Exception as e:
+    print(f"⚠️ RLHF modules not available: {e}", flush=True)
+
+# Reminders import (optional)
+try:
+    from reminders import parse_reminder_time, IST
+    print("✅ Reminders modules loaded successfully", flush=True)
+except Exception as e:
+    print(f"⚠️ Reminders modules not available: {e}", flush=True)
+    parse_reminder_time = None
+    IST = None
 
 
 def generate_weekly_insights(user_id):
@@ -238,6 +274,27 @@ def _ensure_session_cookie(response):
         # Force session to be marked as modified so cookie is sent
         session.modified = True
     return response
+
+
+# Global error handlers
+@app.errorhandler(404)
+def handle_404(e):
+    """Handle 404 Not Found errors"""
+    return jsonify({'error': 'Not found', 'status': 404}), 404
+
+
+@app.errorhandler(500)
+def handle_500(e):
+    """Handle 500 Internal Server errors"""
+    logging.error(f"500 Error: {e}", exc_info=True)
+    return jsonify({'error': 'Internal server error', 'status': 500}), 500
+
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    """Handle all unhandled exceptions"""
+    logging.error(f"Unhandled exception: {e}", exc_info=True)
+    return jsonify({'error': 'An error occurred', 'status': 500}), 500
 
 # Simple in-memory rate limiter (per-IP). Not durable across processes; suitable for single-instance deployments.
 _rate_buckets = {}
@@ -504,6 +561,15 @@ def productivity_page():
     return render_template('productivity.html', active_page='productivity')
 
 
+@app.route('/test')
+def test_route():
+    """Simple test endpoint to verify Flask app is working"""
+    return jsonify({
+        'status': 'ok',
+        'message': 'Flask app is running',
+        'timestamp': datetime.now().isoformat(),
+        'routes_count': len(app.url_map._rules)
+    })
 
 
 @app.route('/api/health')
