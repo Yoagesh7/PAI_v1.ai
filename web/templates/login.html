@@ -407,27 +407,52 @@
             const btn = document.getElementById('action-btn');
             const err = document.getElementById('error');
 
-            if (!user || !pass) {
-                err.innerText = "Please fill in all fields.";
+            // Base validation
+            if (!user) {
+                err.innerText = "Please enter your username or email.";
+                err.style.display = 'block';
+                return;
+            }
+
+            // Password check (not required for initial forgot password step)
+            if (!isForgot && !pass) {
+                err.innerText = "Please enter your password.";
                 err.style.display = 'block';
                 return;
             }
 
             if (!isLogin) {
-                if (!email) {
-                    err.innerText = "Email is required for signup.";
-                    err.style.display = 'block';
-                    return;
-                }
-                if (!pendingVerification && pass !== confirm) {
-                    err.innerText = "Passwords do not match!";
-                    err.style.display = 'block';
-                    return;
-                }
-                if (pendingVerification && (!code || code.length < 6)) {
-                    err.innerText = "Enter the 6-digit verification code from your email.";
-                    err.style.display = 'block';
-                    return;
+                // Signup or Forgot Password flow
+                if (isForgot) {
+                    if (pendingVerification) {
+                        if (!pass) {
+                            err.innerText = "Please enter your new password.";
+                            err.style.display = 'block';
+                            return;
+                        }
+                        if (!code || code.length < 6) {
+                            err.innerText = "Enter the 6-digit reset code.";
+                            err.style.display = 'block';
+                            return;
+                        }
+                    }
+                } else {
+                    // Normal Signup
+                    if (!email) {
+                        err.innerText = "Email is required for signup.";
+                        err.style.display = 'block';
+                        return;
+                    }
+                    if (!pendingVerification && pass !== confirm) {
+                        err.innerText = "Passwords do not match!";
+                        err.style.display = 'block';
+                        return;
+                    }
+                    if (pendingVerification && (!code || code.length < 6)) {
+                        err.innerText = "Enter the 6-digit verification code.";
+                        err.style.display = 'block';
+                        return;
+                    }
                 }
             }
 
