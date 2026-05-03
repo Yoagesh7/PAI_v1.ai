@@ -853,6 +853,10 @@ def chat():
     save_chat_message(user_id, 'user', text)
     
     user = get_user(user_id)
+    if not user:
+        # Ensure a valid user row exists so tuple index access below never crashes.
+        save_user(user_id, name=session.get('user_name', f"User {user_id}"), state="ACTIVE")
+        user = get_user(user_id)
 
     # --- PARTNER AI LOGIC ---
     name = user[1] if user else "Friend"
@@ -1350,9 +1354,9 @@ Keep going strong! 💪
         
         # safely get other fields by index from your schema
         # Schema: 0:id, 1:name, 2:career(goal), 3:hobbies, ..., 11:work_time, 12:free_time, 13:age
-        work_time = user[11] if len(user) > 11 else "Unspecified"
-        free_time = user[12] if len(user) > 12 else "Unspecified"
-        age = user[13] if len(user) > 13 else "Unspecified"
+        work_time = user[11] if user and len(user) > 11 and user[11] else "Unspecified"
+        free_time = user[12] if user and len(user) > 12 and user[12] else "Unspecified"
+        age = user[13] if user and len(user) > 13 and user[13] else "Unspecified"
 
         # --- RLHF STRATEGY SELECTION ---
         selected_strategy = StrategySelector.get_best_strategy()
@@ -1491,7 +1495,7 @@ CONVERSATION RULES (follow naturally, don't state them):
         return Response(_OFFLINE_MSG, mimetype='text/plain')
     except Exception as e:
         print(f"Chat Error: {e}", flush=True)
-        return Response("I'm having a bit of trouble connecting to my brain right now. 🧠", mimetype='text/plain')
+        return Response(f"I'm having a bit of trouble connecting to my brain right now. 🧠\n\nDebug: {e}", mimetype='text/plain')
 
 # --- REMINDER NOTIFICATION API ---
 @app.route('/api/reminders/check', methods=['GET'])
