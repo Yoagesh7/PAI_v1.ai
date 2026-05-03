@@ -166,52 +166,6 @@
 </style>
 
 <script>
-    // Recover user session from localStorage if server session is lost (Vercel issue)
-    function recoverSessionFromStorage() {
-        const stored = {
-            user_id: localStorage.getItem('partnerai_user_id'),
-            user_name: localStorage.getItem('partnerai_user_name'),
-            user_email: localStorage.getItem('partnerai_user_email'),
-            login_time: localStorage.getItem('partnerai_login_time')
-        };
-        
-        // Check if localStorage data is valid (logged in within last 30 days)
-        if (stored.user_id && stored.user_name && stored.login_time) {
-            const loginDate = new Date(stored.login_time);
-            const daysSinceLogin = (new Date() - loginDate) / (1000 * 60 * 60 * 24);
-            if (daysSinceLogin < 30) {
-                console.log(`📱 Found recovery data: ${stored.user_name}`);
-                return stored;
-            }
-        }
-        return null;
-    }
-
-    async function restoreSessionOnServer(userData) {
-        // Call /api/auth/restore to restore session on server
-        try {
-            const res = await fetch('/api/auth/restore', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    user_id: userData.user_id,
-                    user_name: userData.user_name
-                })
-            });
-            const data = await res.json();
-            if (data.success) {
-                console.log(`✅ Session restored on server for ${userData.user_name}`);
-                return true;
-            } else {
-                console.error(`❌ Server restore failed: ${data.error}`);
-                return false;
-            }
-        } catch (err) {
-            console.error('Server restore error:', err);
-            return false;
-        }
-    }
-
     // Set greeting based on time
     function setGreeting() {
         const hour = new Date().getHours();
@@ -324,11 +278,11 @@
     setGreeting();
     loadTasks();
 
-    // Load user info from API first, with multi-layer fallback
+    // Load user info from API only. Session restore from localStorage is disabled.
     (async () => {
         let userLoaded = false;
         
-        // Layer 1: Try server session
+        // Try server session
         try {
             const res = await fetch('/api/user');
             if (res.ok) {
@@ -338,34 +292,12 @@
                     document.getElementById('username-display').textContent = data.username;
                     userLoaded = true;
                 }
-            } else if (res.status === 401) {
-                console.log('⚠️ Server session not found (401)');
-                // Try to recover
-                const recovered = recoverSessionFromStorage();
-                if (recovered) {
-                    console.log(`🔄 Restoring session for ${recovered.user_name}...`);
-                    const restored = await restoreSessionOnServer(recovered);
-                    if (restored) {
-                        document.getElementById('username-display').textContent = recovered.user_name;
-                        userLoaded = true;
-                    }
-                }
             }
         } catch (err) {
             console.error('Error loading user from server:', err);
         }
-        
-        // Layer 2: If server failed, use localStorage
-        if (!userLoaded) {
-            const recovered = recoverSessionFromStorage();
-            if (recovered) {
-                console.log(`📱 Using recovered data: ${recovered.user_name}`);
-                document.getElementById('username-display').textContent = recovered.user_name;
-                userLoaded = true;
-            }
-        }
-        
-        // Layer 3: If all else fails, redirect to login
+
+        // If session is missing, redirect to login
         if (!userLoaded) {
             console.log('❌ No session, no recovery data. Redirecting to login.');
             setTimeout(() => window.location.replace('/login'), 1000);
