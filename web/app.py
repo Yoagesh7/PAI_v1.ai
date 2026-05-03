@@ -436,8 +436,15 @@ def debug_ai_key():
     This endpoint intentionally does NOT reveal the key value.
     """
     try:
+        candidates = {
+            'NVIDIA_API_KEY': bool(os.getenv('NVIDIA_API_KEY')),
+            'NVAPI_API_KEY': bool(os.getenv('NVAPI_API_KEY')),
+            'NVIDIA_API_TOKEN': bool(os.getenv('NVIDIA_API_TOKEN')),
+            'NVIDIA_API_BASE_URL': bool(os.getenv('NVIDIA_API_BASE_URL')),
+            'NVIDIA_MODEL': bool(os.getenv('NVIDIA_MODEL')),
+        }
         present = bool(getattr(rag_system, 'api_key', None))
-        return jsonify({'present': present})
+        return jsonify({'present': present, 'env': candidates})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
