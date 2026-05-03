@@ -280,11 +280,13 @@ def verify_user(username_or_email, password):
             user_id, stored = row[0], row[1]
             match = _verify_password(stored, password)
             import logging
-            logging.info(f" Verify attempt for user_id={user_id}: match={match}")
+            # Log only the start of the hash for security
+            stored_preview = (stored[:15] + "...") if stored else "None"
+            logging.info(f" Verify attempt for user_id={user_id}: match={match}, stored_preview='{stored_preview}'")
             if match:
                 return user_id
                 
-        logging.warning(f" Login failed: No matching password for identifier='{val}'")
+        logging.warning(f" Login failed: Password mismatch or user not found for identifier='{val}'")
         return None
 
 
