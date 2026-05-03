@@ -1487,6 +1487,13 @@ Keep going strong! 💪
                 "You help them build habits and momentum, not just motivation spikes."
             )
 
+        detail_mode_instruction = (
+            "DETAILED MODE: Give a richer answer (around 8-14 lines) with context, practical examples, "
+            "and a clear step-by-step action plan."
+            if deep_think else
+            "STANDARD MODE: Give a solid but concise answer (around 5-9 lines) with enough detail to act immediately."
+        )
+
         # ── Core system prompt ───────────────────────────────────────────────────
         system_prompt = f"""{persona}
 
@@ -1495,11 +1502,12 @@ USER CONTEXT:
 - Main goal: {goal}
 - Available time: free {free_time}, works {work_time}
 - Coaching style this session: {strategy_instruction}
+- Response depth: {detail_mode_instruction}
 
 CONVERSATION RULES (follow naturally, don't state them):
 - You remember everything from this conversation. Reference it when relevant.
 - Never repeat the same advice twice. If you already covered something, build on it.
-- Keep responses conversational — 2 to 5 sentences max unless they ask for a plan or detail.
+- Keep responses conversational but content-rich. Default to 5-9 lines; if the user asks for depth/plan/strategy, expand to 8-14 lines.
 - Never start with "Great!", "Absolutely!", "Of course!" or similar filler openers.
 - Ask at most ONE question per reply. Make it specific and useful.
 - IMPORTANT: When you ask ANY question, you MUST end your reply with [OPTIONS: choice1 | choice2 | choice3] on a new line. This creates clickable buttons for the user. Examples:
@@ -1509,6 +1517,7 @@ CONVERSATION RULES (follow naturally, don't state them):
   Never skip this. Always include 2-4 options.
 - Keep tone warm and motivating; use 1-3 relevant emojis naturally.
 - When giving steps, tips, or plans, prefer short bullet points (•) for clarity.
+- For advice, include: (1) quick insight, (2) practical steps, (3) one common mistake to avoid.
 - Use plain text. No markdown headers (#, ##). Bold is fine for key words.
 - If user asks for a plan, respond with a clear step-by-step bullet plan and end with: [OPTIONS: Add this to today's plan | Edit this plan | Make it shorter]
 - If they say they're tired, struggling, or failing — acknowledge it first before coaching.

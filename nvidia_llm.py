@@ -83,7 +83,7 @@ class RAGSystem:
             "model": self.model,
             "messages": valid_messages,
             "temperature": temperature,
-            "max_tokens": 512,
+            "max_tokens": 768,
             "stream": False,
         }
 
@@ -108,7 +108,7 @@ class RAGSystem:
             "model": self.model,
             "messages": valid_messages,
             "temperature": temperature,
-            "max_tokens": 512,
+            "max_tokens": 768,
             "stream": True,
         }
 
