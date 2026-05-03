@@ -249,17 +249,23 @@ def create_account(username, password, email):
         hashed = _hash_password(password)
         
         is_pg = os.getenv("DATABASE_URL") is not None or "psycopg" in str(type(conn)).lower()
+        logging.info(f" is_pg detection: {is_pg} (DATABASE_URL present: {os.getenv('DATABASE_URL') is not None})")
         
-        if is_pg:
-            cursor.execute(f"INSERT INTO users (username, password, email, name, flow_day, state) VALUES ({PL}, {PL}, {PL}, {PL}, 1, 'NEW') RETURNING user_id", (username, hashed, email, username))
-            user_id = cursor.fetchone()[0]
-        else:
-            cursor.execute(f"INSERT INTO users (username, password, email, name, flow_day, state) VALUES ({PL}, {PL}, {PL}, {PL}, 1, 'NEW')", (username, hashed, email, username))
-            user_id = cursor.lastrowid
-            
-        conn.commit()
-        logging.info(f" Account created: user_id={user_id}, username='{username}', email='{email}'")
-        return user_id
+        try:
+            if is_pg:
+                cursor.execute(f"INSERT INTO users (username, password, email, name, flow_day, state) VALUES ({PL}, {PL}, {PL}, {PL}, 1, 'NEW') RETURNING user_id", (username, hashed, email, username))
+                user_id = cursor.fetchone()[0]
+            else:
+                cursor.execute(f"INSERT INTO users (username, password, email, name, flow_day, state) VALUES ({PL}, {PL}, {PL}, {PL}, 1, 'NEW')", (username, hashed, email, username))
+                user_id = cursor.lastrowid
+                
+            conn.commit()
+            logging.info(f" Account created successfully: user_id={user_id}, username='{username}'")
+            return user_id
+        except Exception as e:
+            logging.error(f" Failed to insert user into DB: {e}")
+            conn.rollback()
+            return None
 
 def verify_user(username_or_email, password):
     if not username_or_email: return None
