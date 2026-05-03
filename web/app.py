@@ -429,6 +429,18 @@ def productivity_page():
 def health_check():
     return jsonify({'status': 'healthy', 'time': datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
 
+
+@app.route('/api/debug/ai-key')
+def debug_ai_key():
+    """Return whether the NVIDIA API key is present on the running server.
+    This endpoint intentionally does NOT reveal the key value.
+    """
+    try:
+        present = bool(getattr(rag_system, 'api_key', None))
+        return jsonify({'present': present})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 # --- API ENDPOINTS ---
 
 
