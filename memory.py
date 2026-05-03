@@ -32,11 +32,31 @@ DB_NAME = _default_db_path()
 
 @contextmanager
 def get_db():
-    conn = sqlite3.connect(DB_NAME, check_same_thread=False)
-    try:
-        yield conn
-    finally:
-        conn.close()
+    # Priority: 1. DATABASE_URL (PostgreSQL), 2. Local SQLite
+    db_url = os.getenv("DATABASE_URL")
+    if db_url and (db_url.startswith("postgres") or db_url.startswith("postgresql")):
+        try:
+            import psycopg2
+            # Use sslmode=require for cloud DBs like Supabase/Neon
+            conn = psycopg2.connect(db_url, sslmode='require')
+            try:
+                yield conn
+            finally:
+                conn.close()
+        except ImportError:
+            # Fallback if psycopg2 is missing but URL is provided
+            print("⚠️ DATABASE_URL provided but psycopg2 not installed. Falling back to SQLite.")
+            conn = sqlite3.connect(DB_NAME, check_same_thread=False)
+            try:
+                yield conn
+            finally:
+                conn.close()
+    else:
+        conn = sqlite3.connect(DB_NAME, check_same_thread=False)
+        try:
+            yield conn
+        finally:
+            conn.close()
 
 def init_db():
     with get_db() as conn:
@@ -44,20 +64,25 @@ def init_db():
         
         def add_column(table, column, col_type, default_value=None):
             try:
+                # Check if column exists first (PostgreSQL and SQLite have different syntax for this, so we use a try-except fallback)
                 if default_value is not None:
                      cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_type} DEFAULT {default_value}")
                 else:
                      cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_type}")
-            except sqlite3.OperationalError:
+                conn.commit()
+            except Exception:
+                # Column likely exists
                 pass 
 
         # 1. Base Users Table
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
-            user_id INTEGER PRIMARY KEY,
+            user_id SERIAL PRIMARY KEY,
             name TEXT
         )
         """)
+        # For SQLite fallback
+        if "SERIAL" in str(cursor.description): pass # serial is PG
         
         # 2. Add columns
         add_column('users', 'career', 'TEXT')
@@ -82,7 +107,7 @@ def init_db():
         # 3. Community / Groups
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS community_posts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             user_name TEXT,
             content TEXT,
             timestamp TEXT
@@ -92,7 +117,7 @@ def init_db():
         
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS groups (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             name TEXT,
             leader_id INTEGER,
             status TEXT DEFAULT 'PLANNING',
@@ -323,27 +348,49 @@ def init_db():
         )
         """)
 
-        # --- SIGNUP EMAIL VERIFICATION ---
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS signup_verifications (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL,
-            email TEXT NOT NULL,
-            code TEXT NOT NULL,
-            expires_at TEXT NOT NULL,
-            created_at TEXT NOT NULL
+        # Check if we are on PostgreSQL
+        id_type_ai = "SERIAL PRIMARY KEY" if "psycopg2" in str(type(conn)) else "INTEGER PRIMARY KEY AUTOINCREMENT"
+
+        # 3. Community / Groups
+        cursor.execute(f"""
+        CREATE TABLE IF NOT EXISTS community_posts (
+            id {id_type_ai},
+            user_name TEXT,
+            content TEXT,
+            timestamp TEXT
         )
         """)
         
-        # Login verification codes (for sign-in 2FA)
-        cursor.execute("""
+        cursor.execute(f"""
+        CREATE TABLE IF NOT EXISTS groups (
+            id {id_type_ai},
+            name TEXT,
+            leader_id INTEGER,
+            status TEXT DEFAULT 'PLANNING',
+            goal TEXT
+        )
+        """)
+        
+        # --- AUTH VERIFICATIONS ---
+        cursor.execute(f"""
+        CREATE TABLE IF NOT EXISTS signup_verifications (
+            id {id_type_ai},
+            username TEXT NOT NULL,
+            password TEXT NOT NULL,
+            email TEXT NOT NULL,
+            code TEXT NOT NULL,
+            expires_at TIMESTAMP NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+        
+        cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS login_verifications (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id {id_type_ai},
             username TEXT NOT NULL,
             code TEXT NOT NULL,
-            expires_at TEXT NOT NULL,
-            created_at TEXT NOT NULL
+            expires_at TIMESTAMP NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
         
@@ -480,21 +527,17 @@ def username_exists(username_or_email):
 
 
 def save_signup_verification(username, password, email, code, expires_at):
-    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    """Store signup attempt for OTP verification."""
     with get_db() as conn:
         cursor = conn.cursor()
+        # Delete any existing verification for this email/username to avoid duplicates
+        cursor.execute("DELETE FROM signup_verifications WHERE username=? OR email=?", (username, email))
         cursor.execute(
             """
-            INSERT INTO signup_verifications (username, password, email, code, expires_at, created_at)
-            VALUES (?, ?, ?, ?, ?, ?)
-            ON CONFLICT(username) DO UPDATE SET
-                password=excluded.password,
-                email=excluded.email,
-                code=excluded.code,
-                expires_at=excluded.expires_at,
-                created_at=excluded.created_at
+            INSERT INTO signup_verifications (username, password, email, code, expires_at)
+            VALUES (?, ?, ?, ?, ?)
             """,
-            (username, password, email, code, expires_at, now_str),
+            (username, password, email, code, expires_at),
         )
         conn.commit()
 
@@ -549,17 +592,19 @@ def cleanup_expired_signup_verifications():
 
 
 def save_login_verification(username, code, expires_at):
-    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    """Store login OTP."""
     with get_db() as conn:
         cursor = conn.cursor()
+        cursor.execute("DELETE FROM login_verifications WHERE username=?", (username,))
         cursor.execute(
-            "INSERT INTO login_verifications (username, code, expires_at, created_at) VALUES (?, ?, ?, ?)",
-            (username, code, expires_at, now_str)
+            "INSERT INTO login_verifications (username, code, expires_at) VALUES (?, ?, ?)",
+            (username, code, expires_at)
         )
         conn.commit()
 
 
 def verify_login_code(username, code):
+    """Verify login OTP."""
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT id, expires_at FROM login_verifications WHERE username=? AND code=?", (username, code))
@@ -567,14 +612,15 @@ def verify_login_code(username, code):
         if not row:
             return False, 'Invalid verification code.'
 
-        vid, expires_at = row
-        try:
+        _, expires_at = row
+        # Handle both string (SQLite) and datetime (PG)
+        if isinstance(expires_at, str):
             exp_dt = datetime.strptime(expires_at, "%Y-%m-%d %H:%M:%S")
-        except Exception:
-            return False, 'Verification code invalid.'
+        else:
+            exp_dt = expires_at
 
         if datetime.now() > exp_dt:
-            return False, 'Code expired.'
+            return False, 'Verification code expired.'
 
         return True, None
 

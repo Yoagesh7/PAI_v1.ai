@@ -296,6 +296,12 @@ def handle_exception(e):
     logging.error(f"Unhandled exception: {e}", exc_info=True)
     return jsonify({'error': 'An error occurred', 'status': 500}), 500
 
+# Extreme session persistence
+app.permanent_session_lifetime = timedelta(days=365)
+
+# Rate limiter setup
+rate_limits = {}
+
 # Simple in-memory rate limiter (per-IP). Not durable across processes; suitable for single-instance deployments.
 _rate_buckets = {}
 def rate_limit(key_prefix, limit=10, window=60):
@@ -760,8 +766,10 @@ def _set_auth_session(user_row):
     """Set a clean authenticated session for a user row."""
     session.clear()
     session['user_id'] = user_row[0]
+    # user_row[15] is username, user_row[1] is name
     session['user_name'] = user_row[15] if len(user_row) > 15 and user_row[15] else user_row[1]
     session.permanent = True
+    logging.info(f"🔑 Session set for user_id={user_row[0]}, name={session['user_name']}")
 
 
 def _serialize_user(user_row):
@@ -777,85 +785,154 @@ def signup():
     data = request.json
     username = (data.get('username') or '').strip()
     password = (data.get('password') or '').strip()
-    email = (data.get('email') or '').strip()
+    email = (data.get('email') or '').strip().lower()
     
     if not username or not password or not email:
-        return jsonify({'error': 'Missing credentials'}), 400
+        return jsonify({'error': 'All fields are required.'}), 400
 
-    email = email.lower()
-    logging.info(f"Signup attempt: username={username}, email={email}")
-
-    if '@' not in email:
+    if '@' not in email or '.' not in email:
         return jsonify({'error': 'Please enter a valid email address.'}), 400
 
-    # Clean, direct signup: create account immediately and log in.
     if username_exists(email) or username_exists(username):
         return jsonify({'error': 'An account already exists with that email or username.'}), 409
 
+    # Generate professional 6-digit OTP
+    import random
+    otp = str(random.randint(100000, 999999))
+    expires_at = (datetime.now() + timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
+    
+    # Save for verification
+    save_signup_verification(username, password, email, otp, expires_at)
+    
+    # Send Email
+    subject = "Verify your PartnerAI Account"
+    body = f"""Hello {username}!
+
+Welcome to PartnerAI. To complete your registration, please enter the following verification code:
+
+Verification Code: {otp}
+
+This code will expire in 10 minutes.
+
+If you did not request this, please ignore this email.
+
+Best,
+The PartnerAI Team"""
+    
+    success = send_email(email, subject, body)
+    if success:
+        logging.info(f"📧 Signup OTP sent to {email}")
+        return jsonify({'success': True, 'verification_required': True, 'message': 'Verification code sent to your email.'})
+    else:
+        return jsonify({'error': 'Failed to send verification email. Please check your email address.'}), 500
+
+
+@app.route('/api/signup/verify', methods=['POST'])
+def signup_verify():
+    data = request.json
+    username = (data.get('username') or '').strip()
+    email = (data.get('email') or '').strip().lower()
+    password = (data.get('password') or '').strip()
+    code = (data.get('code') or '').strip()
+
+    if not username or not code:
+        return jsonify({'error': 'Missing verification data.'}), 400
+
+    success, error = verify_signup_code(username, email, password, code)
+    if not success:
+        return jsonify({'error': error}), 400
+
+    # Verification successful, create account
     user_id = create_account(username, password, email)
     if not user_id:
-        return jsonify({'error': 'Could not create account.'}), 500
+        return jsonify({'error': 'Failed to create account.'}), 500
 
-    user_row = get_user_by_username(email) or get_user(user_id)
-    if not user_row:
-        return jsonify({'error': 'Account created but user record could not be loaded.'}), 500
-
+    clear_signup_verification(username)
+    user_row = get_user(user_id)
     _set_auth_session(user_row)
-    logging.info(f"✅ Signup successful: user_id={user_row[0]}, email={email}")
+    
     return jsonify({
         'success': True,
         **_serialize_user(user_row)
     })
 
-@app.route('/api/signup/resend', methods=['POST'])
-@rate_limit('signup_resend', limit=3, window=60)
-def signup_resend():
-    return jsonify({'error': 'Verification flow has been removed in the rebuilt login backend.'}), 410
-
-
-@app.route('/api/signup/verify', methods=['POST'])
-def signup_verify():
-    return jsonify({'error': 'Verification flow has been removed in the rebuilt login backend.'}), 410
 
 @app.route('/api/login', methods=['POST'])
-@rate_limit('login', limit=6, window=60)
+@rate_limit('login', limit=10, window=60)
 def login():
     data = request.json
-    identifier = (data.get('username') or data.get('email') or '').strip()
+    username_val = (data.get('username') or '').strip()
+    email_val = (data.get('email') or '').strip()
     password = (data.get('password') or '').strip()
 
-    if not identifier or not password:
+    if not (username_val or email_val) or not password:
         return jsonify({'error': 'Email/username and password are required.'}), 400
 
-    logging.info(f"🔍 Login attempt: identifier='{identifier}'")
+    # 1. Identify User
+    user_row = None
+    if username_val:
+        user_row = get_user_by_username(username_val)
+    if not user_row and email_val:
+        user_row = get_user_by_username(email_val)
 
-    user_row = get_user_by_username(identifier)
     if not user_row:
-        return jsonify({'error': 'Invalid credentials. Please check your email or username and password.'}), 404
+        return jsonify({'error': 'Account not found.'}), 404
 
+    # 2. Verify Password
+    identifier = username_val if username_val and user_row[15] == username_val else email_val
+    if not identifier: identifier = user_row[15] or user_row[17]
+    
     verified_user_id = verify_user(identifier, password)
     if not verified_user_id:
-        return jsonify({'error': 'Invalid credentials. Please check your email or username and password.'}), 401
+        return jsonify({'error': 'Incorrect password.'}), 401
 
-    _set_auth_session(user_row)
-    logging.info(f"✅ Login successful: user_id={user_row[0]}, identifier='{identifier}'")
+    # 3. Professional 2FA Flow
+    import random
+    otp = str(random.randint(100000, 999999))
+    expires_at = (datetime.now() + timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
+    
+    username = user_row[15] or user_row[1]
+    email = user_row[17]
+    
+    save_login_verification(username, otp, expires_at)
+    
+    # Send Email
+    subject = "PartnerAI Login Verification"
+    body = f"Hello {username}!\n\nYour login verification code is: {otp}\n\nIt will expire in 10 minutes."
+    
+    send_email(email, subject, body)
+    logging.info(f"📧 Login OTP sent to {email}")
+    
     return jsonify({
         'success': True,
-        **_serialize_user(user_row)
+        'verification_required': True,
+        'username': username,
+        'email': email
     })
 
 
 @app.route('/api/login/verify', methods=['POST'])
 def login_verify():
-    return jsonify({'error': 'Verification flow has been removed in the rebuilt login backend.'}), 410
+    data = request.json
+    username = (data.get('username') or '').strip()
+    code = (data.get('code') or '').strip()
 
-@app.route('/api/auth/switch', methods=['POST'])
-def switch_user():
-    return jsonify({'error': 'Legacy user switching has been disabled in the rebuilt auth backend.'}), 410
+    if not username or not code:
+        return jsonify({'error': 'Missing code.'}), 400
 
-@app.route('/api/auth/restore', methods=['POST'])
-def auth_restore():
-    return jsonify({'error': 'Session restore has been disabled in the rebuilt auth backend.'}), 410
+    success, error = verify_login_code(username, code)
+    if not success:
+        return jsonify({'error': error}), 401
+
+    # Success
+    user_row = get_user_by_username(username)
+    _set_auth_session(user_row)
+    
+    return jsonify({
+        'success': True,
+        **_serialize_user(user_row)
+    })
+
 
 @app.route('/api/auth/check', methods=['GET'])
 def auth_check():
@@ -2403,8 +2480,14 @@ def manage_habits():
             logging.info(f"✅ Habits fetched: count={len(habits) if isinstance(habits, list) else 0}, user={user_id}")
             return jsonify(habits)
     except Exception as e:
-        logging.error(f"❌ Habits endpoint error: {e}", exc_info=True)
-        return jsonify({'error': str(e), 'code': 'INTERNAL_ERROR'}), 500
+        import traceback
+        error_details = traceback.format_exc()
+        logging.error(f"❌ Habits endpoint error: {e}\n{error_details}")
+        return jsonify({
+            'error': str(e), 
+            'details': error_details if os.getenv("DEBUG") else "Internal Server Error",
+            'code': 'INTERNAL_ERROR'
+        }), 500
 
 @app.route('/api/habits/<int:habit_id>', methods=['DELETE'])
 def remove_habit(habit_id):

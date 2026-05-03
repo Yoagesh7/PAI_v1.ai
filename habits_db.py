@@ -12,10 +12,13 @@ def init_habits_db():
     with get_db() as conn:
         cursor = conn.cursor()
         
+        # Check if we are on PostgreSQL
+        id_type = "SERIAL" if "psycopg2" in str(type(conn)) else "INTEGER PRIMARY KEY AUTOINCREMENT"
+        
         # Habits Table
-        cursor.execute("""
+        cursor.execute(f"""
             CREATE TABLE IF NOT EXISTS habits (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id {id_type},
                 user_id INTEGER NOT NULL,
                 title TEXT NOT NULL,
                 category TEXT DEFAULT 'General',
@@ -28,28 +31,32 @@ def init_habits_db():
         """)
         
         # Completions Table
-        cursor.execute("""
+        cursor.execute(f"""
             CREATE TABLE IF NOT EXISTS habit_completions (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id {id_type},
                 habit_id INTEGER NOT NULL,
                 user_id INTEGER NOT NULL,
                 completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                date_str TEXT NOT NULL, -- YYYY-MM-DD for easy querying
-                FOREIGN KEY (habit_id) REFERENCES habits (id)
+                date_str TEXT NOT NULL
             )
         """)
         conn.commit()
 
 def create_habit(user_id, title, category="General", icon="📝", time_of_day="Anytime"):
     """Create a new habit."""
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO habits (user_id, title, category, icon, time_of_day)
-            VALUES (?, ?, ?, ?, ?)
-        """, (user_id, title, category, icon, time_of_day))
-        conn.commit()
-        return cursor.lastrowid
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO habits (user_id, title, category, icon, time_of_day)
+                VALUES (?, ?, ?, ?, ?)
+            """, (user_id, title, category, icon, time_of_day))
+            conn.commit()
+            return cursor.lastrowid
+    except Exception as e:
+        import logging
+        logging.error(f"Error creating habit: {e}")
+        raise e
 
 def delete_habit(habit_id, user_id):
     """Delete a habit and its history."""

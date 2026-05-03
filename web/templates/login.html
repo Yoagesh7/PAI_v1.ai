@@ -233,13 +233,13 @@
 
             <form onsubmit="submitAuth(event)">
                 <div class="form-group">
-                    <label for="username" id="user-label">Username or Email</label>
-                    <input type="text" id="username" placeholder="Enter your username or email" autocomplete="username" required>
+                    <label for="username" id="user-label">Username</label>
+                    <input type="text" id="username" placeholder="Choose a username" autocomplete="username" required>
                 </div>
 
-                <div class="form-group" id="emailGroup" style="display:none;">
+                <div class="form-group" id="emailGroup">
                     <label for="email">Email</label>
-                    <input type="email" id="email" placeholder="Enter your email" autocomplete="email">
+                    <input type="email" id="email" placeholder="Enter your email" autocomplete="email" required>
                 </div>
 
                 <div class="form-group">
@@ -292,10 +292,15 @@
         let deferredPrompt = null;
 
         document.addEventListener('DOMContentLoaded', () => {
-            const saved = localStorage.getItem('partnerai_last_identifier') || '';
-            if (saved) {
+            const savedUser = localStorage.getItem('partnerai_last_username') || '';
+            const savedEmail = localStorage.getItem('partnerai_last_email') || '';
+            if (savedUser) {
                 const input = document.getElementById('username');
-                if (input && !input.value) input.value = saved;
+                if (input && !input.value) input.value = savedUser;
+            }
+            if (savedEmail) {
+                const input = document.getElementById('email');
+                if (input && !input.value) input.value = savedEmail;
             }
         });
 
@@ -345,7 +350,7 @@
             document.getElementById('error').style.display = 'none';
 
             // Toggle fields
-            document.getElementById('emailGroup').style.display = isLogin ? 'none' : 'block';
+            document.getElementById('emailGroup').style.display = 'block';
             document.getElementById('confirmGroup').style.display = isLogin ? 'none' : 'block';
             document.getElementById('verifyGroup').style.display = 'none';
             document.getElementById('btn-resend').style.display = 'none';
@@ -356,13 +361,8 @@
             // Update Username label/placeholder
             const userLabel = document.getElementById('user-label');
             const userInput = document.getElementById('username');
-            if (isLogin) {
-                userLabel.innerText = "Username or Email";
-                userInput.placeholder = "Enter your username or email";
-            } else {
-                userLabel.innerText = "Username";
-                userInput.placeholder = "Choose a username";
-            }
+            userLabel.innerText = "Username";
+            userInput.placeholder = isLogin ? "Enter your username" : "Choose a username";
         }
 
         async function submitAuth(event) {
@@ -406,7 +406,7 @@
             err.style.display = 'none';
 
             let endpoint;
-            const payload = { username: user, password: pass };
+            const payload = { username: user, email: email, password: pass };
             if (isLogin) {
                 if (pendingLoginVerification) {
                     endpoint = '/api/login/verify';
@@ -451,92 +451,65 @@
                 
                 const data = JSON.parse(text);
 
-                if (data.success && data.requires_verification) {
-                    if (data.is_login_redirect) {
-                        isLogin = true;
-                        pendingLoginVerification = true;
-                        pendingLoginUsername = data.login_username || user;
-                        document.getElementById('verifyGroup').style.display = 'block';
-                        document.getElementById('action-btn').innerText = "Verify & Sign In";
-                        document.getElementById('subtitle').innerText = "Account found! Enter the code sent to your email to sign in";
-                        err.innerText = data.message;
-                        err.style.display = 'block';
-                        err.style.background = '#eef7ff';
-                        err.style.color = '#1d4ed8';
-                        btn.disabled = false;
-                        btn.innerText = "Verify & Sign In";
-                        return;
-                    }
-
+                if (data.success && data.verification_required) {
+                    // Switch to OTP mode
                     if (isLogin) {
                         pendingLoginVerification = true;
-                        pendingLoginUsername = data.login_username || user;
+                        pendingLoginUsername = data.username || user;
                         document.getElementById('verifyGroup').style.display = 'block';
+                        document.getElementById('user-label').parentElement.style.display = 'none';
+                        document.getElementById('emailGroup').style.display = 'none';
+                        document.getElementById('password').parentElement.style.display = 'none';
                         document.getElementById('action-btn').innerText = "Verify & Sign In";
-                        document.getElementById('subtitle').innerText = "Enter the code sent to your email to sign in";
-                        err.innerText = data.message || "Verification code sent.";
-                        err.style.display = 'block';
-                        err.style.background = '#eef7ff';
-                        err.style.color = '#1d4ed8';
-                        btn.disabled = false;
-                        btn.innerText = "Verify & Sign In";
-                        return;
+                        document.getElementById('subtitle').innerText = "Enter the 6-digit code sent to " + (data.email || email);
                     } else {
                         pendingVerification = true;
-                        pendingSignupPayload = { username: user, password: pass, email: email };
                         document.getElementById('verifyGroup').style.display = 'block';
                         document.getElementById('confirmGroup').style.display = 'none';
-                        document.getElementById('btn-resend').style.display = 'inline-block';
+                        document.getElementById('user-label').parentElement.style.display = 'none';
+                        document.getElementById('emailGroup').style.display = 'none';
+                        document.getElementById('password').parentElement.style.display = 'none';
                         document.getElementById('action-btn').innerText = "Verify & Create Account";
-                        document.getElementById('subtitle').innerText = "Enter the code sent to your email to finish signup";
-                        err.innerText = data.message || "Verification code sent.";
-                        err.style.display = 'block';
-                        err.style.background = '#eef7ff';
-                        err.style.color = '#1d4ed8';
-                        btn.disabled = false;
-                        return;
+                        document.getElementById('subtitle').innerText = "Verify your email to continue";
                     }
+                    
+                    err.innerText = data.message || "Verification code sent.";
+                    err.style.display = 'block';
+                    err.style.background = '#eef7ff';
+                    err.style.color = '#1d4ed8';
+                    btn.disabled = false;
+                    return;
                 }
 
                 if (data.success) {
+                    // Success! 
                     try {
-                        // Always save identifier for auto-fill
-                        if (user) localStorage.setItem('partnerai_last_identifier', user);
+                        if (user) localStorage.setItem('partnerai_last_username', user);
+                        if (email) localStorage.setItem('partnerai_last_email', email);
                         
-                        // Save user data to localStorage as critical fallback
                         if (data.user_id) {
-                            console.log(`💾 Saving user to localStorage: ${data.user_name}`);
                             localStorage.setItem('partnerai_user_id', String(data.user_id));
                             localStorage.setItem('partnerai_user_name', String(data.user_name || user));
-                            if (data.user_email) {
-                                localStorage.setItem('partnerai_user_email', String(data.user_email));
-                            }
-                            localStorage.setItem('partnerai_login_time', new Date().toISOString());
-                            
-                            // Verify it was saved
-                            const verify_id = localStorage.getItem('partnerai_user_id');
-                            console.log(`✅ Verified localStorage save: ${verify_id}`);
                         }
-                    } catch (e) {
-                        console.warn('localStorage save failed:', e);
-                    }
-                    // Redirect to onboarding wizard after signup, to home/dashboard after login
+                    } catch (e) {}
+                    
                     const redirectUrl = isLogin ? '/' : '/onboarding';
-                    console.log(`📍 Redirecting to ${redirectUrl}`);
-                    setTimeout(() => window.location.replace(redirectUrl), 500);
+                    window.location.replace(redirectUrl);
                 } else {
                     err.innerText = data.error || "Authentication failed.";
                     err.style.display = 'block';
-                    btn.innerText = isLogin ? (pendingLoginVerification ? 'Verify & Sign In' : 'Sign In') : (pendingVerification ? "Verify & Create Account" : "Create Account");
+                    err.style.background = 'rgba(254, 226, 226, 0.5)';
+                    err.style.color = '#dc2626';
+                    btn.innerText = isLogin ? "Sign In" : "Create Account";
                     btn.disabled = false;
                 }
             } catch (e) {
                 console.error('❌ Auth error:', e);
                 err.innerText = "Connection error. Please try again.";
                 err.style.display = 'block';
-                btn.innerText = isLogin ? "Sign In" : (pendingVerification ? "Verify & Create Account" : "Create Account");
                 btn.disabled = false;
             }
+        }
 
             if (!isLogin && pendingSignupPayload) {
                 document.getElementById('username').value = pendingSignupPayload.username;
