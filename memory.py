@@ -247,9 +247,17 @@ def create_account(username, password, email):
             
         # Hash password before storing
         hashed = _hash_password(password)
-        cursor.execute(f"INSERT INTO users (username, password, email, name) VALUES ({PL}, {PL}, {PL}, {PL})", (username, hashed, email, username))
+        
+        is_pg = os.getenv("DATABASE_URL") is not None or "psycopg" in str(type(conn)).lower()
+        
+        if is_pg:
+            cursor.execute(f"INSERT INTO users (username, password, email, name, flow_day, state) VALUES ({PL}, {PL}, {PL}, {PL}, 1, 'NEW') RETURNING user_id", (username, hashed, email, username))
+            user_id = cursor.fetchone()[0]
+        else:
+            cursor.execute(f"INSERT INTO users (username, password, email, name, flow_day, state) VALUES ({PL}, {PL}, {PL}, {PL}, 1, 'NEW')", (username, hashed, email, username))
+            user_id = cursor.lastrowid
+            
         conn.commit()
-        user_id = cursor.lastrowid
         logging.info(f" Account created: user_id={user_id}, username='{username}', email='{email}'")
         return user_id
 
@@ -641,8 +649,13 @@ def get_posts(limit=20):
 def create_group(name, leader_id, goal=None):
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute(f"INSERT INTO groups (name, leader_id, status, goal) VALUES ({PL}, {PL}, 'PLANNING', {PL})", (name, leader_id, goal))
-        group_id = cursor.lastrowid
+        is_pg = os.getenv("DATABASE_URL") is not None or "psycopg" in str(type(conn)).lower()
+        if is_pg:
+            cursor.execute(f"INSERT INTO groups (name, leader_id, status, goal) VALUES ({PL}, {PL}, 'PLANNING', {PL}) RETURNING id", (name, leader_id, goal))
+            group_id = cursor.fetchone()[0]
+        else:
+            cursor.execute(f"INSERT INTO groups (name, leader_id, status, goal) VALUES ({PL}, {PL}, 'PLANNING', {PL})", (name, leader_id, goal))
+            group_id = cursor.lastrowid
         cursor.execute(f"INSERT INTO group_members (group_id, user_id) VALUES ({PL}, {PL})", (group_id, leader_id))
         conn.commit()
         return group_id
