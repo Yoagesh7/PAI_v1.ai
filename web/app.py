@@ -852,7 +852,8 @@ def signup_verify():
     code = (data.get('code') or '').strip()
 
     if not username or not code:
-        return jsonify({'error': 'Missing verification data.'}), 400
+        logging.warning(f" Signup verification failed: Missing data. username='{username}', code='{code}'")
+        return jsonify({'error': 'Missing verification data (username and code are required).'}), 400
 
     success, error = verify_signup_code(username, email, password, code)
     if not success:

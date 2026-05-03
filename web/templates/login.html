@@ -343,7 +343,8 @@
             isForgot = false;
             pendingVerification = false;
             pendingLoginVerification = false;
-            pendingLoginUsername = null;
+            pendingLoginUsername = '';
+            pendingUsername = '';
             pendingSignupPayload = null;
 
             document.getElementById('title').innerText = isLogin ? "Welcome Back" : "Create Account";
@@ -449,13 +450,14 @@
             } else if (isLogin) {
                 if (pendingLoginVerification) {
                     endpoint = '/api/login/verify';
-                    payload.username = pendingLoginUsername || user;
+                    payload.username = pendingLoginUsername || user || pendingUsername;
                     payload.code = code;
                 } else {
                     endpoint = '/api/login';
                 }
             } else {
                 endpoint = pendingVerification ? '/api/signup/verify' : '/api/signup';
+                payload.username = user || pendingUsername;
                 payload.email = email;
                 if (pendingVerification) payload.code = code;
             }
@@ -503,6 +505,7 @@
                         document.getElementById('subtitle').innerText = "Enter the 6-digit code sent to " + (data.email || email);
                     } else {
                         pendingVerification = true;
+                        pendingUsername = user;
                         document.getElementById('verifyGroup').style.display = 'block';
                         document.getElementById('confirmGroup').style.display = 'none';
                         document.getElementById('user-label').parentElement.style.display = 'none';
