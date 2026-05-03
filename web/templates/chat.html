@@ -129,6 +129,16 @@
     .msg-time { display: block; font-size: 10px; color: rgba(255,255,255,0.2); margin-top: 6px; }
     .user-bubble .msg-time { text-align: right; }
 
+    .user-avatar-mini {
+        width: 24px; height: 24px; border-radius: 50%;
+        background: rgba(139,120,204,0.2); border: 1px solid rgba(139,120,204,0.3);
+        color: #8B78CC; font-size: 9px; font-weight: 700;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; flex-shrink: 0; margin-bottom: 2px;
+        transition: all 0.2s;
+    }
+    .user-avatar-mini:hover { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.3); color: #ef4444; }
+
     /* Markdown */
     .ai-bubble p            { margin: 0 0 7px; }
     .ai-bubble p:last-child { margin-bottom: 0; }
@@ -263,11 +273,13 @@
 
     .ai-avatar {
         width: 38px; height: 38px; border-radius: 12px;
-        background: linear-gradient(135deg, #8B78CC, #7A66C2);
+        background: #1E1E24;
         display: flex; align-items: center; justify-content: center;
-        color: white; font-weight: 700; font-size: 12px;
+        overflow: hidden;
         position: relative; flex-shrink: 0;
-        box-shadow: 0 0 0 2px rgba(139,120,204,0.25);
+    }
+    .ai-avatar img {
+        width: 100%; height: 100%; object-fit: cover;
     }
     .ai-avatar .dot {
         position: absolute; bottom: -2px; right: -2px;
@@ -371,12 +383,13 @@
         word-break: break-word; position: relative;
     }
     .user-bubble {
-        background: linear-gradient(135deg, #8B78CC, #6B5BA8);
-        border-radius: 18px 4px 18px 18px;
-        padding: 11px 15px; width: 100%;
-        color: white; font-size: 14.5px; line-height: 1.65;
+        background: none;
+        border: none;
+        padding: 4px 0;
+        color: #B8AEDE; 
+        font-size: 15px; line-height: 1.65;
         word-break: break-word; position: relative;
-        box-shadow: 0 4px 14px rgba(139,120,204,0.25);
+        box-shadow: none;
     }
     .msg-time { display: block; font-size: 10px; color: rgba(255,255,255,0.2); margin-top: 6px; }
     .user-bubble .msg-time { text-align: right; }
@@ -392,6 +405,7 @@
     .msg-row:not(.user):focus-within .msg-actions,
     .msg-actions.visible {
         opacity: 1; height: auto; overflow: visible;
+        flex-wrap: wrap; /* Fix hidden buttons on mobile */
     }
     .act-btn {
         display: inline-flex; align-items: center; gap: 4px;
@@ -609,6 +623,41 @@
     }
     .reminder-dismiss:hover { background: rgba(255,255,255,0.08); color: #ccc; }
 
+    /* ── History Drawer ── */
+    .history-drawer {
+        position: fixed; top: 0; left: 0; width: 280px; height: 100%;
+        background: #1A1A1E; border-right: 1px solid rgba(255,255,255,0.05);
+        z-index: 200; transform: translateX(-100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex; flex-direction: column;
+    }
+    .history-drawer.open { transform: translateX(0); }
+    .history-hdr {
+        padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.05);
+        display: flex; align-items: center; justify-content: space-between;
+    }
+    .history-hdr h4 { margin: 0; font-size: 14px; color: #8B78CC; text-transform: uppercase; letter-spacing: 1px; }
+    .history-list { flex: 1; overflow-y: auto; padding: 10px; }
+    .history-item {
+        padding: 12px; border-radius: 10px; margin-bottom: 4px;
+        cursor: pointer; transition: background 0.2s;
+    }
+    .history-item:hover { background: rgba(255,255,255,0.03); }
+    .history-item .h-snippet { font-size: 13px; color: #bbb; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .history-item .h-time { font-size: 10px; color: #555; margin-top: 4px; display: block; }
+    
+    .history-del-all {
+        padding: 12px; margin: 10px; border-top: 1px solid rgba(255,255,255,0.05);
+        color: #ef4444; font-size: 12px; font-weight: 600; text-align: center;
+        cursor: pointer; transition: opacity 0.2s;
+    }
+    .history-del-all:hover { opacity: 0.8; }
+    .drawer-overlay {
+        position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px);
+        z-index: 199; display: none;
+    }
+    .drawer-overlay.active { display: block; }
+
     /* ── Responsive ── */
     @media (max-width: 480px) {
         .ai-bubble { font-size: 15px; }
@@ -628,49 +677,25 @@
     <div class="chat-header">
         <div class="h-left">
             <button class="back-btn" onclick="window.location.href='/'">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                     <path d="M19 12H5M12 19l-7-7 7-7"/>
                 </svg>
             </button>
-            <div class="ai-avatar">AI<span class="dot"></span></div>
+            <div class="ai-avatar">
+                <img src="/static/images/ai-dp.png" alt="AI">
+                <span class="dot"></span>
+            </div>
             <div class="ai-info">
                 <h3>PartnerAI Mentor</h3>
                 <p id="statusLine">Online · Ready to help</p>
             </div>
         </div>
         <div class="h-right">
-            <div class="menu-wrap">
-                <div class="menu-items" id="menuItems">
-                    <div class="menu-item" onclick="closeMenu(); if(confirm('Clear chat history?')) window.location.href='/reset'">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="1 4 1 10 7 10"/>
-                            <path d="M3.51 15a9 9 0 1 0 .49-3.41"/>
-                        </svg>
-                        Clear Chat
-                    </div>
-                    <div class="menu-item" onclick="closeMenu(); window.location.href='/settings'">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="3"/>
-                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-                        </svg>
-                        Settings
-                    </div>
-                    <div class="menu-item" onclick="closeMenu(); window.location.href='/'">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                            <polyline points="9 22 9 12 15 12 15 22"/>
-                        </svg>
-                        Home
-                    </div>
-                </div>
-                <button class="icon-btn dot-btn" id="dotBtn" onclick="toggleMenu()">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                        <circle cx="12" cy="5" r="2"/>
-                        <circle cx="12" cy="12" r="2"/>
-                        <circle cx="12" cy="19" r="2"/>
-                    </svg>
-                </button>
-            </div>
+            <button class="icon-btn" onclick="toggleHistory()" title="Chat History">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
+            </button>
         </div>
     </div>
 
@@ -714,6 +739,24 @@
     </div>
 </div>
 
+<!-- History Drawer -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="toggleHistory()"></div>
+<div class="history-drawer" id="historyDrawer">
+    <div class="history-hdr">
+        <h4>Chat History</h4>
+        <div style="display:flex; gap:8px;">
+            <button class="act-btn regen" onclick="if(confirm('Start a new chat?')) window.location.href='/reset'" style="font-size:11px; padding:6px 10px;">+ New Chat</button>
+            <button class="icon-btn" onclick="toggleHistory()">✕</button>
+        </div>
+    </div>
+    <div class="history-list" id="historyList">
+        <!-- populated by JS -->
+    </div>
+    <div class="history-del-all" onclick="confirmDeleteHistory()">
+        🗑️ Clear All History
+    </div>
+</div>
+
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
@@ -734,8 +777,37 @@
         btn.classList.toggle('active', items.classList.contains('open'));
     }
     function closeMenu() {
-        document.getElementById('menuItems').classList.remove('open');
-        document.getElementById('dotBtn').classList.remove('active');
+        // Menu was removed, but keep stub for safety if needed
+    }
+    function confirmDeleteHistory() {
+        if(confirm('Are you sure you want to delete your entire chat history? This cannot be undone.')) {
+            window.location.href = '/reset';
+        }
+    }
+    function toggleHistory() {
+        const drawer = document.getElementById('historyDrawer');
+        const overlay = document.getElementById('drawerOverlay');
+        drawer.classList.toggle('open');
+        overlay.classList.toggle('active');
+        if(drawer.classList.contains('open')) renderHistoryList();
+    }
+    function renderHistoryList() {
+        const list = document.getElementById('historyList');
+        list.innerHTML = '';
+        if(!conversationHistory || conversationHistory.length === 0) {
+            list.innerHTML = '<p style="color:#555; font-size:12px; text-align:center; margin-top:20px;">No messages yet.</p>';
+            return;
+        }
+        // Group into snippets
+        conversationHistory.slice().reverse().forEach((m, i) => {
+            if(m.role === 'user') {
+                const item = document.createElement('div');
+                item.className = 'history-item';
+                item.innerHTML = `<span class="h-snippet">${esc(m.content)}</span><span class="h-time">You</span>`;
+                item.onclick = () => { toggleHistory(); /* scroll logic could go here */ };
+                list.appendChild(item);
+            }
+        });
     }
     document.addEventListener('click', e => { if (!e.target.closest('.menu-wrap')) closeMenu(); });
 
@@ -830,7 +902,14 @@
         const area = document.getElementById('messages');
         const row = document.createElement('div');
         row.className = 'msg-row user';
-        row.innerHTML = `<div class="bubble-col"><div class="user-bubble">${esc(content)}<span class="msg-time">${ts()}</span></div></div>`;
+        row.innerHTML = `
+            <div class="bubble-col">
+                <div class="user-bubble">
+                    ${esc(content)}
+                    <span class="msg-time">${ts()}</span>
+                </div>
+            </div>
+            <div class="user-avatar-mini" title="Delete History" onclick="confirmDeleteHistory()">PA</div>`;
         area.appendChild(row);
         scrollBottom();
     }
@@ -1258,9 +1337,23 @@
     /* ── Load history ── */
     if (conversationHistory && conversationHistory.length > 0) {
         conversationHistory.forEach(m => {
-            if (m.role === 'user') addUserMsg(m.content);
+            if (m.role === 'user') {
+                const area = document.getElementById('messages');
+                const row = document.createElement('div');
+                row.className = 'msg-row user';
+                row.innerHTML = `
+                    <div class="bubble-col">
+                        <div class="user-bubble">
+                            ${esc(m.content)}
+                            <span class="msg-time">${ts()}</span>
+                        </div>
+                    </div>
+                    <div class="user-avatar-mini" title="Delete History" onclick="confirmDeleteHistory()">PA</div>`;
+                area.appendChild(row);
+            }
             else addAiMsgStatic(m.content);
         });
+        scrollBottom();
     } else {
         // Welcome message
         addAiMsgStatic("Hey! 👋 I'm your **PartnerAI Mentor**. What are we working on today? 🚀\n\nTry a quick command like `/daily`, `/plan`, or just tell me what's on your mind.");

@@ -339,10 +339,15 @@ init_db()
 
 # --- AUTH ---
 def create_account(username, password, email):
+    username = username.strip() if username else ""
+    email = email.strip() if email else ""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT user_id FROM users WHERE username=?", (username,))
-        if cursor.fetchone(): return None
+        # Check if username or email already exists (case-insensitive)
+        cursor.execute("SELECT user_id FROM users WHERE LOWER(username)=LOWER(?) OR LOWER(email)=LOWER(?)", (username, email))
+        if cursor.fetchone(): 
+            return None
+            
         # Hash password before storing
         hashed = _hash_password(password)
         cursor.execute("INSERT INTO users (username, password, email, name) VALUES (?, ?, ?, ?)", (username, hashed, email, username))
@@ -350,10 +355,12 @@ def create_account(username, password, email):
         return cursor.lastrowid
 
 def verify_user(username_or_email, password):
+    if not username_or_email: return None
+    val = username_or_email.strip()
     with get_db() as conn:
         cursor = conn.cursor()
-        # Fetch all potential matches (important if multiple accounts share an email)
-        cursor.execute("SELECT user_id, password FROM users WHERE username=? OR email=?", (username_or_email, username_or_email))
+        # Fetch all potential matches (case-insensitive)
+        cursor.execute("SELECT user_id, password FROM users WHERE LOWER(username)=LOWER(?) OR LOWER(email)=LOWER(?)", (val, val))
         rows = cursor.fetchall()
         
         for row in rows:
@@ -432,10 +439,12 @@ def _verify_password(stored: str, password: str) -> bool:
 
 
 def username_exists(username_or_email):
+    if not username_or_email: return False
+    val = username_or_email.strip()
     with get_db() as conn:
         cursor = conn.cursor()
-        # Check both username and email to allow login with either
-        cursor.execute("SELECT user_id FROM users WHERE username=? OR email=?", (username_or_email, username_or_email))
+        # Check both username and email (case-insensitive)
+        cursor.execute("SELECT user_id FROM users WHERE LOWER(username)=LOWER(?) OR LOWER(email)=LOWER(?)", (val, val))
         return cursor.fetchone() is not None
 
 
@@ -566,7 +575,7 @@ def get_user_by_username(username_or_email):
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT user_id, name, career, hobbies, last_task, task_status, state, tasks_completed, streak, last_active_date, daily_topic, work_time, free_time, age, last_task_date, username, password, email, flow_day FROM users WHERE username=? OR email=?",
+            "SELECT user_id, name, career, hobbies, last_task, task_status, state, tasks_completed, streak, last_active_date, daily_topic, work_time, free_time, age, last_task_date, username, password, email, flow_day FROM users WHERE LOWER(username)=LOWER(?) OR LOWER(email)=LOWER(?)",
             (username_or_email, username_or_email)
         )
         row = cursor.fetchone()
