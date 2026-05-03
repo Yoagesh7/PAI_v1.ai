@@ -524,8 +524,13 @@ Let's make it happen! 💪
 
 @app.route('/reset')
 def reset_account():
+    """Clear chat history and restart onboarding without deleting user account."""
     if 'user_id' in session:
-        reset_user(session['user_id'])
+        user_id = session['user_id']
+        clear_chat_history(user_id)
+        # Reset user state so they can re-onboard
+        save_user(user_id, state="NEW", career=None, last_task=None)
+        logging.info(f"🔄 Account reset for user {user_id}: chat cleared, state set to NEW")
     return redirect('/onboarding')
 
 
@@ -826,11 +831,11 @@ def login():
 
     user_row = get_user_by_username(identifier)
     if not user_row:
-        return jsonify({'error': 'Account not found. Please create an account.'}), 404
+        return jsonify({'error': 'Invalid credentials. Please check your email or username and password.'}), 404
 
     verified_user_id = verify_user(identifier, password)
     if not verified_user_id:
-        return jsonify({'error': 'Invalid credentials.'}), 401
+        return jsonify({'error': 'Invalid credentials. Please check your email or username and password.'}), 401
 
     _set_auth_session(user_row)
     logging.info(f"✅ Login successful: user_id={user_row[0]}, identifier='{identifier}'")

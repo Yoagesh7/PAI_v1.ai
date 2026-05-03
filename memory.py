@@ -392,9 +392,13 @@ def verify_user(username_or_email, password):
         
         for row in rows:
             user_id, stored = row[0], row[1]
-            if _verify_password(stored, password):
+            match = _verify_password(stored, password)
+            import logging
+            logging.info(f"🔐 Verify attempt for user_id={user_id}: match={match}")
+            if match:
                 return user_id
                 
+        logging.warning(f"❌ Login failed: No matching password for identifier='{val}'")
         return None
 
 
@@ -664,9 +668,15 @@ def increment_flow_day(user_id):
     return new_value
 
 def reset_user(user_id):
+    """Resets user data (chat, streaks, goals) without deleting the account row."""
     with get_db() as conn:
-        conn.execute("DELETE FROM users WHERE user_id=?", (user_id,))
+        # Clear chat
+        conn.execute("DELETE FROM chat_history WHERE user_id=?", (user_id,))
+        # Reset user fields
+        conn.execute("UPDATE users SET state='NEW', career=NULL, streak=0, tasks_completed=0, last_task=NULL, flow_day=1 WHERE user_id=?", (user_id,))
         conn.commit()
+    import logging
+    logging.info(f"🧹 user_id {user_id} has been fully reset (account preserved)")
 
 # --- POSTS ---
 def create_post(user_name, content):
