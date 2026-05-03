@@ -306,6 +306,19 @@ def init_db():
             FOREIGN KEY (user_id) REFERENCES users(user_id)
         )
         """)
+
+        # --- SIGNUP EMAIL VERIFICATION ---
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS signup_verifications (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL,
+            email TEXT NOT NULL,
+            code TEXT NOT NULL,
+            expires_at TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+        """)
         
         conn.commit()
 
@@ -329,6 +342,82 @@ def verify_user(username, password):
         cursor.execute("SELECT user_id FROM users WHERE username=? AND password=?", (username, password))
         row = cursor.fetchone()
         return row[0] if row else None
+
+
+def username_exists(username):
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT user_id FROM users WHERE username=?", (username,))
+        return cursor.fetchone() is not None
+
+
+def save_signup_verification(username, password, email, code, expires_at):
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO signup_verifications (username, password, email, code, expires_at, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(username) DO UPDATE SET
+                password=excluded.password,
+                email=excluded.email,
+                code=excluded.code,
+                expires_at=excluded.expires_at,
+                created_at=excluded.created_at
+            """,
+            (username, password, email, code, expires_at, now_str),
+        )
+        conn.commit()
+
+
+def verify_signup_code(username, email, password, code):
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT id, expires_at, password, email
+            FROM signup_verifications
+            WHERE username=? AND code=?
+            """,
+            (username, code),
+        )
+        row = cursor.fetchone()
+        if not row:
+            return False, "Invalid verification code."
+
+        _, expires_at, saved_password, saved_email = row
+
+        try:
+            exp_dt = datetime.strptime(expires_at, "%Y-%m-%d %H:%M:%S")
+        except Exception:
+            return False, "Verification code is invalid. Request a new code."
+
+        if datetime.now() > exp_dt:
+            return False, "Verification code expired. Please request a new code."
+
+        if (saved_email or "").strip().lower() != (email or "").strip().lower():
+            return False, "Email does not match verification request."
+
+        if saved_password != password:
+            return False, "Password changed. Request a new verification code."
+
+        return True, None
+
+
+def clear_signup_verification(username):
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM signup_verifications WHERE username=?", (username,))
+        conn.commit()
+
+
+def cleanup_expired_signup_verifications():
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM signup_verifications WHERE expires_at < ?", (now_str,))
+        conn.commit()
 
 # --- USER ---
 def get_user(user_id):

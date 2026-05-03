@@ -187,6 +187,11 @@
                     <input type="password" id="confirm-pass" placeholder="Confirm your password">
                 </div>
 
+                <div class="form-group" id="verifyGroup" style="display:none;">
+                    <label for="verify-code">Verification Code</label>
+                    <input type="text" id="verify-code" placeholder="Enter 6-digit code from email" maxlength="6">
+                </div>
+
                 <button type="submit" class="btn-submit" id="action-btn">Sign In</button>
             </form>
 
@@ -199,10 +204,14 @@
 
     <script>
         let isLogin = true;
+        let pendingVerification = false;
+        let pendingSignupPayload = null;
 
         function toggleMode(event) {
             event.preventDefault();
             isLogin = !isLogin;
+            pendingVerification = false;
+            pendingSignupPayload = null;
 
             document.getElementById('title').innerText = isLogin ? "Welcome Back" : "Create Account";
             document.getElementById('subtitle').innerText = isLogin ? "Sign in to continue to PartnerAI" : "Join PartnerAI to get started";
@@ -215,6 +224,7 @@
             // Toggle fields
             document.getElementById('emailGroup').style.display = isLogin ? 'none' : 'block';
             document.getElementById('confirmGroup').style.display = isLogin ? 'none' : 'block';
+            document.getElementById('verifyGroup').style.display = 'none';
 
             // Update password autocomplete
             document.getElementById('password').autocomplete = isLogin ? 'current-password' : 'new-password';
@@ -227,6 +237,7 @@
             const pass = document.getElementById('password').value;
             const email = document.getElementById('email').value;
             const confirm = document.getElementById('confirm-pass').value;
+            const code = document.getElementById('verify-code').value;
 
             const btn = document.getElementById('action-btn');
             const err = document.getElementById('error');
@@ -243,8 +254,13 @@
                     err.style.display = 'block';
                     return;
                 }
-                if (pass !== confirm) {
+                if (!pendingVerification && pass !== confirm) {
                     err.innerText = "Passwords do not match!";
+                    err.style.display = 'block';
+                    return;
+                }
+                if (pendingVerification && (!code || code.length < 6)) {
+                    err.innerText = "Enter the 6-digit verification code from your email.";
                     err.style.display = 'block';
                     return;
                 }
@@ -254,9 +270,15 @@
             btn.disabled = true;
             err.style.display = 'none';
 
-            const endpoint = isLogin ? '/api/login' : '/api/signup';
+            const endpoint = isLogin
+                ? '/api/login'
+                : (pendingVerification ? '/api/signup/verify' : '/api/signup');
+
             const payload = { username: user, password: pass };
-            if (!isLogin) payload.email = email;
+            if (!isLogin) {
+                payload.email = email;
+                if (pendingVerification) payload.code = code;
+            }
 
             try {
                 const res = await fetch(endpoint, {
@@ -266,19 +288,40 @@
                 });
                 const data = await res.json();
 
+                if (data.success && data.requires_verification) {
+                    pendingVerification = true;
+                    pendingSignupPayload = { username: user, password: pass, email: email };
+                    document.getElementById('verifyGroup').style.display = 'block';
+                    document.getElementById('confirmGroup').style.display = 'none';
+                    document.getElementById('action-btn').innerText = "Verify & Create Account";
+                    document.getElementById('subtitle').innerText = "Enter the code sent to your email to finish signup";
+                    err.innerText = data.message || "Verification code sent.";
+                    err.style.display = 'block';
+                    err.style.background = '#eef7ff';
+                    err.style.color = '#1d4ed8';
+                    btn.disabled = false;
+                    return;
+                }
+
                 if (data.success) {
                     window.location.href = '/';
                 } else {
                     err.innerText = data.error || "Authentication failed.";
                     err.style.display = 'block';
-                    btn.innerText = isLogin ? "Sign In" : "Create Account";
+                    btn.innerText = isLogin ? "Sign In" : (pendingVerification ? "Verify & Create Account" : "Create Account");
                     btn.disabled = false;
                 }
             } catch (e) {
                 err.innerText = "Connection error. Please try again.";
                 err.style.display = 'block';
-                btn.innerText = isLogin ? "Sign In" : "Create Account";
+                btn.innerText = isLogin ? "Sign In" : (pendingVerification ? "Verify & Create Account" : "Create Account");
                 btn.disabled = false;
+            }
+
+            if (!isLogin && pendingSignupPayload) {
+                document.getElementById('username').value = pendingSignupPayload.username;
+                document.getElementById('password').value = pendingSignupPayload.password;
+                document.getElementById('email').value = pendingSignupPayload.email;
             }
         }
     </script>

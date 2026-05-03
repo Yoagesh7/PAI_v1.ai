@@ -61,6 +61,8 @@ from memory import (
     create_group, join_group, get_user_group, get_group_members,
     set_group_goal, add_group_task, get_group_tasks, complete_group_task,
     save_chat_message, get_chat_history, create_account, verify_user,
+    username_exists, save_signup_verification, verify_signup_code,
+    clear_signup_verification, cleanup_expired_signup_verifications,
     add_reward, get_rewards,
     create_daily_task, get_daily_tasks, toggle_daily_task,
     create_daily_article, get_latest_article,
@@ -227,33 +229,34 @@ def home():
     user = get_user(user_id)
     # Check Onboarding
     if user:
-         # Schema Mapping (0-indexed):
-         # 0:user_id, 1:name, 2:goal, 6:state, 11:work_time, 12:free_time, 13:age
-         try:
-            goal = user[2]
-            state = user[6]
-            work_t = user[11]
-            free_t = user[12]
-            age = user[13]
+        # Schema Mapping (0-indexed):
+        # 0:user_id, 1:name, 2:goal, 6:state, 11:work_time, 12:free_time, 13:age
+        try:
+            goal = user[2] if len(user) > 2 else None
+            state = (user[6] if len(user) > 6 and user[6] else "").upper()
+            age = user[13] if len(user) > 13 else None
             
             print(f">>> HOME: User {user_id} | State: {state} | Goal: {goal} | Age: {age}", flush=True)
 
             # Manual bypass for debugging
             if request.args.get('force_chat') == 'true':
-                 return render_template('chat.html', active_page='chat', history=get_chat_history(user_id))
+                return render_template('chat.html', active_page='chat', history=get_chat_history(user_id))
 
-            # Logic: If they have a goal and aren't in WAITING state, they're good.
-            # We use a broad check to prevent loops.
-            if goal and state == "ACTIVE":
+            # Treat ACTIVE users as ready even if optional fields are missing.
+            # Only send to onboarding for clearly incomplete profiles.
+            needs_onboarding = (state in ("", "ONBOARDING", "WAITING") and not goal)
+
+            if not needs_onboarding:
                 print(f">>> HOME: User {user_id} verified ACTIVE. Loading Home Dashboard.", flush=True)
                 history = get_chat_history(user_id, limit=50)
                 return render_template('home.html', active_page='home', history=history)
             
             print(f">>> HOME: User {user_id} failed check. Redirecting to onboarding...", flush=True)
             return redirect('/onboarding')
-         except Exception as e:
+        except Exception as e:
             print(f">>> HOME ERROR: {e}", flush=True)
-            return redirect('/onboarding')
+            history = get_chat_history(user_id, limit=50)
+            return render_template('home.html', active_page='home', history=history)
     else:
         print(f">>> HOME: No user Record for ID {user_id}. Redirecting...", flush=True)
         return redirect('/onboarding')
@@ -282,7 +285,7 @@ def onboarding_page():
     if 'user_id' not in session: return redirect('/login')
     # If they are already active, don't let them back into onboarding unless they want to
     user = get_user(session['user_id'])
-    if user and user[6] == "ACTIVE" and not request.args.get('re_onboard'):
+    if user and len(user) > 6 and user[6] == "ACTIVE" and not request.args.get('re_onboard'):
          return redirect('/')
     return render_template('onboarding.html')
 @app.route('/api/onboarding/complete', methods=['POST'])
@@ -507,17 +510,62 @@ def api_user():
 @app.route('/api/signup', methods=['POST'])
 def signup():
     data = request.json
-    username = data.get('username')
-    password = data.get('password')
-    email = data.get('email') # New
+    username = (data.get('username') or '').strip()
+    password = (data.get('password') or '').strip()
+    email = (data.get('email') or '').strip()
     
-    if not username or not password:
+    if not username or not password or not email:
         return jsonify({'error': 'Missing credentials'}), 400
-        
+
+    cleanup_expired_signup_verifications()
+
+    if username_exists(username):
+        return jsonify({'error': 'Username already exists'}), 400
+
+    if '@' not in email:
+        return jsonify({'error': 'Please enter a valid email address.'}), 400
+
+    verification_code = f"{random.randint(100000, 999999)}"
+    expires_at = (datetime.now() + timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
+
+    save_signup_verification(username, password, email, verification_code, expires_at)
+
+    subject = "PartnerAI verification code"
+    body = (
+        f"Hi {username},\n\n"
+        f"Your PartnerAI verification code is: {verification_code}\n"
+        "This code will expire in 10 minutes.\n\n"
+        "If you did not request this, please ignore this email."
+    )
+    sent = send_email(email, subject, body)
+    if not sent:
+        return jsonify({'error': 'Could not send verification email. Please try again.'}), 500
+
+    return jsonify({'success': True, 'requires_verification': True, 'message': 'Verification code sent to your email.'})
+
+
+@app.route('/api/signup/verify', methods=['POST'])
+def signup_verify():
+    data = request.json
+    username = (data.get('username') or '').strip()
+    password = (data.get('password') or '').strip()
+    email = (data.get('email') or '').strip()
+    code = (data.get('code') or '').strip()
+
+    if not username or not password or not email or not code:
+        return jsonify({'error': 'Missing verification details'}), 400
+
+    ok, err = verify_signup_code(username, email, password, code)
+    if not ok:
+        return jsonify({'error': err}), 400
+
     user_id = create_account(username, password, email)
     if not user_id:
+        clear_signup_verification(username)
         return jsonify({'error': 'Username already exists'}), 400
-        
+
+    clear_signup_verification(username)
+
     session['user_id'] = user_id
     session['user_name'] = username
     return jsonify({'success': True})
