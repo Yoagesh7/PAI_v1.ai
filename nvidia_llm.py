@@ -52,9 +52,15 @@ class RAGSystem:
     @staticmethod
     def _clean_messages(messages):
         valid_messages = [m for m in messages if isinstance(m, dict) and m.get("role") and m.get("content")]
-        if len(valid_messages) > 15:
-            valid_messages = [valid_messages[0]] + valid_messages[-14:]
-        return valid_messages
+        cleaned = []
+        for idx, msg in enumerate(valid_messages):
+            content = str(msg.get("content", ""))
+            if len(content) > 2000:
+                content = content[:2000] + "\n...[truncated]"
+            cleaned.append({"role": msg["role"], "content": content})
+        if len(cleaned) > 9:
+            cleaned = [cleaned[0]] + cleaned[-8:]
+        return cleaned
 
     def _request(self, payload, stream=False):
         url = f"{self.base_url}/chat/completions"
@@ -91,7 +97,7 @@ class RAGSystem:
             return {"message": {"content": "Error: No response from model."}}
         except AIConnectionError as exc:
             print(f"AI Error: {exc}", flush=True)
-            return {"message": {"content": _OFFLINE_MSG}}
+            return {"message": {"content": f"{_OFFLINE_MSG}\n\nDebug: {exc}"}}
         except Exception as exc:
             print(f"AI Error: {exc}", flush=True)
             return {"message": {"content": f"I'm having trouble thinking right now. ({exc})"}}
@@ -125,7 +131,7 @@ class RAGSystem:
                         continue
         except AIConnectionError as exc:
             print(f"AI Stream Error: {exc}", flush=True)
-            yield _OFFLINE_MSG
+            yield f"{_OFFLINE_MSG}\n\nDebug: {exc}"
         except Exception as exc:
             print(f"AI Stream Error: {exc}", flush=True)
             yield f"(Connection Error: {exc})"
