@@ -508,8 +508,8 @@ def save_password_reset(username, email, code, expires_at):
         conn.commit()
 
 
-def verify_reset_code(username_or_email, code):
-    """Verify password reset OTP."""
+    import logging
+    logging.info(f" Verifying reset code for identifier='{username_or_email}', code='{code}'")
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(
@@ -518,6 +518,7 @@ def verify_reset_code(username_or_email, code):
         )
         row = cursor.fetchone()
         if not row:
+            logging.warning(f" Reset code not found in DB for identifier='{username_or_email}' and code='{code}'")
             return False, "Invalid reset code.", None
 
         _, expires_at, username = row
