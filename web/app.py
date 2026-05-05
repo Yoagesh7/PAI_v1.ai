@@ -3924,9 +3924,12 @@ def edit_block_page(block_id):
     if 'user_id' not in session:
         return redirect('/login')
     block = get_knowledge_block(session['user_id'], block_id)
-    if not block:
-        return redirect('/workspace')
-    return render_template('block_editor.html', block=block, active_page='workspace')
+    return render_template(
+        'block_editor.html',
+        block=block,
+        requested_block_id=block_id,
+        active_page='workspace'
+    )
 
 @app.route('/chat')
 def chat_page():

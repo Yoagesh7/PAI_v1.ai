@@ -640,6 +640,23 @@
     let habits = [];
     let selectedIcon = '📝';
 
+    function getLocalHabitKey() {
+        const uid = localStorage.getItem('partnerai_user_id') || 'guest';
+        return `partnerai_local_habits_${uid}`;
+    }
+
+    function loadLocalHabits() {
+        try {
+            return JSON.parse(localStorage.getItem(getLocalHabitKey()) || '[]');
+        } catch (_) {
+            return [];
+        }
+    }
+
+    function saveLocalHabits(list) {
+        localStorage.setItem(getLocalHabitKey(), JSON.stringify(list || []));
+    }
+
     // --- INIT ---
     document.addEventListener('DOMContentLoaded', () => {
         updateDate();
@@ -681,10 +698,12 @@
             }
             
             habits = JSON.parse(text);
+            saveLocalHabits(habits);
             renderHabits();
         } catch (err) {
             console.error('❌ Error fetching habits:', err);
-            document.getElementById('habitsList').innerHTML = `<div style="padding:20px; color:red;">Error loading habits: ${err.message}</div>`;
+            habits = loadLocalHabits();
+            renderHabits();
         }
     }
 
@@ -888,6 +907,8 @@
                 }
             }
 
+            saveLocalHabits(habits);
+
             // 4. Refresh background stats (chart)
             fetchStats();
             // No need to re-fetch list immediately since we updated state manually, 
@@ -933,7 +954,20 @@
             fetchHabits();
         } catch (e) {
             console.error('❌ Save habit error:', e);
-            alert('Failed to save habit: ' + e.message);
+            const localHabit = {
+                id: Date.now(),
+                title: title,
+                category: 'General',
+                icon: selectedIcon,
+                time_of_day: time,
+                streak: 0,
+                completed_today: false
+            };
+            habits.unshift(localHabit);
+            saveLocalHabits(habits);
+            renderHabits();
+            closeAddModal();
+            alert('Saved locally in your browser. Add Vercel KV or PostgreSQL for server persistence.');
         }
     }
 
@@ -1024,6 +1058,8 @@
                 throw new Error(`HTTP ${res.status}`);
             }
             
+            habits = habits.filter(h => h.id !== id);
+            saveLocalHabits(habits);
             fetchHabits(); // Refresh list
             fetchStats();  // Refresh stats
         } catch (e) {

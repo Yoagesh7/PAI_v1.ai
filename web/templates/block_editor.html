@@ -789,6 +789,7 @@
 <button class="ed-save-bar" onclick="saveBlock()">💾 Save Block</button>
 
 <script id="existingBlockData" type="application/json">{{ block | tojson if block else 'null' }}</script>
+<script id="requestedBlockId" type="application/json">{{ requested_block_id | tojson if requested_block_id is defined else 'null' }}</script>
 
 <script>
 /* ═══════════════════════════════════════════════════
@@ -797,6 +798,36 @@
 
 /* ── Initial data from server ─────────────────── */
 const EXISTING_BLOCK = JSON.parse(document.getElementById('existingBlockData').textContent || 'null');
+const REQUESTED_BLOCK_ID = JSON.parse(document.getElementById('requestedBlockId').textContent || 'null');
+
+function getLocalBlockKey() {
+  const uid = localStorage.getItem('partnerai_user_id') || 'guest';
+  return `partnerai_local_blocks_${uid}`;
+}
+
+function loadLocalBlocks() {
+  try {
+    return JSON.parse(localStorage.getItem(getLocalBlockKey()) || '[]');
+  } catch (_) {
+    return [];
+  }
+}
+
+function saveLocalBlocks(list) {
+  localStorage.setItem(getLocalBlockKey(), JSON.stringify(list || []));
+}
+
+function upsertLocalBlock(block) {
+  const blocks = loadLocalBlocks();
+  const idx = blocks.findIndex(b => String(b.id) === String(block.id));
+  if (idx >= 0) blocks[idx] = { ...blocks[idx], ...block };
+  else blocks.unshift(block);
+  saveLocalBlocks(blocks);
+}
+
+function findLocalBlockById(id) {
+  return loadLocalBlocks().find(b => String(b.id) === String(id)) || null;
+}
 
 /* ── State ────────────────────────────────────── */
 let blockId       = EXISTING_BLOCK ? EXISTING_BLOCK.id : null;
@@ -818,10 +849,17 @@ const typeMap = {
 
 /* ── Bootstrap ────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
+  const localFallback = !EXISTING_BLOCK && REQUESTED_BLOCK_ID ? findLocalBlockById(REQUESTED_BLOCK_ID) : null;
+
   if (EXISTING_BLOCK) {
     populateEditor(EXISTING_BLOCK);
     document.getElementById('deleteBtn').style.display = 'flex';
     setSaveStatus('saved', '✅ All saved');
+  } else if (localFallback) {
+    populateEditor(localFallback);
+    blockId = localFallback.id;
+    document.getElementById('deleteBtn').style.display = 'flex';
+    setSaveStatus('saved', '✅ Loaded from browser');
   } else {
     setSaveStatus('unsaved', 'Unsaved');
     setType('idea');
@@ -1083,11 +1121,12 @@ async function saveBlock(isAuto = false) {
   try {
     if (blockId) {
       // Update existing
-      await fetch('/api/knowledge/update', {
+      const updateRes = await fetch('/api/knowledge/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: blockId, ...payload }),
       });
+      if (!updateRes.ok) throw new Error(`HTTP ${updateRes.status}`);
     } else {
       // Create new
       const res  = await fetch('/api/knowledge', {
@@ -1095,6 +1134,7 @@ async function saveBlock(isAuto = false) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       blockId = data.id;
       // Update URL without reload
@@ -1102,13 +1142,19 @@ async function saveBlock(isAuto = false) {
       document.getElementById('deleteBtn').style.display = 'flex';
     }
 
+    upsertLocalBlock({ id: blockId || Date.now(), ...payload, created_at: new Date().toISOString() });
+
     isDirty = false;
     setSaveStatus('saved', '✅ Saved');
     if (!isAuto) flashSaveSuccess();
 
   } catch (e) {
     console.error('Save error:', e);
-    setSaveStatus('unsaved', '✗ Save failed');
+    if (!blockId) blockId = Date.now();
+    upsertLocalBlock({ id: blockId, ...payload, created_at: new Date().toISOString() });
+    isDirty = false;
+    setSaveStatus('saved', '✅ Saved locally');
+    if (!isAuto) flashSaveSuccess();
   }
 }
 
@@ -1125,6 +1171,7 @@ async function deleteBlock() {
   if (!blockId) { history.back(); return; }
   if (!confirm('Delete this block permanently?')) return;
   await fetch('/api/knowledge/' + blockId, { method: 'DELETE' });
+  saveLocalBlocks(loadLocalBlocks().filter(b => String(b.id) !== String(blockId)));
   location.href = '/workspace';
 }
 

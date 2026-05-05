@@ -557,6 +557,23 @@ let activeTab   = 'all';
 let aiConn      = null;
 let searchTimer = null;
 
+function getLocalBlockKey() {
+  const uid = localStorage.getItem('partnerai_user_id') || 'guest';
+  return `partnerai_local_blocks_${uid}`;
+}
+
+function loadLocalBlocks() {
+  try {
+    return JSON.parse(localStorage.getItem(getLocalBlockKey()) || '[]');
+  } catch (_) {
+    return [];
+  }
+}
+
+function saveLocalBlocks(list) {
+  localStorage.setItem(getLocalBlockKey(), JSON.stringify(list || []));
+}
+
 const typeIcons = {
   idea:       '\u{1F4A1}',
   task:       '\u2705',
@@ -574,13 +591,26 @@ document.addEventListener('DOMContentLoaded', () => {
 async function loadBlocks() {
   try {
     const res = await fetch('/api/knowledge');
-    allBlocks = await res.json();
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const serverBlocks = await res.json();
+    const localBlocks = loadLocalBlocks();
+    const merged = new Map();
+    [...localBlocks, ...serverBlocks].forEach(b => merged.set(String(b.id), b));
+    allBlocks = Array.from(merged.values()).sort((a, b) => {
+      const ad = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const bd = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return bd - ad;
+    });
+    saveLocalBlocks(allBlocks);
     renderView();
     if (allBlocks.length) document.getElementById('statsRow').style.display = 'flex';
     updateStats();
   } catch (e) {
     console.error('loadBlocks:', e);
-    document.getElementById('blocksGrid').innerHTML = '';
+    allBlocks = loadLocalBlocks();
+    renderView();
+    if (allBlocks.length) document.getElementById('statsRow').style.display = 'flex';
+    updateStats();
     showEmpty();
   }
 }
@@ -775,6 +805,7 @@ async function delBlock(id) {
   if (!confirm('Delete this block?')) return;
   await fetch('/api/knowledge/' + id, { method: 'DELETE' });
   allBlocks = allBlocks.filter(b => b.id !== id);
+  saveLocalBlocks(allBlocks);
   renderView();
   updateStats();
 }
