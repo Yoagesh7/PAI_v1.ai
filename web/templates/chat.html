@@ -485,24 +485,6 @@
     .poll-opt:hover { background: rgba(139,120,204,0.2); color: white; }
     .poll-opt.picked { background: #8B78CC; border-color: #8B78CC; color: white; }
 
-    /* Typing indicator */
-    .typing-row { display: flex; margin-bottom: 14px; align-items: flex-end; }
-    .typing-bubble {
-        background: rgba(30,30,36,0.8); border: 1px solid rgba(255,255,255,0.07);
-        border-radius: 4px 18px 18px 18px;
-        padding: 14px 18px; display: inline-flex; gap: 5px; align-items: center;
-    }
-    .t-dot {
-        width: 6px; height: 6px; border-radius: 50%; background: #8B78CC;
-        animation: tPulse 1.3s infinite ease-in-out;
-    }
-    .t-dot:nth-child(2) { animation-delay: 0.18s; }
-    .t-dot:nth-child(3) { animation-delay: 0.36s; }
-    @keyframes tPulse {
-        0%,60%,100% { transform: translateY(0); opacity: 0.35; }
-        30%          { transform: translateY(-6px); opacity: 1; }
-    }
-
     /* ── Input Section ── */
     .input-section {
         flex-shrink: 0;

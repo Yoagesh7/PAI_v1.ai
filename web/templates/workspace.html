@@ -135,58 +135,90 @@
 .kb-stat-v { font-size:20px; font-weight:700; color:var(--kb-title); line-height:1; margin-bottom:3px; }
 .kb-stat-l { font-size:10px; font-weight:600; color:var(--kb-muted); text-transform:uppercase; letter-spacing:.5px; }
 
+/* -- Quick create panel (REMOVED) -- */
+
+/* -- Rich block extras -- */
+.kb-extra { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px; margin:12px 0 14px; }
+.kb-widget {
+  border:1px solid var(--kb-border); border-radius:13px; padding:11px 12px;
+  background:linear-gradient(135deg, var(--kb-card) 0%, rgba(139,92,246,.02) 100%);
+  transition:all .2s ease;
+}
+.kb-card:hover .kb-widget {
+  border-color:rgba(139,92,246,.2);
+  background:linear-gradient(135deg, rgba(139,92,246,.06) 0%, rgba(139,92,246,.02) 100%);
+}
+.kb-widget-l { font-size:9px; text-transform:uppercase; letter-spacing:.6px; color:var(--kb-muted); font-weight:800; margin-bottom:5px; opacity:.85; }
+.kb-widget-v { font-size:13px; color:var(--kb-title); font-weight:700; line-height:1.4; }
+.kb-widget-full { grid-column:1/-1; }
+.kb-img { width:100%; height:140px; object-fit:cover; border-radius:13px; border:1px solid var(--kb-border); margin-top:9px; }
+.kb-checklist { display:flex; flex-direction:column; gap:9px; margin-top:11px; }
+.kb-check { display:flex; gap:9px; align-items:flex-start; font-size:13px; color:var(--kb-sec); line-height:1.5; cursor:pointer; }
+.kb-check input { margin-top:2px; cursor:pointer; accent-color:var(--kb-accent); width:16px; height:16px; flex-shrink:0; }
+.kb-check:hover { color:var(--kb-title); }
+.kb-check input:checked ~ span { text-decoration:line-through; opacity:.6; }
+.kb-progress { width:100%; height:6px; border-radius:999px; background:rgba(139,92,246,.1); overflow:hidden; border:none; margin-top:8px; }
+.kb-progress > span { display:block; height:100%; background:linear-gradient(90deg,var(--kb-accent),#A78BFA); border-radius:inherit; transition:width .3s ease; }
+.kb-calendar { display:grid; grid-template-columns:repeat(7,1fr); gap:5px; margin-top:8px; }
+.kb-calendar .d { font-size:10px; text-align:center; padding:5px 2px; color:var(--kb-sec); border-radius:7px; font-weight:500; }
+.kb-calendar .h { color:var(--kb-title); font-weight:700; background:rgba(139,92,246,.08); }
+.kb-calendar .today { background:var(--kb-accent); color:#fff; font-weight:700; }
+
 /* -- Grid -- */
 .kb-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:12px; }
 
 /* -- Card -- */
 .kb-card {
   background:var(--kb-card); border:1px solid var(--kb-border);
-  border-radius:16px; padding:16px; cursor:pointer;
-  transition:all .22s cubic-bezier(.4,0,.2,1);
+  border-radius:14px; padding:16px; cursor:pointer;
+  transition:all .24s cubic-bezier(.4,0,.2,1);
   position:relative; overflow:hidden;
+  box-shadow:0 2px 8px rgba(0,0,0,0.04);
 }
 .kb-card::before {
-  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  content:''; position:absolute; top:0; left:0; right:0; height:2.5px;
   background:linear-gradient(90deg,var(--tc,#8B5CF6),transparent);
-  opacity:0; transition:opacity .22s;
+  opacity:0; transition:opacity .24s;
 }
 .kb-card:hover {
-  transform:translateY(-2px);
+  transform:translateY(-3px);
   border-color:var(--kb-border-hov);
-  box-shadow:0 8px 28px var(--kb-glow);
+  box-shadow:0 12px 32px var(--kb-glow);
 }
 .kb-card:hover::before { opacity:1; }
-.kb-card:active { transform:translateY(0); }
+.kb-card:active { transform:translateY(-1px); }
 
-.card-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.card-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:11px; }
 .card-icon {
-  width:34px; height:34px; border-radius:9px;
-  background:var(--tb,rgba(139,92,246,.12));
-  display:flex; align-items:center; justify-content:center; font-size:17px; flex-shrink:0;
+  width:36px; height:36px; border-radius:10px;
+  background:linear-gradient(135deg, var(--tb,rgba(139,92,246,.15)), var(--tb,rgba(139,92,246,.05)));
+  display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;
+  border:1px solid rgba(139,92,246,.15);
 }
 .card-badge {
-  font-size:10px; font-weight:700; color:var(--tc,var(--kb-accent));
+  font-size:10px; font-weight:800; color:var(--tc,var(--kb-accent));
   background:var(--tb,rgba(139,92,246,.1));
-  padding:3px 8px; border-radius:8px; text-transform:capitalize;
+  padding:4px 10px; border-radius:8px; text-transform:capitalize; letter-spacing:.3px;
 }
 .card-title {
-  font-size:14px; font-weight:600; color:var(--kb-title); margin:0 0 5px; line-height:1.35;
-  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+  font-size:15px; font-weight:700; color:var(--kb-title); margin:0 0 6px; line-height:1.3;
+  display:-webkit-box; line-clamp:2; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
 }
 .card-preview {
-  font-size:12px; color:var(--kb-sec); line-height:1.5;
-  display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
+  font-size:12px; color:var(--kb-sec); line-height:1.55;
+  display:-webkit-box; line-clamp:3; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
   margin-bottom:12px;
 }
-.card-foot { display:flex; align-items:center; justify-content:space-between; }
+.card-preview p { margin:0; }
+.card-foot { display:flex; align-items:center; justify-content:space-between; gap:8px; }
 .card-date { font-size:11px; color:var(--kb-muted); }
-.card-acts { display:flex; gap:4px; opacity:0; transition:opacity .15s; }
+.card-acts { display:flex; gap:6px; opacity:0; transition:opacity .15s; }
 .kb-card:hover .card-acts { opacity:1; }
 .card-btn {
-  width:26px; height:26px; border-radius:7px;
+  width:28px; height:28px; border-radius:8px;
   border:1px solid var(--kb-border); background:transparent;
   color:var(--kb-sec); display:flex; align-items:center; justify-content:center;
-  cursor:pointer; font-size:12px; transition:all .15s;
+  cursor:pointer; font-size:13px; transition:all .15s;
 }
 .card-btn:hover { background:var(--kb-glow); border-color:var(--kb-accent); color:var(--kb-accent); }
 
@@ -229,6 +261,7 @@
 /* -- Responsive: Tablet -- */
 @media (min-width:769px) and (max-width:1024px) {
   .kb-grid { grid-template-columns:repeat(2,1fr); }
+  .kb-create-grid { grid-template-columns:repeat(2, minmax(0,1fr)); }
 }
 
 /* =========================================================
@@ -317,40 +350,58 @@
 
   /* ── Grid: single column ── */
   .kb-grid {
-    grid-template-columns:1fr !important;
+    grid-template-columns:repeat(2, 1fr) !important;
     gap:10px;
   }
 
   /* ── Card: compact mobile list-style ── */
   .kb-card {
-    padding:12px 14px;
-    border-radius:14px;
+    padding:13px 14px;
+    border-radius:13px;
     -webkit-tap-highlight-color:transparent;
+    box-shadow:0 1px 3px rgba(0,0,0,0.06);
   }
   .kb-card:hover {
-    transform:none; box-shadow:none;
+    transform:none; box-shadow:0 1px 3px rgba(0,0,0,0.06);
   }
   .kb-card:active { transform:scale(.98); }
   .kb-card::before { display:none; }
 
-  .card-top { margin-bottom:6px; }
+  .card-top { margin-bottom:7px; }
   .card-icon {
-    width:30px; height:30px;
-    border-radius:8px; font-size:14px;
+    width:32px; height:32px;
+    border-radius:9px; font-size:15px;
   }
   .card-badge {
     font-size:9px; padding:2px 7px;
     border-radius:6px;
   }
   .card-title {
-    font-size:14px; margin-bottom:4px;
-    -webkit-line-clamp:1;
+    font-size:14px; margin-bottom:6px;
+    line-clamp:1; -webkit-line-clamp:1;
+    font-weight:700;
   }
   .card-preview {
     font-size:12px; margin-bottom:8px;
-    -webkit-line-clamp:2;
+    line-clamp:2; -webkit-line-clamp:2;
     line-height:1.4;
   }
+  .kb-extra { grid-template-columns:1fr; gap:9px; margin:10px 0 11px; }
+  .kb-widget {
+    padding:10px 11px;
+    border-radius:12px;
+  }
+  .kb-widget-l { font-size:8px; }
+  .kb-widget-v { font-size:12px; }
+  .kb-widget-full { grid-column:1/-1; }
+  .kb-img { height:120px; border-radius:12px; }
+  .kb-checklist { gap:8px; margin-top:9px; }
+  .kb-check { gap:8px; font-size:12px; }
+  .kb-check input { width:14px; height:14px; }
+  .kb-calendar { gap:3px; margin-top:7px; }
+  .kb-calendar .d { padding:4px 1px; font-size:9px; }
+  .kb-progress { height:5px; margin-top:8px; }
+  
   .card-foot { gap:6px; }
   .card-date { font-size:10px; }
 
@@ -488,7 +539,7 @@
       <div class="kb-empty-sub">
         Capture ideas, tasks, learnings and reflections &mdash; your AI-powered second brain.
       </div>
-      <button class="kb-empty-btn" onclick="location.href='/workspace/new'">
+      <button class="kb-empty-btn" onclick="document.getElementById('kbTitle').focus(); window.scrollTo({top: 0, behavior: 'smooth'});">
         + Create your first block
       </button>
     </div>
@@ -534,6 +585,73 @@ async function loadBlocks() {
   }
 }
 
+function clearQuickBlock() {
+  // REMOVED - Function no longer needed
+}
+
+function fillTodoTemplate() {
+  // REMOVED - Function no longer needed
+}
+
+function fillCalendarTemplate() {
+  // REMOVED - Function no longer needed
+}
+
+function fillTimeTemplate() {
+  // REMOVED - Function no longer needed
+}
+
+function parseChecklist(content) {
+  const lines = String(content || '').split('\n');
+  const items = [];
+  lines.forEach(line => {
+    const match = line.match(/^\s*[-*]\s*\[( |x|X)\]\s+(.*)$/);
+    if (match) items.push({ checked: match[1].toLowerCase() === 'x', text: match[2] });
+  });
+  return items;
+}
+
+function renderMiniCalendar(dateValue) {
+  const date = dateValue ? new Date(dateValue) : new Date();
+  if (Number.isNaN(date.getTime())) return '';
+  const month = date.getMonth();
+  const year = date.getFullYear();
+  const today = new Date();
+  const first = new Date(year, month, 1);
+  const start = (first.getDay() + 6) % 7;
+  const days = new Date(year, month + 1, 0).getDate();
+  const names = ['M','T','W','T','F','S','S'];
+  const cells = Array.from({ length: 42 }, (_, i) => {
+    const day = i - start + 1;
+    const isCurrent = day >= 1 && day <= days;
+    const isToday = isCurrent && today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
+    return `<div class="d ${i < 7 ? 'h' : ''} ${isToday ? 'today' : ''}">${i < 7 ? names[i] : (isCurrent ? day : '')}</div>`;
+  });
+  return `<div class="kb-calendar">${cells.join('')}</div>`;
+}
+
+function renderBlockExtras(block) {
+  const meta = block.meta && typeof block.meta === 'string' ? (() => { try { return JSON.parse(block.meta); } catch (_) { return {}; } })() : (block.meta || {});
+  const checklist = parseChecklist(block.content);
+  const total = checklist.length;
+  const done = checklist.filter(i => i.checked).length;
+  const progress = typeof meta.progress === 'number' ? meta.progress : (total ? Math.round((done / total) * 100) : null);
+  const timeValue = meta.time_minutes || meta.time || '';
+  const imageUrl = meta.image_url || meta.image || '';
+  const dueDate = meta.due_date || meta.date || '';
+
+  const parts = [];
+  if (timeValue) parts.push(`<div class="kb-widget"><div class="kb-widget-l">Time</div><div class="kb-widget-v">${escapeHTML(String(timeValue))} min</div></div>`);
+  if (progress !== null && !Number.isNaN(progress)) parts.push(`<div class="kb-widget"><div class="kb-widget-l">Progress</div><div class="kb-widget-v">${Math.max(0, Math.min(100, progress))}%</div><div class="kb-progress" style="margin-top:9px;"><span style="width:${Math.max(0, Math.min(100, progress))}%;"></span></div></div>`);
+  if (dueDate) parts.push(`<div class="kb-widget"><div class="kb-widget-l">Due Date</div><div class="kb-widget-v">${escapeHTML(new Date(dueDate).toLocaleDateString(undefined, { month:'short', day:'numeric' }))}</div>${renderMiniCalendar(dueDate)}</div>`);
+  if (imageUrl) parts.push(`<div class="kb-widget kb-widget-full"><div class="kb-widget-l">Image</div><div class="kb-widget-v">Preview</div><img class="kb-img" src="${escapeHTML(imageUrl)}" alt="${escapeHTML(block.title || 'Block image')}" loading="lazy"></div>`);
+  if (checklist.length) {
+    const checklistHTML = checklist.map((item, idx) => `<label class="kb-check" data-block="${block.id}" data-index="${idx}"><input type="checkbox" ${item.checked ? 'checked' : ''} onchange="toggleChecklistItem(event, ${block.id}, ${idx})"><span>${escapeHTML(item.text)}</span></label>`).join('');
+    parts.push(`<div class="kb-widget kb-widget-full"><div class="kb-widget-l">Todo</div><div class="kb-widget-v">${done}/${total}</div><div class="kb-checklist">${checklistHTML}</div></div>`);
+  }
+  return parts.length ? `<div class="kb-extra">${parts.join('')}</div>` : '';
+}
+
 /* -- Render -- */
 function renderView() {
   const q  = (document.getElementById('searchInput').value || '').toLowerCase().trim();
@@ -565,6 +683,7 @@ function cardHTML(b) {
         <span class="card-badge">${b.type}</span>
       </div>
       <div class="card-title">${esc(b.title || 'Untitled')}</div>
+      ${renderBlockExtras(b)}
       ${prev ? `<div class="card-preview">${prev}</div>` : ''}
       <div class="card-foot">
         <span class="card-date">${date}</span>
@@ -586,10 +705,53 @@ function cardHTML(b) {
     </div>`;
 }
 
+async function createQuickBlock() {
+  // REMOVED - Quick create moved to dedicated editor
+}
+
 function esc(s) {
   const d = document.createElement('div');
   d.textContent = s;
   return d.innerHTML;
+}
+
+function escapeHTML(value) {
+  return esc(value);
+}
+
+async function toggleChecklistItem(event, blockId, itemIndex) {
+  event.stopPropagation();
+  const block = allBlocks.find(b => b.id === blockId);
+  if (!block) return;
+
+  const lines = String(block.content || '').split('\n');
+  let currentIdx = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const match = lines[i].match(/^\s*[-*]\s*\[( |x|X)\]\s+(.*)$/);
+    if (match) {
+      if (currentIdx === itemIndex) {
+        const isChecked = match[1].toLowerCase() === 'x';
+        lines[i] = lines[i].replace(/\[( |x|X)\]/, isChecked ? '[ ]' : '[x]');
+        break;
+      }
+      currentIdx++;
+    }
+  }
+
+  const newContent = lines.join('\n');
+  try {
+    const res = await fetch(`/api/knowledge/update`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: blockId, content: newContent })
+    });
+
+    if (res.ok) {
+      await loadBlocks();
+    }
+  } catch (e) {
+    console.error('toggleChecklistItem:', e);
+  }
 }
 
 /* -- Tabs / Search -- */
