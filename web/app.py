@@ -2587,7 +2587,20 @@ def manage_habits():
                 logging.info(f"✓ Habit created: id={habit_id}, user={user_id}, title={title}")
                 return jsonify({'id': habit_id, 'status': 'created', 'title': title})
             except Exception as create_error:
-                logging.error(f"✗ Habit creation failed: {create_error}")
+                import traceback
+                error_trace = traceback.format_exc()
+                logging.error(f"✗ Habit creation failed: {create_error}\n{error_trace}")
+                
+                # Provide helpful error message for Vercel deployments
+                error_msg = str(create_error).lower()
+                if os.getenv("VERCEL") and ("database" in error_msg or "disk" in error_msg or "table" in error_msg):
+                    return jsonify({
+                        'error': 'Database persistence error on Vercel',
+                        'details': 'See VERCEL_HTTP500_FIX.md in the repo for solution',
+                        'code': 'VERCEL_PERSISTENCE_ERROR',
+                        'hint': 'You need to add Vercel KV or PostgreSQL. Currently using ephemeral /tmp storage.'
+                    }), 500
+                
                 return jsonify({
                     'error': 'Failed to save habit',
                     'details': str(create_error) if os.getenv("DEBUG") else "Database error",
@@ -2886,16 +2899,36 @@ def knowledge_api():
         return jsonify(blocks)
         
     if request.method == 'POST':
-        data = request.json
-        block_id = create_knowledge_block(
-            user_id, 
-            data.get('type', 'idea'),
-            data.get('title', 'Untitled'),
-            data.get('content', ''),
-            data.get('tags', []),
-            data.get('meta', {})
-        )
-        return jsonify({'id': block_id, 'status': 'success'})
+        try:
+            data = request.json or {}
+            block_id = create_knowledge_block(
+                user_id, 
+                data.get('type', 'idea'),
+                data.get('title', 'Untitled'),
+                data.get('content', ''),
+                data.get('tags', []),
+                data.get('meta', {})
+            )
+            return jsonify({'id': block_id, 'status': 'success'})
+        except Exception as create_error:
+            import traceback
+            error_trace = traceback.format_exc()
+            logging.error(f"✗ Knowledge block creation failed: {create_error}\n{error_trace}")
+            
+            error_msg = str(create_error).lower()
+            if os.getenv("VERCEL") and ("database" in error_msg or "disk" in error_msg or "table" in error_msg):
+                return jsonify({
+                    'error': 'Database persistence error on Vercel',
+                    'details': 'See VERCEL_HTTP500_FIX.md in the repo for solution',
+                    'code': 'VERCEL_PERSISTENCE_ERROR',
+                    'hint': 'You need to add Vercel KV or PostgreSQL. Currently using ephemeral /tmp storage.'
+                }), 500
+
+            return jsonify({
+                'error': 'Failed to save knowledge block',
+                'details': str(create_error) if os.getenv("DEBUG") else "Database error",
+                'code': 'CREATE_FAILED'
+            }), 500
 
 @app.route('/knowledge/<int:block_id>')
 def knowledge_detail(block_id):
