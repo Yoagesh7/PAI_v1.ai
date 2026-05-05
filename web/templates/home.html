@@ -21,12 +21,12 @@
         </div>
     </div>
 
-    <!-- Today's Focus Card -->
+    <!-- Execution Coach Card -->
     <div class="card"
         style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; margin-bottom: var(--space-6); padding: var(--space-8);"
         id="focusCard">
         <div class="badge" style="background: rgba(255,255,255,0.2); color: white; margin-bottom: var(--space-4);">
-            TODAY'S FOCUS
+            EXECUTION COACH
         </div>
         <h2 style="font-size: var(--text-2xl); font-weight: 700; color: white; margin: 0 0 var(--space-3) 0;"
             id="focusTitle">
@@ -66,6 +66,27 @@
 
         <div id="taskList" style="display: flex; flex-direction: column; gap: var(--space-3);">
             <!-- Tasks will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Dashboard Widgets Section -->
+    <div style="margin-bottom: var(--space-6); margin-top: var(--space-8); border-top: 1px solid var(--color-border-light); padding-top: var(--space-8);">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4);">
+            <h3 style="font-size: var(--text-lg); font-weight: 600; color: var(--color-text-primary); margin: 0; display: flex; align-items: center; gap: var(--space-2);">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="color: var(--color-primary-500);">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+                Your Workspace
+            </h3>
+            <a href="/dashboard" style="font-size: var(--text-sm); color: var(--color-primary-500); text-decoration: none; font-weight: 500;">
+                View All →
+            </a>
+        </div>
+        <div id="workspaceWidgets" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-6);">
+            <!-- Widgets will load here -->
         </div>
     </div>
 
@@ -274,9 +295,102 @@
             .catch(() => alert('Failed to clear tasks.'));
     }
 
+    // Load workspace widgets
+    function loadWorkspaceWidgets() {
+        const container = document.getElementById('workspaceWidgets');
+        if (!container) return;
+
+        fetch('/api/widgets?limit=3')
+            .then(r => r.json())
+            .then(data => {
+                const widgets = data.blocks || data.widgets || [];
+                if (widgets.length === 0) {
+                    container.innerHTML = `
+                        <div style="grid-column: 1/-1; text-align: center; padding: 32px 16px; color: var(--color-text-tertiary); background: var(--color-bg-secondary); border-radius: var(--radius-lg);">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 12px; opacity: 0.5;">
+                                <rect x="3" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="14" width="7" height="7"></rect>
+                                <rect x="3" y="14" width="7" height="7"></rect>
+                            </svg>
+                            <p style="margin:0 0 8px 0; font-size: var(--text-base); font-weight: 500; color: var(--color-text-secondary);">No widgets yet</p>
+                            <p style="margin:0; font-size: var(--text-sm);">Create your first widget to get started</p>
+                        </div>
+                    `;
+                } else {
+                    renderHomeWidgets(widgets);
+                }
+            })
+            .catch(err => console.error('Error loading workspace widgets:', err));
+    }
+
+    function renderHomeWidgets(widgets) {
+        const container = document.getElementById('workspaceWidgets');
+        container.innerHTML = '';
+
+        widgets.slice(0, 3).forEach(widget => {
+            const widgetEl = document.createElement('div');
+            widgetEl.className = 'card';
+            widgetEl.style.cssText = `padding: var(--space-4); cursor: pointer; transition: all var(--transition-fast);`;
+            widgetEl.onmouseover = () => widgetEl.style.transform = 'translateY(-2px)';
+            widgetEl.onmouseout = () => widgetEl.style.transform = 'translateY(0)';
+
+            let content = '';
+            const config = widget.config || {};
+            
+            // Render based on widget type
+            if (widget.type === 'habit') {
+                const habits = widget.data?.habits || [];
+                const completed = habits.filter(h => h.completed_today).length;
+                content = `
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-3);">
+                        <h4 style="margin: 0; font-size: var(--text-base); font-weight: 600; color: var(--color-text-primary);">🔥 Habits</h4>
+                        <span style="font-size: var(--text-xs); color: var(--color-text-tertiary);">${completed}/${habits.length}</span>
+                    </div>
+                    <div style="font-size: var(--text-sm); color: var(--color-text-secondary);">
+                        ${habits.slice(0, 3).map(h => `<div>• ${h.title}</div>`).join('')}
+                    </div>
+                    <div style="margin-top: var(--space-3); width: 100%; height: 4px; background: var(--color-bg-secondary); border-radius: 2px; overflow: hidden;">
+                        <div style="width: ${(completed/habits.length)*100}%; height: 100%; background: var(--color-primary-500);"></div>
+                    </div>
+                `;
+            } else if (widget.type === 'todo') {
+                const tasks = widget.data?.tasks || [];
+                const completed = tasks.filter(t => t.completed).length;
+                content = `
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-3);">
+                        <h4 style="margin: 0; font-size: var(--text-base); font-weight: 600; color: var(--color-text-primary);">📋 Tasks</h4>
+                        <span style="font-size: var(--text-xs); color: var(--color-text-tertiary);">${completed}/${tasks.length}</span>
+                    </div>
+                    <div style="font-size: var(--text-sm); color: var(--color-text-secondary);">
+                        ${tasks.slice(0, 3).map(t => `<div>${t.completed ? '✓' : '○'} ${t.title}</div>`).join('')}
+                    </div>
+                `;
+            } else if (widget.type === 'focus') {
+                const sessions = widget.data?.sessions || [];
+                const totalTime = sessions.reduce((sum, s) => sum + (s.duration || 0), 0);
+                content = `
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-3);">
+                        <h4 style="margin: 0; font-size: var(--text-base); font-weight: 600; color: var(--color-text-primary);">⏱️ Focus</h4>
+                        <span style="font-size: var(--text-xs); color: var(--color-text-tertiary);">${sessions.length} sessions</span>
+                    </div>
+                    <div style="font-size: var(--text-3xl); font-weight: 700; color: var(--color-primary-500); margin-bottom: var(--space-2);">${Math.round(totalTime / 60)}h</div>
+                    <div style="font-size: var(--text-xs); color: var(--color-text-tertiary);">Total focused time today</div>
+                `;
+            } else {
+                content = `<p style="margin: 0; font-size: var(--text-sm); color: var(--color-text-secondary);">Widget loading...</p>`;
+            }
+
+            widgetEl.innerHTML = content;
+            widgetEl.onclick = () => window.location.href = '/dashboard';
+            container.appendChild(widgetEl);
+        });
+    }
+
     // Initialize
     setGreeting();
     loadTasks();
+    loadWorkspaceWidgets();
 
     // Load user info from API only. Session restore from localStorage is disabled.
     (async () => {

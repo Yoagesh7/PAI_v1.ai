@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - PartnerAI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary-color: #6366f1;
+            --secondary-color: #8b5cf6;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --dark-bg: #0f172a;
+            --card-bg: #1e293b;
+            --border-color: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+        
+        .navbar {
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .navbar-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        .btn {
+            padding: 0.5rem 1.2rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(99, 102, 241, 0.3);
+        }
+        
+        .btn-secondary {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+        
+        .btn-secondary:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+        
+        .btn-sm {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.85rem;
+        }
+        
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .header {
+            margin-bottom: 2rem;
+        }
+        
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header p {
+            color: var(--text-secondary);
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .widget {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            cursor: move;
+            position: relative;
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .widget:hover {
+            border-color: var(--primary-color);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
+        }
+        
+        .widget-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+        
+        .widget-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        .widget-emoji {
+            font-size: 1.5rem;
+        }
+        
+        .widget-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .widget-delete {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0.25rem;
+            font-size: 1.2rem;
+            transition: color 0.2s;
+        }
+        
+        .widget-delete:hover {
+            color: var(--danger-color);
+        }
+        
+        /* TODO WIDGET */
+        .widget-tasks {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .task-item {
+            padding: 0.75rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+            transition: all 0.2s;
+        }
+        
+        .task-item:hover {
+            background: rgba(99, 102, 241, 0.1);
+        }
+        
+        .task-item.completed {
+            opacity: 0.6;
+        }
+        
+        .task-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        
+        .task-text {
+            flex: 1;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+        
+        .task-item.completed .task-text {
+            text-decoration: line-through;
+            color: var(--text-secondary);
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 2px;
+            margin-top: auto;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            transition: width 0.3s ease;
+        }
+        
+        .progress-text {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+            text-align: right;
+        }
+        
+        /* HABIT WIDGET */
+        .habit-list {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .habit-item {
+            padding: 0.75rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.2s;
+        }
+        
+        .habit-item:hover {
+            background: rgba(99, 102, 241, 0.1);
+        }
+        
+        .habit-name {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex: 1;
+        }
+        
+        .habit-toggle {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            border-radius: 50%;
+            border: 2px solid var(--border-color);
+            background: transparent;
+            transition: all 0.2s;
+        }
+        
+        .habit-toggle:hover {
+            border-color: var(--primary-color);
+        }
+        
+        .habit-toggle.completed {
+            background: var(--success-color);
+            border-color: var(--success-color);
+        }
+        
+        .habit-streak {
+            font-size: 0.8rem;
+            color: var(--warning-color);
+            font-weight: 600;
+        }
+        
+        .chart-bars {
+            display: flex;
+            gap: 0.3rem;
+            margin-top: auto;
+            align-items: flex-end;
+            height: 40px;
+        }
+        
+        .chart-bar {
+            flex: 1;
+            background: rgba(99, 102, 241, 0.3);
+            border-radius: 4px 4px 0 0;
+            position: relative;
+            transition: all 0.2s;
+            min-height: 2px;
+        }
+        
+        .chart-bar:hover {
+            background: var(--primary-color);
+        }
+        
+        .chart-bar.today {
+            border: 2px solid var(--primary-color);
+        }
+        
+        /* FOCUS WIDGET */
+        .focus-stats {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 1rem;
+            text-align: center;
+        }
+        
+        .focus-stat {
+            padding: 1rem;
+            background: rgba(99, 102, 241, 0.1);
+            border-radius: 0.5rem;
+        }
+        
+        .focus-stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .focus-stat-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+        
+        .start-button {
+            background: linear-gradient(135deg, var(--success-color), #059669);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin-top: 1rem;
+        }
+        
+        .start-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3);
+        }
+        
+        /* EMPTY STATE */
+        .empty-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+        
+        .empty-state-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        /* SIDEBAR */
+        .add-widget-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .widget-select {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border-color);
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .widget-select:hover,
+        .widget-select:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+        
+        /* MODAL */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal.show {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        
+        .modal-close:hover {
+            color: var(--text-primary);
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            border-radius: 0.5rem;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 2rem;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(99, 102, 241, 0.3);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .error-message {
+            padding: 1rem;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--danger-color);
+            border-radius: 0.5rem;
+            color: #fca5a5;
+            margin-bottom: 1rem;
+        }
+        
+        .success-message {
+            padding: 1rem;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid var(--success-color);
+            border-radius: 0.5rem;
+            color: #86efac;
+            margin-bottom: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .navbar {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .add-widget-section {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="navbar-brand">📊 PartnerAI Dashboard</div>
+        <div class="navbar-actions">
+            <span id="userName" style="color: var(--text-secondary);"></span>
+            <button class="btn btn-secondary btn-sm" onclick="showAddWidgetModal()">+ Add Widget</button>
+            <a href="/" class="btn btn-secondary btn-sm">← Home</a>
+        </div>
+    </nav>
+    
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Your Personalized Dashboard</h1>
+            <p>Customize your productivity hub. Add, remove, and arrange widgets to focus on what matters.</p>
+        </div>
+        
+        <!-- Messages -->
+        <div id="messageContainer"></div>
+        
+        <!-- Dashboard Grid -->
+        <div class="dashboard-grid" id="dashboardGrid">
+            <!-- Widgets will be rendered here -->
+        </div>
+        
+        <!-- Empty State -->
+        <div id="emptyState" style="text-align: center; padding: 3rem;">
+            <p style="font-size: 3rem; margin-bottom: 1rem;">📭</p>
+            <p>Your dashboard is empty. Click "+ Add Widget" to get started!</p>
+        </div>
+    </div>
+    
+    <!-- Add Widget Modal -->
+    <div class="modal" id="addWidgetModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Add a Widget</h2>
+                <button class="modal-close" onclick="closeAddWidgetModal()">✕</button>
+            </div>
+            <div id="modalMessage"></div>
+            <form id="addWidgetForm">
+                <div class="form-group">
+                    <label class="form-label">Choose Widget Type</label>
+                    <select class="form-input" id="widgetTypeSelect" required>
+                        <option value="">-- Select --</option>
+                        <option value="todo">📋 TODO - Today's Tasks</option>
+                        <option value="habit">🔥 HABITS - Track Habits</option>
+                        <option value="focus">⏱️ FOCUS - Pomodoro Timer</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <p id="widgetDescription" style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem;"></p>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeAddWidgetModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Widget</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE = '/api';
+        const descriptions = {
+            'todo': 'Display your tasks for today with progress tracking.',
+            'habit': 'Show your habits and track completions with streaks.',
+            'focus': 'Pomodoro timer for focused work sessions.'
+        };
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            const userName = document.querySelector('.navbar-brand').parentElement.querySelector('#userName');
+            userName.textContent = `Welcome, {{user_name}}`;
+            loadDashboard();
+        });
+        
+        // Load dashboard widgets
+        async function loadDashboard() {
+            try {
+                const response = await fetch(`${API_BASE}/widgets`);
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    showMessage('Error loading dashboard', 'error');
+                    return;
+                }
+                
+                const widgets = data.widgets || [];
+                renderWidgets(widgets);
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                showMessage('Failed to load dashboard', 'error');
+            }
+        }
+        
+        // Render widgets
+        function renderWidgets(widgets) {
+            const grid = document.getElementById('dashboardGrid');
+            const emptyState = document.getElementById('emptyState');
+            
+            grid.innerHTML = '';
+            
+            if (widgets.length === 0) {
+                emptyState.style.display = 'block';
+                return;
+            }
+            
+            emptyState.style.display = 'none';
+            
+            widgets.forEach(widget => {
+                const widgetEl = createWidgetElement(widget);
+                grid.appendChild(widgetEl);
+            });
+        }
+        
+        // Create widget element
+        function createWidgetElement(widget) {
+            const div = document.createElement('div');
+            div.className = 'widget';
+            div.dataset.id = widget.id;
+            div.dataset.type = widget.type;
+            
+            const emoji = widget.emoji || '📦';
+            const title = {
+                'todo': 'Today\'s Tasks',
+                'habit': 'My Habits',
+                'focus': 'Focus Sessions'
+            }[widget.type] || widget.type;
+            
+            let content = '';
+            
+            if (widget.type === 'todo') {
+                content = renderTodoWidget(widget);
+            } else if (widget.type === 'habit') {
+                content = renderHabitWidget(widget);
+            } else if (widget.type === 'focus') {
+                content = renderFocusWidget(widget);
+            }
+            
+            div.innerHTML = `
+                <div class="widget-header">
+                    <div class="widget-title">
+                        <span class="widget-emoji">${emoji}</span>
+                        <span>${title}</span>
+                    </div>
+                    <div class="widget-actions">
+                        <button class="widget-delete" onclick="deleteWidget(${widget.id})">✕</button>
+                    </div>
+                </div>
+                ${content}
+            `;
+            
+            return div;
+        }
+        
+        // Render TODO widget
+        function renderTodoWidget(widget) {
+            const tasks = widget.tasks || [];
+            
+            if (tasks.length === 0) {
+                return `
+                    <div class="empty-state">
+                        <p class="empty-state-icon">📋</p>
+                        <p>No tasks yet</p>
+                    </div>
+                `;
+            }
+            
+            const taskItems = tasks.map(task => `
+                <div class="task-item ${task.completed ? 'completed' : ''}">
+                    <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} 
+                           onchange="toggleTask(${task.id}, this.checked)">
+                    <span class="task-text">${escapeHtml(task.task)}</span>
+                </div>
+            `).join('');
+            
+            const completed = widget.completed || 0;
+            const total = widget.count || 0;
+            const pct = widget.completion_pct || 0;
+            
+            return `
+                <div class="widget-tasks">
+                    ${taskItems}
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${pct}%"></div>
+                    </div>
+                    <div class="progress-text">${completed}/${total} completed</div>
+                </div>
+            `;
+        }
+        
+        // Render HABIT widget
+        function renderHabitWidget(widget) {
+            const habits = widget.habits || [];
+            
+            if (habits.length === 0) {
+                return `
+                    <div class="empty-state">
+                        <p class="empty-state-icon">🌱</p>
+                        <p>No habits yet</p>
+                    </div>
+                `;
+            }
+            
+            const habitItems = habits.map(habit => `
+                <div class="habit-item">
+                    <div class="habit-name">
+                        <button class="habit-toggle ${habit.completed ? 'completed' : ''}" 
+                                onclick="toggleHabit(${habit.id}, this)"></button>
+                        <span>${escapeHtml(habit.title)}</span>
+                    </div>
+                    <span class="habit-streak">${habit.streak}🔥</span>
+                </div>
+            `).join('');
+            
+            return `
+                <div class="habit-list">
+                    ${habitItems}
+                </div>
+            `;
+        }
+        
+        // Render FOCUS widget
+        function renderFocusWidget(widget) {
+            const sessions = widget.today_sessions || 0;
+            const minutes = widget.total_minutes || 0;
+            
+            return `
+                <div class="focus-stats">
+                    <div class="focus-stat">
+                        <div class="focus-stat-value">${sessions}</div>
+                        <div class="focus-stat-label">Sessions Today</div>
+                    </div>
+                    <div class="focus-stat">
+                        <div class="focus-stat-value">${minutes}</div>
+                        <div class="focus-stat-label">Minutes Focused</div>
+                    </div>
+                    <button class="start-button" onclick="startFocusSession()">🎯 Start Session</button>
+                </div>
+            `;
+        }
+        
+        // Show/Hide Add Widget Modal
+        function showAddWidgetModal() {
+            document.getElementById('addWidgetModal').classList.add('show');
+        }
+        
+        function closeAddWidgetModal() {
+            document.getElementById('addWidgetModal').classList.remove('show');
+            document.getElementById('addWidgetForm').reset();
+        }
+        
+        // Update description when selecting widget type
+        document.addEventListener('DOMContentLoaded', () => {
+            const select = document.getElementById('widgetTypeSelect');
+            const desc = document.getElementById('widgetDescription');
+            
+            select?.addEventListener('change', () => {
+                desc.textContent = descriptions[select.value] || '';
+            });
+        });
+        
+        // Add widget
+        document.getElementById('addWidgetForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const type = document.getElementById('widgetTypeSelect').value;
+            
+            if (!type) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/widgets`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type, config: {} })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to create widget');
+                }
+                
+                closeAddWidgetModal();
+                showMessage(`${type.toUpperCase()} widget added!`, 'success');
+                await loadDashboard();
+            } catch (error) {
+                showMessage('Failed to add widget: ' + error.message, 'error');
+            }
+        });
+        
+        // Delete widget
+        async function deleteWidget(widgetId) {
+            if (!confirm('Delete this widget?')) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/widgets/${widgetId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to delete widget');
+                }
+                
+                showMessage('Widget deleted', 'success');
+                await loadDashboard();
+            } catch (error) {
+                showMessage('Failed to delete widget', 'error');
+            }
+        }
+        
+        // Toggle task completion
+        async function toggleTask(taskId, completed) {
+            try {
+                const response = await fetch(`/api/tasks/${taskId}/toggle`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: completed ? 'completed' : 'pending' })
+                });
+                
+                if (response.ok) {
+                    await loadDashboard();
+                }
+            } catch (error) {
+                console.error('Error toggling task:', error);
+            }
+        }
+        
+        // Toggle habit completion
+        async function toggleHabit(habitId, button) {
+            try {
+                const response = await fetch(`/api/habits/${habitId}/toggle`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    button.classList.toggle('completed');
+                    await loadDashboard();
+                }
+            } catch (error) {
+                console.error('Error toggling habit:', error);
+            }
+        }
+        
+        // Start focus session
+        function startFocusSession() {
+            window.location.href = '/focus';
+        }
+        
+        // Show message
+        function showMessage(text, type) {
+            const container = document.getElementById('messageContainer');
+            const className = type === 'error' ? 'error-message' : 'success-message';
+            const div = document.createElement('div');
+            div.className = className;
+            div.textContent = text;
+            container.innerHTML = '';
+            container.appendChild(div);
+            
+            setTimeout(() => div.remove(), 4000);
+        }
+        
+        // Escape HTML
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+    </script>
+</body>
+</html>

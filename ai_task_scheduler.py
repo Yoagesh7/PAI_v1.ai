@@ -1,11 +1,20 @@
 """
 AI Daily Task Email Reminders and Scheduling System
+Includes autonomous agent for proactive user engagement
 """
 from datetime import datetime
 from memory import (
     get_all_active_users, get_ai_tasks_for_date, 
     get_incomplete_ai_tasks, rollover_incomplete_tasks
 )
+
+# Import the autonomous agent engine
+try:
+    from agent_engine import run_autonomous_agent_for_all_users
+    AGENT_ENGINE_AVAILABLE = True
+except ImportError:
+    print(" ⚠️  Agent Engine not available - autonomous features disabled", flush=True)
+    AGENT_ENGINE_AVAILABLE = False
 
 def send_email(to_email, subject, body):
     """Email sending function (imported from app.py)"""
@@ -138,13 +147,39 @@ def run_midnight_rollover():
     except Exception as e:
         print(f" Rollover failed: {e}", flush=True)
 
+def run_autonomous_agent_job():
+    """Run the autonomous agent to make proactive decisions"""
+    print(" Running autonomous agent cycle...", flush=True)
+    try:
+        if not AGENT_ENGINE_AVAILABLE:
+            print(" ⚠️  Agent engine not available, skipping autonomous agent cycle", flush=True)
+            return
+            
+        results = run_autonomous_agent_for_all_users()
+        successful = sum(1 for v in results.values() if v)
+        total = len(results)
+        print(f" Autonomous agent cycle completed: {successful}/{total} users processed successfully", flush=True)
+    except Exception as e:
+        print(f" Autonomous agent cycle failed: {e}", flush=True)
+
 # APScheduler setup
 def init_scheduler(app):
     """Initialize background scheduler for automated tasks"""
     from apscheduler.schedulers.background import BackgroundScheduler
     from apscheduler.triggers.cron import CronTrigger
+    from apscheduler.triggers.interval import IntervalTrigger
     
     scheduler = BackgroundScheduler()
+    
+    # Every 30 minutes - Autonomous agent
+    if AGENT_ENGINE_AVAILABLE:
+        scheduler.add_job(
+            run_autonomous_agent_job,
+            IntervalTrigger(minutes=30),
+            id='autonomous_agent',
+            name='Autonomous AI Agent - Proactive Engagement',
+            replace_existing=True
+        )
     
     # Daily 8:30 AM IST - Morning reminders
     scheduler.add_job(
@@ -174,7 +209,13 @@ def init_scheduler(app):
     )
     
     scheduler.start()
-    print(" Scheduler initialized with 3 jobs:", flush=True)
+    job_count = 3
+    if AGENT_ENGINE_AVAILABLE:
+        job_count += 1
+    
+    print(f" Scheduler initialized with {job_count} jobs:", flush=True)
+    if AGENT_ENGINE_AVAILABLE:
+        print("  - Autonomous Agent: Every 30 minutes", flush=True)
     print("  - Morning reminders: 8:30 AM", flush=True)
     print("  - Evening reminders: 8:00 PM", flush=True)
     print("  - Midnight rollover: 12:00 AM", flush=True)

@@ -769,6 +769,63 @@
     let lastStrategy = 'balanced';
     let isStreaming = false;
 
+    // DEBUG: Log history loading
+    console.log('Chat initialized with history length:', conversationHistory.length, 'history:', conversationHistory);
+
+    // Fix for empty/stale history: Load fresh from /api/init on page load
+    async function loadFreshHistory() {
+        try {
+            const res = await fetch('/api/init', { method: 'GET' });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.history && Array.isArray(data.history)) {
+                    conversationHistory = data.history;
+                    console.log('✅ Fresh history loaded from /api/init:', conversationHistory.length, 'messages');
+                    // Render the loaded history
+                    renderInitialHistory();
+                }
+            }
+        } catch (e) {
+            console.warn('Could not load fresh history from /api/init:', e);
+            // Fall back to whatever was passed by Jinja
+            console.log('Falling back to Jinja-provided history:', conversationHistory.length, 'messages');
+        }
+    }
+
+    // Render initial history to DOM
+    function renderInitialHistory() {
+        const messagesArea = document.getElementById('messages');
+        // Clear existing (keep date divider)
+        while (messagesArea.children.length > 1) {
+            messagesArea.removeChild(messagesArea.lastChild);
+        }
+        
+        if (conversationHistory && conversationHistory.length > 0) {
+            conversationHistory.forEach(m => {
+                if (m.role === 'user') {
+                    const row = document.createElement('div');
+                    row.className = 'msg-row user';
+                    row.innerHTML = `
+                        <div class="bubble-col">
+                            <div class="user-bubble">
+                                ${esc(m.content)}
+                                <span class="msg-time">${ts()}</span>
+                            </div>
+                        </div>
+                        <div class="user-avatar-mini" title="Delete History" onclick="confirmDeleteHistory()">PA</div>`;
+                    messagesArea.appendChild(row);
+                }
+                else {
+                    addAiMsgStatic(m.content);
+                }
+            });
+            scrollBottom();
+        } else {
+            // Show welcome message only if no history
+            addAiMsgStatic("Hey! 👋 I'm your **PartnerAI Mentor**. What are we working on today? 🚀\n\nTry a quick command like `/daily`, `/plan`, or just tell me what's on your mind.");
+        }
+    }
+
     /* ── Header menu ── */
     function toggleMenu() {
         const items = document.getElementById('menuItems');
@@ -1284,6 +1341,10 @@
                 throw new Error(errMsg);
             }
 
+            // ✅ Extract RLHF strategy from response header
+            lastStrategy = res.headers.get('X-RLHF-Strategy') || 'balanced';
+            console.log('✅ RLHF Strategy updated:', lastStrategy);
+
             const area = document.getElementById('messages');
 
             // Build new AI row
@@ -1381,40 +1442,21 @@
     }
 
     /* ── Load history ── */
-    if (conversationHistory && conversationHistory.length > 0) {
-        conversationHistory.forEach(m => {
-            if (m.role === 'user') {
-                const area = document.getElementById('messages');
-                const row = document.createElement('div');
-                row.className = 'msg-row user';
-                row.innerHTML = `
-                    <div class="bubble-col">
-                        <div class="user-bubble">
-                            ${esc(m.content)}
-                            <span class="msg-time">${ts()}</span>
-                        </div>
-                    </div>
-                    <div class="user-avatar-mini" title="Delete History" onclick="confirmDeleteHistory()">PA</div>`;
-                area.appendChild(row);
-            }
-            else addAiMsgStatic(m.content);
-        });
-        scrollBottom();
-    } else {
-        // Welcome message
-        addAiMsgStatic("Hey! 👋 I'm your **PartnerAI Mentor**. What are we working on today? 🚀\n\nTry a quick command like `/daily`, `/plan`, or just tell me what's on your mind.");
-    }
-
-    /* ── URL ?msg= auto-send ── */
-    window.addEventListener('load', () => {
+    // Load fresh history from server on page load
+    window.addEventListener('load', async () => {
+        // First, try to load fresh history from the API
+        await loadFreshHistory();
+        
+        // Then handle URL ?msg= auto-send
         const msg = new URLSearchParams(window.location.search).get('msg');
         if (msg) {
             window.history.replaceState({}, document.title, window.location.pathname);
             document.getElementById('messageInput').value = msg;
             send();
         }
-    });
-
+    }, { once: true }); // Ensure this only runs once
+    
+    // Also set up reminder polling
     /* ── Reminder Notification Polling ── */
     function checkReminders() {
         fetch('/api/reminders/check')

@@ -3,9 +3,18 @@ Smart Blocks, AI Memory, and Intelligence System
 Database helper functions for advanced PartnerAI features
 """
 import json
-from memory import get_db
+import logging
+import os
 from datetime import datetime, timedelta
+from memory import get_db
 
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Detect environment
+IS_VERCEL = bool(os.getenv("VERCEL"))
+IS_PRODUCTION = bool(os.getenv("PRODUCTION"))
 
 # ===== SMART BLOCKS SYSTEM =====
 
@@ -20,86 +29,129 @@ def create_smart_block(user_id, block_type, title, content, metadata=None):
         metadata: Optional JSON metadata
     
     Returns:
-        block_id
+        block_id or None if failed
     """
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    metadata_str = json.dumps(metadata) if metadata else None
-    
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO smart_blocks (user_id, block_type, title, content, metadata, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (user_id, block_type, title, content, metadata_str, timestamp, timestamp))
-        conn.commit()
-        return cursor.lastrowid
+    try:
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        metadata_str = json.dumps(metadata) if metadata else None
+        
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO smart_blocks (user_id, block_type, title, content, metadata, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (user_id, block_type, title, content, metadata_str, timestamp, timestamp))
+            conn.commit()
+            block_id = cursor.lastrowid
+            
+            logger.info(f"✅ Block {block_id} created for user {user_id}")
+            return block_id
+    except Exception as e:
+        logger.error(f"❌ Error creating block: {e}", exc_info=True)
+        return None
 
 
 def get_user_blocks(user_id, block_type=None, limit=50):
     """Get blocks for a user, optionally filtered by type."""
-    with get_db() as conn:
-        cursor = conn.cursor()
-        if block_type:
-            cursor.execute("""
-                SELECT id, block_type, title, content, metadata, created_at, updated_at
-                FROM smart_blocks WHERE user_id=? AND block_type=?
-                ORDER BY updated_at DESC LIMIT ?
-            """, (user_id, block_type, limit))
-        else:
-            cursor.execute("""
-                SELECT id, block_type, title, content, metadata, created_at, updated_at
-                FROM smart_blocks WHERE user_id=?
-                ORDER BY updated_at DESC LIMIT ?
-            """, (user_id, limit))
-        
-        rows = cursor.fetchall()
-        return [{
-            'id': r[0],
-            'type': r[1],
-            'title': r[2],
-            'content': r[3],
-            'metadata': json.loads(r[4]) if r[4] else {},
-            'created_at': r[5],
-            'updated_at': r[6]
-        } for r in rows]
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            if block_type:
+                cursor.execute("""
+                    SELECT id, block_type, title, content, metadata, created_at, updated_at
+                    FROM smart_blocks WHERE user_id=? AND block_type=?
+                    ORDER BY updated_at DESC LIMIT ?
+                """, (user_id, block_type, limit))
+            else:
+                cursor.execute("""
+                    SELECT id, block_type, title, content, metadata, created_at, updated_at
+                    FROM smart_blocks WHERE user_id=?
+                    ORDER BY updated_at DESC LIMIT ?
+                """, (user_id, limit))
+            
+            rows = cursor.fetchall()
+            return [{
+                'id': r[0],
+                'type': r[1],
+                'title': r[2],
+                'content': r[3],
+                'metadata': json.loads(r[4]) if r[4] else {},
+                'created_at': r[5],
+                'updated_at': r[6]
+            } for r in rows]
+    except Exception as e:
+        logger.error(f"❌ Error getting blocks for user {user_id}: {e}", exc_info=True)
+        return []
 
 
 def update_smart_block(block_id, title=None, content=None, metadata=None):
-    """Update an existing block."""
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    """Update an existing block.
     
-    with get_db() as conn:
-        cursor = conn.cursor()
-        updates = []
-        values = []
+    Returns: True if successful, False otherwise
+    """
+    try:
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
-        if title is not None:
-            updates.append("title=?")
-            values.append(title)
-        if content is not None:
-            updates.append("content=?")
-            values.append(content)
-        if metadata is not None:
-            updates.append("metadata=?")
-            values.append(json.dumps(metadata))
-        
-        updates.append("updated_at=?")
-        values.append(timestamp)
-        values.append(block_id)
-        
-        cursor.execute(f"UPDATE smart_blocks SET {', '.join(updates)} WHERE id=?", values)
-        conn.commit()
+        with get_db() as conn:
+            cursor = conn.cursor()
+            updates = []
+            values = []
+            
+            if title is not None:
+                updates.append("title=?")
+                values.append(title)
+            if content is not None:
+                updates.append("content=?")
+                values.append(content)
+            if metadata is not None:
+                updates.append("metadata=?")
+                values.append(json.dumps(metadata))
+            
+            if not updates:
+                logger.warning(f"No updates provided for block {block_id}")
+                return True
+            
+            updates.append("updated_at=?")
+            values.append(timestamp)
+            values.append(block_id)
+            
+            cursor.execute(f"UPDATE smart_blocks SET {', '.join(updates)} WHERE id=?", values)
+            conn.commit()
+            
+            # Verify update
+            cursor.execute("SELECT id FROM smart_blocks WHERE id=?", (block_id,))
+            if cursor.fetchone():
+                logger.info(f"✅ Block {block_id} updated successfully")
+                return True
+            else:
+                logger.warning(f"⚠️ Block {block_id} not found after update")
+                return False
+    except Exception as e:
+        logger.error(f"❌ Error updating block {block_id}: {e}", exc_info=True)
+        if IS_VERCEL:
+            logger.error(f"Vercel detected - check DATABASE_URL or KV_URL environment variables")
+        return False
 
 
 def delete_smart_block(block_id):
-    """Delete a block and its relationships."""
-    with get_db() as conn:
-        cursor = conn.cursor()
-        # Delete relationships first
-        cursor.execute("DELETE FROM block_relationships WHERE block_id_1=? OR block_id_2=?", (block_id, block_id))
-        # Delete block
-        cursor.execute("DELETE FROM smart_blocks WHERE id=?", (block_id,))
-        conn.commit()
+    """Delete a block and its relationships.
+    
+    Returns: True if successful, False otherwise
+    """
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            # Delete relationships first
+            cursor.execute("DELETE FROM block_relationships WHERE block_id_1=? OR block_id_2=?", (block_id, block_id))
+            # Delete block
+            cursor.execute("DELETE FROM smart_blocks WHERE id=?", (block_id,))
+            conn.commit()
+            
+            logger.info(f"✅ Block {block_id} deleted successfully")
+            return True
+    except Exception as e:
+        logger.error(f"❌ Error deleting block {block_id}: {e}", exc_info=True)
+        return False
 
 
 def link_blocks(block_id_1, block_id_2, relationship_type='related'):
@@ -107,47 +159,62 @@ def link_blocks(block_id_1, block_id_2, relationship_type='related'):
     
     Args:
         relationship_type: 'related', 'depends_on', 'part_of', 'leads_to'
-    """
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
-    with get_db() as conn:
-        cursor = conn.cursor()
-        # Check if relationship already exists
-        cursor.execute("""
-            SELECT id FROM block_relationships 
-            WHERE (block_id_1=? AND block_id_2=?) OR (block_id_1=? AND block_id_2=?)
-        """, (block_id_1, block_id_2, block_id_2, block_id_1))
+    Returns: True if successful, False otherwise
+    """
+    try:
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
-        if not cursor.fetchone():
+        with get_db() as conn:
+            cursor = conn.cursor()
+            # Check if relationship already exists
             cursor.execute("""
-                INSERT INTO block_relationships (block_id_1, block_id_2, relationship_type, created_at)
-                VALUES (?, ?, ?, ?)
-            """, (block_id_1, block_id_2, relationship_type, timestamp))
-            conn.commit()
+                SELECT id FROM block_relationships 
+                WHERE (block_id_1=? AND block_id_2=?) OR (block_id_1=? AND block_id_2=?)
+            """, (block_id_1, block_id_2, block_id_2, block_id_1))
+            
+            if not cursor.fetchone():
+                cursor.execute("""
+                    INSERT INTO block_relationships (block_id_1, block_id_2, relationship_type, created_at)
+                    VALUES (?, ?, ?, ?)
+                """, (block_id_1, block_id_2, relationship_type, timestamp))
+                conn.commit()
+                logger.info(f"✅ Linked blocks {block_id_1} ↔ {block_id_2}")
+                return True
+            else:
+                logger.info(f"ℹ️ Relationship already exists between {block_id_1} and {block_id_2}")
+                return True
+    except Exception as e:
+        logger.error(f"❌ Error linking blocks {block_id_1} and {block_id_2}: {e}", exc_info=True)
+        return False
 
 
 def get_block_relationships(block_id):
     """Get all blocks related to a given block."""
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT br.id, br.block_id_1, br.block_id_2, br.relationship_type, 
-                   b1.title as title_1, b2.title as title_2
-            FROM block_relationships br
-            LEFT JOIN smart_blocks b1 ON br.block_id_1 = b1.id
-            LEFT JOIN smart_blocks b2 ON br.block_id_2 = b2.id
-            WHERE br.block_id_1=? OR br.block_id_2=?
-        """, (block_id, block_id))
-        
-        rows = cursor.fetchall()
-        return [{
-            'rel_id': r[0],
-            'block_1': r[1],
-            'block_2': r[2],
-            'type': r[3],
-            'other_block_id': r[2] if r[1] == block_id else r[1],
-            'other_block_title': r[5] if r[1] == block_id else r[4]
-        } for r in rows]
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT br.id, br.block_id_1, br.block_id_2, br.relationship_type, 
+                       b1.title as title_1, b2.title as title_2
+                FROM block_relationships br
+                LEFT JOIN smart_blocks b1 ON br.block_id_1 = b1.id
+                LEFT JOIN smart_blocks b2 ON br.block_id_2 = b2.id
+                WHERE br.block_id_1=? OR br.block_id_2=?
+            """, (block_id, block_id))
+            
+            rows = cursor.fetchall()
+            return [{
+                'rel_id': r[0],
+                'block_1': r[1],
+                'block_2': r[2],
+                'type': r[3],
+                'other_block_id': r[2] if r[1] == block_id else r[1],
+                'other_block_title': r[5] if r[1] == block_id else r[4]
+            } for r in rows]
+    except Exception as e:
+        logger.error(f"❌ Error getting relationships for block {block_id}: {e}", exc_info=True)
+        return []
 
 
 def search_blocks(user_id, query):

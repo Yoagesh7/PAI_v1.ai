@@ -23,6 +23,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(mess
 
 # ... (Previous imports) ...
 from habits_db import init_habits_db, create_habit, get_user_habits, toggle_habit, get_weekly_stats, analyze_habits_ai, delete_habit
+from ai_response_formatter import format_ai_response
 
 # Generic System Prompt
 SYSTEM_PROMPT = "You are a helpful, friendly, and intelligent AI assistant. Answer the user's questions clearly and concisely."
@@ -2135,15 +2136,20 @@ CONVERSATION RULES (follow naturally, don't state them):
                 yield token
             # Save full reply to history
             ai_reply = ''.join(full_text_accumulator)
-            save_chat_message(_uid, 'ai', ai_reply)
+            # Format response with bullets, emojis, and better formatting
+            formatted_reply = format_ai_response(ai_reply)
+            save_chat_message(_uid, 'ai', formatted_reply)
             # Extract actionable tasks in background (non-blocking)
             threading.Thread(
                 target=_extract_tasks_from_chat,
-                args=(_uid, _user_text, ai_reply, _user_goal),
+                args=(_uid, _user_text, formatted_reply, _user_goal),
                 daemon=True,
             ).start()
 
-        return Response(stream_with_context(stream_chat_response()), mimetype='text/plain')
+        response = Response(stream_with_context(stream_chat_response()), mimetype='text/plain')
+        # Add strategy as response header for RLHF feedback tracking
+        response.headers['X-RLHF-Strategy'] = selected_strategy
+        return response
         
     except AIConnectionError as e:
         logging.error(f"Chat AIConnectionError: {e}")
@@ -2561,26 +2567,49 @@ def manage_habits():
         
         if request.method == 'POST':
             data = request.json
-            title = data.get('title')
-            category = data.get('category', 'General')
-            icon = data.get('icon', '')
-            time_of_day = data.get('time_of_day', 'Anytime')
+            if not data:
+                return jsonify({'error': 'Invalid JSON request'}), 400
+                
+            title = data.get('title', '').strip()
+            category = data.get('category', 'General').strip()
+            icon = data.get('icon', '').strip()
+            time_of_day = data.get('time_of_day', 'Anytime').strip()
             
             if not title: 
                 return jsonify({'error': 'Title required'}), 400
             
-            habit_id = create_habit(user_id, title, category, icon, time_of_day)
-            logging.info(f" Habit created: id={habit_id}, user={user_id}")
-            return jsonify({'id': habit_id, 'status': 'created'})
+            # Validate length
+            if len(title) > 255:
+                return jsonify({'error': 'Title too long (max 255 characters)'}), 400
+            
+            try:
+                habit_id = create_habit(user_id, title, category, icon, time_of_day)
+                logging.info(f"✓ Habit created: id={habit_id}, user={user_id}, title={title}")
+                return jsonify({'id': habit_id, 'status': 'created', 'title': title})
+            except Exception as create_error:
+                logging.error(f"✗ Habit creation failed: {create_error}")
+                return jsonify({
+                    'error': 'Failed to save habit',
+                    'details': str(create_error) if os.getenv("DEBUG") else "Database error",
+                    'code': 'CREATE_FAILED'
+                }), 500
             
         else:
-            habits = get_user_habits(user_id)
-            logging.info(f" Habits fetched: count={len(habits) if isinstance(habits, list) else 0}, user={user_id}")
-            return jsonify(habits)
+            try:
+                habits = get_user_habits(user_id)
+                logging.info(f"✓ Habits fetched: count={len(habits) if isinstance(habits, list) else 0}, user={user_id}")
+                return jsonify(habits)
+            except Exception as fetch_error:
+                logging.error(f"✗ Habit fetch failed: {fetch_error}")
+                return jsonify({
+                    'error': 'Failed to load habits',
+                    'details': str(fetch_error) if os.getenv("DEBUG") else "Database error",
+                    'code': 'FETCH_FAILED'
+                }), 500
     except Exception as e:
         import traceback
         error_details = traceback.format_exc()
-        logging.error(f" Habits endpoint error: {e}\n{error_details}")
+        logging.error(f"✗ Habits endpoint error: {e}\n{error_details}")
         return jsonify({
             'error': str(e), 
             'details': error_details if os.getenv("DEBUG") else "Internal Server Error",

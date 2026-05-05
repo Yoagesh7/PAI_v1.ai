@@ -45,6 +45,9 @@ def init_habits_db():
 def create_habit(user_id, title, category="General", icon="", time_of_day="Anytime"):
     """Create a new habit."""
     try:
+        # Ensure tables exist first
+        init_habits_db()
+        
         with get_db() as conn:
             cursor = conn.cursor()
             cursor.execute("""
@@ -52,10 +55,15 @@ def create_habit(user_id, title, category="General", icon="", time_of_day="Anyti
                 VALUES (?, ?, ?, ?, ?)
             """, (user_id, title, category, icon, time_of_day))
             conn.commit()
-            return cursor.lastrowid
+            habit_id = cursor.lastrowid
+            print(f"DEBUG_HABIT: Created habit ID {habit_id} for user {user_id}: {title}")
+            return habit_id
     except Exception as e:
         import logging
-        logging.error(f"Error creating habit: {e}")
+        import traceback
+        error_trace = traceback.format_exc()
+        logging.error(f"Error creating habit: {e}\n{error_trace}")
+        print(f"DEBUG_HABIT: Error creating habit: {e}\n{error_trace}")
         raise e
 
 def delete_habit(habit_id, user_id):
