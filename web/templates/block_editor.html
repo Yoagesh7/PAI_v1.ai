@@ -421,20 +421,6 @@
 .skel-line.w90 { width: 90%; }
 @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 
-/* ── Bottom save bar (mobile) ────────────────────── */
-.ed-save-bar {
-  display: none;
-  position: fixed; bottom: calc(90px + env(safe-area-inset-bottom,0px));
-  left: 12px; right: 12px;
-  background: linear-gradient(135deg, var(--ed-accent), #6D28D9);
-  color: #fff; font-size: 16px; font-weight: 700;
-  padding: 14px; border-radius: 16px; border: none;
-  cursor: pointer; z-index: 1300;
-  box-shadow: 0 8px 24px rgba(109,40,217,.4);
-  transition: opacity .15s;
-}
-.ed-save-bar:active { opacity: .88; }
-
 /* -- Responsive: Mobile (≤768px — matches base.html) -- */
 @media (max-width: 768px) {
 
@@ -454,6 +440,10 @@
     padding: 7px 11px; font-size: 12px; border-radius: 14px;
     min-height: 34px;
   }
+  .ed-type-pill .chevron,
+  .ed-type-drop {
+    display: none !important;
+  }
   .ed-type-drop {
     left: -40px; min-width: 160px; border-radius: 12px;
   }
@@ -464,7 +454,7 @@
   .ed-topbar-right { gap: 8px; }
   .ed-save-status { font-size: 11px; padding: 3px 8px; }
 
-  /* Hide desktop save, use floating bar */
+  /* Hide desktop save on mobile; rely on auto-save */
   .ed-topbar-right .ed-tb-btn.primary { display: none; }
   .ed-tb-btn { padding: 7px 10px; font-size: 12px; min-height: 34px; }
 
@@ -556,17 +546,6 @@
   .ed-widget-name { font-size: 14px; margin-bottom: 6px; }
   .ed-widget-desc { font-size: 12px; }
 
-  /* ─── Floating save bar ─── */
-  .ed-save-bar {
-    display: block;
-    padding: 13px 16px;
-    border-radius: 16px;
-    font-size: 15px;
-    bottom: calc(100px + env(safe-area-inset-bottom,0px));
-    left: 14px; right: 14px;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .ed-save-bar:active { transform: scale(.97); opacity: .88; }
 }
 
 /* -- Extra-small screens (iPhone SE etc.) -- */
@@ -580,7 +559,6 @@
   .ed-type-pill { padding: 6px 9px; font-size: 11px; }
   .ed-toolbar { padding: 0 14px; }
   .ed-tool-btn { padding: 9px 12px; font-size: 12px; }
-  .ed-save-bar { left: 10px; right: 10px; padding: 11px 14px; font-size: 14px; }
 }
 </style>
 
@@ -784,9 +762,6 @@
   </div>
 
 </div><!-- /ed-page -->
-
-<!-- Mobile save bar -->
-<button class="ed-save-bar" onclick="saveBlock()">💾 Save Block</button>
 
 <script id="existingBlockData" type="application/json">{{ block | tojson if block else 'null' }}</script>
 <script id="requestedBlockId" type="application/json">{{ requested_block_id | tojson if requested_block_id is defined else 'null' }}</script>
@@ -1160,6 +1135,7 @@ async function saveBlock(isAuto = false) {
 
 function flashSaveSuccess() {
   const btn = document.getElementById('saveBtn');
+  if (!btn) return;
   const orig = btn.innerHTML;
   btn.innerHTML = '✅ Saved';
   btn.disabled = true;
