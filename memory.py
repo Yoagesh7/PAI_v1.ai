@@ -7,6 +7,47 @@ import threading
 from contextlib import contextmanager
 
 
+class _SQLiteCompatConnectionProxy:
+    """Proxy that makes a psycopg2 connection feel closer to sqlite3.
+
+    Some parts of the app expect a connection object that allows arbitrary
+    attributes like `row_factory` and returns mapping-like rows. psycopg2
+    connections don't support that directly, so this proxy stores extra
+    attributes locally and delegates everything else to the real connection.
+    """
+
+    def __init__(self, conn):
+        object.__setattr__(self, "_conn", conn)
+        object.__setattr__(self, "_extra", {"row_factory": None})
+
+    def __getattr__(self, name):
+        extra = object.__getattribute__(self, "_extra")
+        if name in extra:
+            return extra[name]
+        return getattr(object.__getattribute__(self, "_conn"), name)
+
+    def __setattr__(self, name, value):
+        if name in ("_conn", "_extra"):
+            object.__setattr__(self, name, value)
+            return
+        # Store sqlite-like attributes locally instead of on the psycopg2 conn.
+        extra = object.__getattribute__(self, "_extra")
+        extra[name] = value
+
+    def cursor(self, *args, **kwargs):
+        import psycopg2.extras
+        if "cursor_factory" not in kwargs:
+            kwargs["cursor_factory"] = psycopg2.extras.RealDictCursor
+        return object.__getattribute__(self, "_conn").cursor(*args, **kwargs)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        self.close()
+        return False
+
+
 def _default_db_path():
     """
     Get the database path. On Vercel, use the project directory.
@@ -42,30 +83,9 @@ def get_db():
     if db_url and (db_url.startswith("postgres") or db_url.startswith("postgresql")):
         try:
             import psycopg2
-            import psycopg2.extras
             # Use sslmode=require for cloud DBs like Supabase/Neon
             conn = psycopg2.connect(db_url, sslmode='require')
-
-            # Ensure code that expects sqlite3-like behavior doesn't crash.
-            # Some modules set `conn.row_factory = sqlite3.Row`. psycopg2 connection
-            # doesn't have that attribute by default, so expose it and make
-            # cursor() return dict-like rows using RealDictCursor.
-            try:
-                # attach a harmless row_factory attribute so `conn.row_factory = ...` works
-                conn.row_factory = None
-
-                # Wrap the cursor method to default to RealDictCursor so fetched rows
-                # behave like sqlite3.Row (mapping access by column name).
-                orig_cursor = conn.cursor
-                def cursor_with_dict(*args, **kwargs):
-                    # allow explicit cursor_factory override
-                    if 'cursor_factory' in kwargs:
-                        return orig_cursor(*args, **kwargs)
-                    return orig_cursor(cursor_factory=psycopg2.extras.RealDictCursor, *args, **kwargs)
-                conn.cursor = cursor_with_dict
-            except Exception:
-                # If monkeypatching fails, continue; queries should still work.
-                pass
+            conn = _SQLiteCompatConnectionProxy(conn)
 
             try:
                 yield conn
