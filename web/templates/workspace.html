@@ -135,7 +135,63 @@
 .kb-stat-v { font-size:20px; font-weight:700; color:var(--kb-title); line-height:1; margin-bottom:3px; }
 .kb-stat-l { font-size:10px; font-weight:600; color:var(--kb-muted); text-transform:uppercase; letter-spacing:.5px; }
 
-/* -- Quick create panel (REMOVED) -- */
+/* -- Quick Create Input (Notion-style) -- */
+.kb-quick-create-wrap { 
+  margin-bottom: 24px; 
+  position: relative;
+}
+
+.kb-quick-input {
+  width: 100%;
+  padding: 14px 18px;
+  background: var(--kb-card);
+  border: 2px solid var(--kb-border);
+  border-radius: 16px;
+  font-size: 15px;
+  color: var(--kb-title);
+  font-family: inherit;
+  outline: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.kb-quick-input:focus {
+  border-color: var(--kb-accent);
+  box-shadow: 0 0 0 3px var(--kb-glow), 0 2px 12px rgba(0, 0, 0, 0.1);
+  background: var(--kb-card);
+}
+
+.kb-quick-input::placeholder {
+  color: var(--kb-muted);
+}
+
+.kb-quick-hint {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: var(--kb-muted);
+  pointer-events: none;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+}
+
+.kb-quick-input:focus ~ .kb-quick-hint {
+  opacity: 0.5;
+}
+
+@media (max-width: 640px) {
+  .kb-quick-input {
+    padding: 12px 14px;
+    font-size: 14px;
+  }
+  
+  .kb-quick-hint {
+    display: none;
+  }
+}
 
 /* -- Rich block extras -- */
 .kb-extra { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px; margin:12px 0 14px; }
@@ -488,6 +544,19 @@
 
   <div class="kb-body">
 
+    <!-- Quick Create Input (Notion-style) -->
+    <div class="kb-quick-create-wrap">
+      <input 
+        class="kb-quick-input" 
+        id="quickCreateInput"
+        type="text" 
+        placeholder="What's on your mind? Press Enter to create..." 
+        onkeydown="handleQuickCreateKeydown(event)"
+        onkeyup="updateQuickCreateHint()"
+      />
+      <span class="kb-quick-hint" id="quickCreateHint">Enter</span>
+    </div>
+
     <!-- AI Banner -->
     <div class="ai-banner" id="aiBanner" onclick="openAIBanner()">
       <span style="font-size:20px;">&#x2728;</span>
@@ -585,7 +654,102 @@ const typeIcons = {
 document.addEventListener('DOMContentLoaded', () => {
   loadBlocks();
   setTimeout(checkAIInsights, 4000);
+  
+  // Focus quick create input on load (optional, comment out for accessibility)
+  // document.getElementById('quickCreateInput').focus();
 });
+
+/* -- Quick Create (Notion-style) -- */
+async function handleQuickCreateKeydown(event) {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    await createBlockFromQuickInput();
+  } else if (event.key === 'Escape') {
+    event.preventDefault();
+    document.getElementById('quickCreateInput').value = '';
+    updateQuickCreateHint();
+  }
+}
+
+function updateQuickCreateHint() {
+  const input = document.getElementById('quickCreateInput');
+  const hint = document.getElementById('quickCreateHint');
+  if (input.value.trim()) {
+    hint.textContent = '↵ Create';
+    hint.style.opacity = '0.8';
+  } else {
+    hint.textContent = 'Enter';
+    hint.style.opacity = '0.5';
+  }
+}
+
+async function createBlockFromQuickInput() {
+  const input = document.getElementById('quickCreateInput');
+  const title = input.value.trim();
+  
+  if (!title) {
+    input.focus();
+    return;
+  }
+
+  // Show loading state
+  input.disabled = true;
+  const originalPlaceholder = input.placeholder;
+  input.placeholder = 'Creating...';
+
+  try {
+    // Create a new knowledge block with the title
+    const res = await fetch('/api/knowledge', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'idea',
+        title: title,
+        content: '',
+        tags: [],
+        meta: {}
+      })
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    
+    const data = await res.json();
+    
+    if (data && data.id) {
+      // Show success feedback
+      const successText = input.placeholder;
+      input.placeholder = '✓ Created! Opening editor...';
+      
+      // Clear input
+      input.value = '';
+      updateQuickCreateHint();
+      
+      // Reload blocks
+      await loadBlocks();
+      
+      // Navigate to editor
+      setTimeout(() => {
+        window.location.href = `/workspace/${data.id}/edit`;
+      }, 300);
+    } else {
+      throw new Error('Invalid response from server');
+    }
+  } catch (error) {
+    console.error('createBlockFromQuickInput:', error);
+    
+    // Show error state
+    input.style.borderColor = '#ef4444';
+    input.placeholder = '⚠ Failed to create. Try again.';
+    
+    // Reset after 2 seconds
+    setTimeout(() => {
+      input.style.borderColor = '';
+      input.placeholder = originalPlaceholder;
+      input.disabled = false;
+      input.focus();
+    }, 2000);
+  }
+}
 
 /* -- Fetch -- */
 async function loadBlocks() {
