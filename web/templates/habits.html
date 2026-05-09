@@ -636,6 +636,8 @@
 </div>
 
 <script>
+    // Server persistence flag injected by Flask
+    const SERVER_PERSISTENT = {{ 'true' if server_persistent else 'false' }};
     // --- STATE ---
     let habits = [];
     let selectedIcon = '📝';
@@ -967,7 +969,11 @@
             saveLocalHabits(habits);
             renderHabits();
             closeAddModal();
-            alert('Saved locally in your browser. Add Vercel KV or PostgreSQL for server persistence.');
+            if (typeof SERVER_PERSISTENT !== 'undefined' && SERVER_PERSISTENT) {
+                alert('Server save failed. Your habit was saved locally as a backup and will sync when the server is available.');
+            } else {
+                alert('Saved locally in your browser. Add Vercel KV or PostgreSQL for server persistence.');
+            }
         }
     }
 

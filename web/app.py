@@ -582,7 +582,11 @@ def community_page():
 @app.route('/habits')
 def habits_page():
     if 'user_id' not in session: return render_template('login.html')
-    return render_template('habits.html', active_page='habits')
+    # Indicate whether server-side persistence is available (Postgres or Vercel KV)
+    has_db = bool(os.getenv('DATABASE_URL'))
+    has_kv = bool(os.getenv('KV_REST_API_URL') and os.getenv('KV_REST_API_TOKEN'))
+    server_persistent = has_db or has_kv
+    return render_template('habits.html', active_page='habits', server_persistent=server_persistent)
 
 @app.route('/group')
 def group_page():
