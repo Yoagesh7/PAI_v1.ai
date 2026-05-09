@@ -991,6 +991,25 @@
             saveLocalHabits(habits);
             renderHabits();
             closeAddModal();
+
+            // Update completion percentage locally
+            try {
+                const completedCount = habits.filter(h => h.completed_today).length;
+                const newRate = Math.round((completedCount / Math.max(1, habits.length)) * 100);
+                document.getElementById('completionRate').textContent = newRate + '%';
+
+                // Update lastChartData if available
+                if (lastChartData && Array.isArray(lastChartData)) {
+                    let idx = lastChartData.findIndex(d => d.is_today);
+                    if (idx === -1) idx = lastChartData.length - 1;
+                    lastChartData[idx].value = newRate;
+                    lastChartData[idx].is_today = true;
+                    renderChart(lastChartData);
+                }
+            } catch (chartErr) {
+                console.warn('Could not update completion UI locally:', chartErr);
+            }
+
             if (typeof SERVER_PERSISTENT !== 'undefined' && SERVER_PERSISTENT) {
                 alert('Server save failed. Your habit was saved locally as a backup and will sync when the server is available.');
             } else {
