@@ -673,6 +673,7 @@
     }
 
     // --- API CALLS ---
+    let lastChartData = null;
 
     async function fetchHabits() {
         try {
@@ -731,7 +732,8 @@
             }
             
             const stats = JSON.parse(text);
-            renderChart(stats.chart_data);
+            lastChartData = stats.chart_data || null;
+            renderChart(lastChartData);
             document.getElementById('completionRate').textContent = (stats.today_rate !== undefined ? stats.today_rate : stats.completion_rate) + '%';
         } catch (err) {
             console.error('❌ Error fetching stats:', err);
@@ -910,6 +912,26 @@
             }
 
             saveLocalHabits(habits);
+
+            // Update local chart optimistically if available
+            try {
+                if (lastChartData && Array.isArray(lastChartData)) {
+                    // Find today's bar (is_today flag) or use last element
+                    let idx = lastChartData.findIndex(d => d.is_today);
+                    if (idx === -1) idx = lastChartData.length - 1;
+                    // Adjust value: assume each completed habit increments percentage proportionally
+                    // Compute simple completion rate based on habits
+                    const completedCount = habits.filter(h => h.completed_today).length;
+                    const newRate = Math.round((completedCount / Math.max(1, habits.length)) * 100);
+                    // Update chart value at idx to newRate
+                    lastChartData[idx].value = newRate;
+                    lastChartData[idx].is_today = true;
+                    renderChart(lastChartData);
+                    document.getElementById('completionRate').textContent = newRate + '%';
+                }
+            } catch (e) {
+                console.warn('Could not update chart locally:', e);
+            }
 
             // 4. Refresh background stats (chart)
             fetchStats();
