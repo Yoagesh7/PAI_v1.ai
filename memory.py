@@ -42,8 +42,31 @@ def get_db():
     if db_url and (db_url.startswith("postgres") or db_url.startswith("postgresql")):
         try:
             import psycopg2
+            import psycopg2.extras
             # Use sslmode=require for cloud DBs like Supabase/Neon
             conn = psycopg2.connect(db_url, sslmode='require')
+
+            # Ensure code that expects sqlite3-like behavior doesn't crash.
+            # Some modules set `conn.row_factory = sqlite3.Row`. psycopg2 connection
+            # doesn't have that attribute by default, so expose it and make
+            # cursor() return dict-like rows using RealDictCursor.
+            try:
+                # attach a harmless row_factory attribute so `conn.row_factory = ...` works
+                conn.row_factory = None
+
+                # Wrap the cursor method to default to RealDictCursor so fetched rows
+                # behave like sqlite3.Row (mapping access by column name).
+                orig_cursor = conn.cursor
+                def cursor_with_dict(*args, **kwargs):
+                    # allow explicit cursor_factory override
+                    if 'cursor_factory' in kwargs:
+                        return orig_cursor(*args, **kwargs)
+                    return orig_cursor(cursor_factory=psycopg2.extras.RealDictCursor, *args, **kwargs)
+                conn.cursor = cursor_with_dict
+            except Exception:
+                # If monkeypatching fails, continue; queries should still work.
+                pass
+
             try:
                 yield conn
             finally:
