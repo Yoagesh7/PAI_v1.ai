@@ -38,7 +38,7 @@ class _SQLiteCompatConnectionProxy:
         import psycopg2.extras
         if "cursor_factory" not in kwargs:
             kwargs["cursor_factory"] = psycopg2.extras.RealDictCursor
-        return object.__getattribute__(self, "_conn").cursor(*args, **kwargs)
+        return _SQLiteCompatCursorProxy(object.__getattribute__(self, "_conn").cursor(*args, **kwargs))
 
     def __enter__(self):
         return self
@@ -46,6 +46,36 @@ class _SQLiteCompatConnectionProxy:
     def __exit__(self, exc_type, exc, tb):
         self.close()
         return False
+
+
+class _SQLiteCompatCursorProxy:
+    """Proxy cursor that translates SQLite qmark placeholders to psycopg2.
+
+    The existing codebase uses SQL like `WHERE id=? AND user_id=?`. PostgreSQL
+    expects `%s` placeholders, so we convert the query before execution.
+    """
+
+    def __init__(self, cursor):
+        object.__setattr__(self, "_cursor", cursor)
+
+    @staticmethod
+    def _translate_sql(sql):
+        if isinstance(sql, str) and "?" in sql:
+            return sql.replace("?", "%s")
+        return sql
+
+    def execute(self, sql, params=None):
+        sql = self._translate_sql(sql)
+        if params is None:
+            return object.__getattribute__(self, "_cursor").execute(sql)
+        return object.__getattribute__(self, "_cursor").execute(sql, params)
+
+    def executemany(self, sql, seq_of_params):
+        sql = self._translate_sql(sql)
+        return object.__getattribute__(self, "_cursor").executemany(sql, seq_of_params)
+
+    def __getattr__(self, name):
+        return getattr(object.__getattribute__(self, "_cursor"), name)
 
 
 def _default_db_path():
