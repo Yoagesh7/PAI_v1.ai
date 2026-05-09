@@ -3,6 +3,7 @@ Habits Database Helper Functions
 Handles CRUD operations for habits and completion tracking.
 """
 import sqlite3
+import os
 from datetime import datetime, timedelta
 import json
 from memory import get_db
@@ -13,7 +14,8 @@ def init_habits_db():
         cursor = conn.cursor()
         
         # Check if we are on PostgreSQL
-        id_type = "SERIAL" if "psycopg2" in str(type(conn)) else "INTEGER PRIMARY KEY AUTOINCREMENT"
+        is_pg = bool(getattr(conn, "is_postgres", False) or os.getenv("DATABASE_URL"))
+        id_type = "SERIAL PRIMARY KEY" if is_pg else "INTEGER PRIMARY KEY AUTOINCREMENT"
         
         # Habits Table
         cursor.execute(f"""
@@ -49,13 +51,22 @@ def create_habit(user_id, title, category="General", icon="", time_of_day="Anyti
         init_habits_db()
         
         with get_db() as conn:
+            is_pg = bool(getattr(conn, "is_postgres", False) or os.getenv("DATABASE_URL"))
             cursor = conn.cursor()
-            cursor.execute("""
-                INSERT INTO habits (user_id, title, category, icon, time_of_day)
-                VALUES (?, ?, ?, ?, ?)
-            """, (user_id, title, category, icon, time_of_day))
+            if is_pg:
+                cursor.execute("""
+                    INSERT INTO habits (user_id, title, category, icon, time_of_day)
+                    VALUES (?, ?, ?, ?, ?) RETURNING id
+                """, (user_id, title, category, icon, time_of_day))
+                row = cursor.fetchone()
+                habit_id = row[0] if row else None
+            else:
+                cursor.execute("""
+                    INSERT INTO habits (user_id, title, category, icon, time_of_day)
+                    VALUES (?, ?, ?, ?, ?)
+                """, (user_id, title, category, icon, time_of_day))
+                habit_id = cursor.lastrowid
             conn.commit()
-            habit_id = cursor.lastrowid
             print(f"DEBUG_HABIT: Created habit ID {habit_id} for user {user_id}: {title}")
             return habit_id
     except Exception as e:

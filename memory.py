@@ -18,7 +18,7 @@ class _SQLiteCompatConnectionProxy:
 
     def __init__(self, conn):
         object.__setattr__(self, "_conn", conn)
-        object.__setattr__(self, "_extra", {"row_factory": None})
+        object.__setattr__(self, "_extra", {"row_factory": None, "is_postgres": True})
 
     def __getattr__(self, name):
         extra = object.__getattribute__(self, "_extra")
@@ -37,7 +37,7 @@ class _SQLiteCompatConnectionProxy:
     def cursor(self, *args, **kwargs):
         import psycopg2.extras
         if "cursor_factory" not in kwargs:
-            kwargs["cursor_factory"] = psycopg2.extras.RealDictCursor
+            kwargs["cursor_factory"] = psycopg2.extras.DictCursor
         return _SQLiteCompatCursorProxy(object.__getattribute__(self, "_conn").cursor(*args, **kwargs))
 
     def __enter__(self):
@@ -57,6 +57,7 @@ class _SQLiteCompatCursorProxy:
 
     def __init__(self, cursor):
         object.__setattr__(self, "_cursor", cursor)
+        object.__setattr__(self, "_lastrowid", None)
 
     @staticmethod
     def _translate_sql(sql):
@@ -66,13 +67,41 @@ class _SQLiteCompatCursorProxy:
 
     def execute(self, sql, params=None):
         sql = self._translate_sql(sql)
-        if params is None:
-            return object.__getattribute__(self, "_cursor").execute(sql)
-        return object.__getattribute__(self, "_cursor").execute(sql, params)
+        cursor = object.__getattribute__(self, "_cursor")
+        result = cursor.execute(sql) if params is None else cursor.execute(sql, params)
+
+        # Emulate sqlite3 lastrowid for INSERTs on PostgreSQL.
+        try:
+            if isinstance(sql, str) and sql.lstrip().upper().startswith("INSERT"):
+                # If the statement already returns rows (RETURNING), use that.
+                if "RETURNING" in sql.upper():
+                    row = cursor.fetchone()
+                    if row is not None:
+                        try:
+                            object.__setattr__(self, "_lastrowid", row[0])
+                        except Exception:
+                            object.__setattr__(self, "_lastrowid", row.get("id") if hasattr(row, "get") else None)
+                else:
+                    # Best-effort fallback: get the current sequence value.
+                    try:
+                        cursor.execute("SELECT LASTVAL()")
+                        row = cursor.fetchone()
+                        if row is not None:
+                            object.__setattr__(self, "_lastrowid", row[0])
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+
+        return result
 
     def executemany(self, sql, seq_of_params):
         sql = self._translate_sql(sql)
         return object.__getattribute__(self, "_cursor").executemany(sql, seq_of_params)
+
+    @property
+    def lastrowid(self):
+        return object.__getattribute__(self, "_lastrowid")
 
     def __getattr__(self, name):
         return getattr(object.__getattribute__(self, "_cursor"), name)
@@ -163,7 +192,7 @@ def init_db():
                     print(f"Error adding column {column} to {table}: {e}")
 
         # Determine ID type for auto-increment based on DB connection type
-        is_pg = os.getenv("DATABASE_URL") is not None or "psycopg" in str(type(conn)).lower()
+        is_pg = bool(getattr(conn, "is_postgres", False) or os.getenv("DATABASE_URL"))
         id_type_ai = "SERIAL PRIMARY KEY" if is_pg else "INTEGER PRIMARY KEY AUTOINCREMENT"
 
         # 1. Base Users Table
@@ -322,7 +351,7 @@ def create_account(username, password, email):
         # Hash password before storing
         hashed = _hash_password(password)
         
-        is_pg = os.getenv("DATABASE_URL") is not None or "psycopg" in str(type(conn)).lower()
+        is_pg = bool(getattr(conn, "is_postgres", False) or os.getenv("DATABASE_URL"))
         logging.info(f" is_pg detection: {is_pg} (DATABASE_URL present: {os.getenv('DATABASE_URL') is not None})")
         
         try:
@@ -741,7 +770,7 @@ def get_posts(limit=20):
 def create_group(name, leader_id, goal=None):
     with get_db() as conn:
         cursor = conn.cursor()
-        is_pg = os.getenv("DATABASE_URL") is not None or "psycopg" in str(type(conn)).lower()
+        is_pg = bool(getattr(conn, "is_postgres", False) or os.getenv("DATABASE_URL"))
         if is_pg:
             cursor.execute(f"INSERT INTO groups (name, leader_id, status, goal) VALUES ({PL}, {PL}, 'PLANNING', {PL}) RETURNING id", (name, leader_id, goal))
             group_id = cursor.fetchone()[0]
