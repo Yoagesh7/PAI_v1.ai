@@ -2872,6 +2872,221 @@ Output JSON: {{"pattern": "...", "tip": "...", "recommendation": "..."}}"""
 # ==========================================
 from knowledge_db import create_knowledge_block, get_user_knowledge_blocks, delete_knowledge_block, get_knowledge_block, update_knowledge_block
 
+@app.route('/api/knowledge/smart-create', methods=['POST'])
+def smart_create_workspace():
+    """AI-powered workspace creator - analyzes prompt and generates structured content"""
+    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
+    
+    try:
+        data = request.json or {}
+        prompt = data.get('prompt', '').strip()
+        
+        if not prompt:
+            return jsonify({'error': 'Empty prompt'}), 400
+        
+        user_id = session['user_id']
+        
+        # Smart type detection
+        prompt_lower = prompt.lower()
+        block_type = 'idea'  # default
+        
+        if any(w in prompt_lower for w in ['task', 'todo', 'do', 'need to', 'should', 'must', 'fix', 'build', 'create']):
+            block_type = 'task'
+        elif any(w in prompt_lower for w in ['learn', 'study', 'understand', 'how to', 'tutorial', 'guide']):
+            block_type = 'learning'
+        elif any(w in prompt_lower for w in ['think', 'thought', 'feel', 'reflect', 'question', 'wonder']):
+            block_type = 'reflection'
+        elif any(w in prompt_lower for w in ['read', 'article', 'book', 'paper', 'blog', 'resource']):
+            block_type = 'read'
+        else:
+            block_type = 'idea'
+        
+        # Generate structured content based on type and prompt
+        title = prompt
+        content = generate_workspace_template(block_type, prompt)
+        
+        # Create the block
+        block_id = create_knowledge_block(
+            user_id,
+            block_type,
+            title,
+            content,
+            tags=[],
+            meta={'template': 'smart-generated', 'prompt': prompt[:200]}
+        )
+        
+        return jsonify({
+            'id': block_id,
+            'status': 'success',
+            'type': block_type,
+            'title': title,
+            'content': content,
+            'message': f'Created {block_type} workspace from prompt'
+        })
+    
+    except Exception as e:
+        logging.error(f"Smart create error: {e}")
+        return jsonify({'error': str(e), 'code': 'SMART_CREATE_FAILED'}), 500
+
+
+def generate_workspace_template(block_type, prompt):
+    """Generate structured workspace content based on type and prompt"""
+    
+    templates = {
+        'task': f"""# {prompt}
+
+## Overview
+{prompt}
+
+## Steps
+- [ ] Step 1
+- [ ] Step 2
+- [ ] Step 3
+
+## Timeline
+- Start: 
+- Deadline: 
+
+## Resources
+- Link 1
+- Link 2
+
+## Notes
+""",
+        'learning': f"""# {prompt}
+
+## Objective
+Understand and master {prompt.lower()}
+
+## Key Concepts
+- Concept 1
+- Concept 2
+- Concept 3
+
+## Learning Path
+1. Foundation
+   - [ ] Subtopic 1
+   - [ ] Subtopic 2
+
+2. Intermediate
+   - [ ] Subtopic 3
+   - [ ] Subtopic 4
+
+3. Advanced
+   - [ ] Subtopic 5
+
+## Resources
+- Tutorial: 
+- Documentation: 
+- Examples: 
+
+## Practice
+- [ ] Exercise 1
+- [ ] Exercise 2
+- [ ] Build project
+
+## Notes & Insights
+""",
+        'reflection': f"""# {prompt}
+
+## What I'm Thinking About
+{prompt}
+
+## Key Questions
+- What exactly am I questioning?
+- Why is this important?
+- What do I already know?
+- What am I uncertain about?
+
+## Analysis
+### Perspectives
+- View 1:
+- View 2:
+- View 3:
+
+### Evidence
+- Point 1:
+- Point 2:
+
+## Insights
+- Insight 1:
+- Insight 2:
+
+## Action
+- Decision:
+- Next steps:
+""",
+        'read': f"""# {prompt}
+
+## Source Info
+- Title: 
+- Author: 
+- URL: 
+- Read Date: 
+
+## Main Ideas
+- Idea 1:
+- Idea 2:
+- Idea 3:
+
+## Key Takeaways
+1. Takeaway 1
+2. Takeaway 2
+3. Takeaway 3
+
+## Highlights & Quotes
+- Quote 1
+- Quote 2
+
+## How This Applies
+- Application 1:
+- Application 2:
+
+## Questions It Raised
+- Question 1:
+- Question 2:
+
+## Rating: ⭐⭐⭐⭐⭐
+""",
+        'idea': f"""# {prompt}
+
+## The Concept
+{prompt}
+
+## Why This Matters
+- Reason 1:
+- Reason 2:
+- Reason 3:
+
+## Key Components
+- Component 1:
+- Component 2:
+- Component 3:
+
+## Potential Applications
+- Use case 1:
+- Use case 2:
+- Use case 3:
+
+## Challenges
+- Challenge 1:
+- Challenge 2:
+
+## Next Steps
+- [ ] Research more
+- [ ] Discuss with team
+- [ ] Create prototype
+- [ ] Test hypothesis
+
+## Related Ideas
+- Idea 1:
+- Idea 2:
+"""
+    }
+    
+    return templates.get(block_type, templates['idea'])
+
+
 @app.route('/api/knowledge/update', methods=['POST'])
 def update_knowledge_api():
     if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401

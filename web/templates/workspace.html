@@ -550,7 +550,7 @@
         class="kb-quick-input" 
         id="quickCreateInput"
         type="text" 
-        placeholder="What's on your mind? Press Enter to create..." 
+        placeholder="What's your next idea? Describe anything and we'll create a full workspace..." 
         onkeydown="handleQuickCreateKeydown(event)"
         onkeyup="updateQuickCreateHint()"
       />
@@ -685,9 +685,9 @@ function updateQuickCreateHint() {
 
 async function createBlockFromQuickInput() {
   const input = document.getElementById('quickCreateInput');
-  const title = input.value.trim();
+  const prompt = input.value.trim();
   
-  if (!title) {
+  if (!prompt) {
     input.focus();
     return;
   }
@@ -695,19 +695,15 @@ async function createBlockFromQuickInput() {
   // Show loading state
   input.disabled = true;
   const originalPlaceholder = input.placeholder;
-  input.placeholder = 'Creating...';
+  input.placeholder = 'Creating workspace...';
 
   try {
-    // Create a new knowledge block with the title
-    const res = await fetch('/api/knowledge', {
+    // Call the smart template generator instead of plain creation
+    const res = await fetch('/api/knowledge/smart-create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        type: 'idea',
-        title: title,
-        content: '',
-        tags: [],
-        meta: {}
+        prompt: prompt
       })
     });
 
@@ -717,8 +713,7 @@ async function createBlockFromQuickInput() {
     
     if (data && data.id) {
       // Show success feedback
-      const successText = input.placeholder;
-      input.placeholder = '✓ Created! Opening editor...';
+      input.placeholder = '✓ Workspace created! Opening editor...';
       
       // Clear input
       input.value = '';
