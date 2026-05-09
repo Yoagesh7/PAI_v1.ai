@@ -6,6 +6,7 @@ sys.path.append(ROOT_DIR)
 import json
 import time
 import random
+import re
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -158,6 +159,21 @@ except Exception as e:
     print(f" Reminders modules not available: {e}", flush=True)
     parse_reminder_time = None
     IST = None
+
+
+# Knowledge DB helpers
+try:
+    from knowledge_db import create_knowledge_block
+    print("knowledge_db functions imported", flush=True)
+except Exception as e:
+    create_knowledge_block = None
+    print(f"Could not import knowledge_db.create_knowledge_block: {e}", flush=True)
+
+# LLM wrapper fallback (use local_llm if available)
+try:
+    from local_llm import rag_system as local_rag_system
+except Exception:
+    local_rag_system = None
 
 
 def generate_weekly_insights(user_id):
@@ -4324,6 +4340,77 @@ PREDICTION: [Expected outcome if they continue current habits]"""
 
 
 # ===== AI TASK API (NEW) =====
+@app.route('/api/knowledge/command-create', methods=['POST'])
+@rate_limit('command_create', limit=6, window=30)
+def command_create():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    data = request.get_json() or {}
+    prompt = (data.get('prompt') or '').strip()
+    if not prompt:
+        return jsonify({'error': 'No prompt provided'}), 400
+
+    low = prompt.lower()
+    try:
+        # Create checklist/todo blocks
+        if any(k in low for k in ['todo', 'task', 'checklist', 'action items', 'action items']):
+            items = []
+            if local_rag_system:
+                messages = [
+                    {"role":"system","content": SYSTEM_PROMPT},
+                    {"role":"user","content": f"Create a concise checklist for: {prompt}. Return each item on its own line prefixed with '- [ ]'."}
+                ]
+                res = local_rag_system.generate_response(messages)
+                content = (res.get('message') or {}).get('content','') if isinstance(res, dict) else ''
+                lines = [l.strip() for l in content.splitlines() if l.strip()]
+                for l in lines:
+                    m = re.match(r'^\s*[-*]\s*\[.\]\s*(.*)$', l)
+                    if m:
+                        items.append({'text': m.group(1).strip(), 'done': False})
+                    else:
+                        items.append({'text': re.sub(r'^[\-\*\d\.\)\s]+','', l).strip(), 'done': False})
+            else:
+                # Fallback: create simple steps based on prompt
+                items = [{'text': f"{prompt} - step {i+1}", 'done': False} for i in range(3)]
+
+            md = '\n'.join([f"- [ ] {t['text']}" for t in items])
+            title = prompt.split(' for ')[0][:120]
+            meta = {'widgets': ['todo'], 'todos': items}
+            block_id = None
+            if create_knowledge_block:
+                block_id = create_knowledge_block(session['user_id'], 'task', title, md, tags=[], meta=meta)
+            return jsonify({'id': block_id, 'meta': meta, 'content': md}), 201
+
+        # Create full document blocks
+        if any(k in low for k in ['create document', 'write document', 'create a document', 'document about', 'write an article', 'write a guide']):
+            if local_rag_system:
+                messages = [
+                    {"role":"system","content": SYSTEM_PROMPT},
+                    {"role":"user","content": f"Write a structured document about: {prompt}. Include a short title (on first line), a 2-3 sentence intro, and 3-5 sections with headings and content."}
+                ]
+                res = local_rag_system.generate_response(messages)
+                content = (res.get('message') or {}).get('content','') if isinstance(res, dict) else ''
+            else:
+                content = f"# {prompt}\n\nThis document was auto-generated." 
+            title = (content.splitlines()[0].lstrip('# ').strip() if content.splitlines() else prompt)[:120]
+            block_id = None
+            if create_knowledge_block:
+                block_id = create_knowledge_block(session['user_id'], 'learning', title, content, tags=[], meta={})
+            return jsonify({'id': block_id, 'content': content}), 201
+
+        # General fallback: create an idea block
+        title = prompt.splitlines()[0][:120]
+        content = prompt
+        block_id = None
+        if create_knowledge_block:
+            block_id = create_knowledge_block(session['user_id'], 'idea', title, content, tags=[], meta={})
+        return jsonify({'id': block_id, 'content': content}), 201
+
+    except Exception as e:
+        logging.exception('command-create failed')
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/ai-tasks/<int:task_id>/complete', methods=['POST'])
 def complete_ai_task_api(task_id):
     if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401

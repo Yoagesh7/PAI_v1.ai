@@ -698,13 +698,22 @@ async function createBlockFromQuickInput() {
   input.placeholder = 'Creating workspace...';
 
   try {
-    // Call the smart template generator instead of plain creation
-    const res = await fetch('/api/knowledge/smart-create', {
+    // Detect command-style prompts (todo, create document, etc)
+    const low = prompt.toLowerCase();
+    const isCommand = (
+      low.includes('todo') || low.includes('task') || low.includes('checklist') || 
+      low.includes('action item') || low.includes('create document') || 
+      low.includes('write document') || low.includes('write an article') || 
+      low.includes('write a guide')
+    );
+
+    // Route to appropriate endpoint
+    const endpoint = isCommand ? '/api/knowledge/command-create' : '/api/knowledge/smart-create';
+    
+    const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        prompt: prompt
-      })
+      body: JSON.stringify({ prompt: prompt })
     });
 
     if (!res.ok) throw new Error(`HTTP ${res.status}`);

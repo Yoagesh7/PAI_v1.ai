@@ -562,6 +562,22 @@
 }
 </style>
 
+/* ─── Todo widget styles ───────────────────────── */
+.ed-todo-wrap {
+  max-width: 740px; width: 100%; margin: 12px auto 0; padding: 12px 24px; background: var(--ed-surface);
+  border: 1px solid var(--ed-border); border-radius: 12px;
+}
+.ed-todo-hdr { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+.ed-todo-add { display:flex; gap:8px; }
+.ed-todo-input { flex:1; padding:8px 10px; border-radius:8px; border:1px solid var(--ed-border); background:transparent; color:var(--ed-body-c); }
+.ed-todo-list { display:flex; flex-direction:column; gap:8px; margin-top:8px; }
+.ed-todo-item { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; background:var(--ed-btn-bg); border:1px solid var(--ed-border); }
+.ed-todo-item.done { opacity:0.6; text-decoration:line-through; }
+.ed-todo-item .todo-text { flex:1; font-size:14px; color:var(--ed-body-c); }
+.ed-todo-item .todo-del { background:none; border:none; color:var(--ed-muted); cursor:pointer; font-size:16px; }
+
+</style>
+
 <div class="ed-page">
 
   <!-- ════════════════════════════════════════════
@@ -644,6 +660,9 @@
       placeholder="Start writing… or press / for AI assist"
       oninput="autoResize(this); markUnsaved()"
       onkeydown="bodyKeydown(event)"></textarea>
+
+    <!-- Visual Todo widget container -->
+    <div id="todoWidgetWrap"></div>
 
     <!-- Tags -->
     <div class="ed-tags-row" id="tagsRow">
@@ -868,6 +887,8 @@ function populateEditor(b) {
 
   widgetMeta = normalizeMeta(b.meta);
   refreshWidgetBadges();
+  // Render todo widget if present in meta
+  renderTodoWidget();
 }
 
 /* ── Type selector ────────────────────────────── */
@@ -1042,11 +1063,18 @@ function closeWidgetPicker(evt) {
 
 function insertQuickChecklist() {
   const body = document.getElementById('blockBody');
-  const snippet = '- [ ] Define objective\n- [ ] Add details\n- [ ] Review with team';
+  const items = [
+    { text: 'Define objective', done: false },
+    { text: 'Add details', done: false },
+    { text: 'Review with team', done: false }
+  ];
+  const snippet = items.map(i => `- [ ] ${i.text}`).join('\n');
   body.value = body.value ? `${body.value}\n${snippet}` : snippet;
   body.dispatchEvent(new Event('input'));
   widgetMeta.widgets = Array.from(new Set([...(widgetMeta.widgets || []), 'todo']));
+  widgetMeta.todos = items;
   refreshWidgetBadges();
+  renderTodoWidget();
   markUnsaved();
 }
 
@@ -1063,6 +1091,13 @@ function applyWidgetTemplate(type) {
   body.value = body.value ? `${body.value}\n\n${templates[type] || ''}` : (templates[type] || '');
   body.dispatchEvent(new Event('input'));
   widgetMeta.widgets = Array.from(new Set([...(widgetMeta.widgets || []), type]));
+  // If type is todo, also populate structured todo items
+  if (type === 'todo') {
+    const t = templates[type] || '';
+    const items = (t.split('\n')||[]).map(l => l.replace(/^\s*- \[.\]\s*/, '').trim()).filter(Boolean).map(txt => ({ text: txt, done: false }));
+    widgetMeta.todos = items;
+    renderTodoWidget();
+  }
   refreshWidgetBadges();
   markUnsaved();
 }
@@ -1070,7 +1105,72 @@ function applyWidgetTemplate(type) {
 function insertWidget(type) {
   applyWidgetTemplate(type);
   closeWidgetPicker();
+  if (type === 'todo') {
+    renderTodoWidget();
+  }
   openAIPanel();
+}
+
+/* ── Todo widget renderer / handlers ───────────────── */
+function renderTodoWidget() {
+  const wrap = document.getElementById('todoWidgetWrap');
+  wrap.innerHTML = '';
+  const todos = Array.isArray(widgetMeta.todos) ? widgetMeta.todos : [];
+  if (!todos.length && !(widgetMeta.widgets || []).includes('todo')) return;
+
+  const container = document.createElement('div');
+  container.className = 'ed-todo-wrap';
+
+  const hdr = document.createElement('div'); hdr.className = 'ed-todo-hdr';
+  hdr.innerHTML = '<strong>✅ Todos</strong>';
+  const addWrap = document.createElement('div'); addWrap.className = 'ed-todo-add';
+  const input = document.createElement('input'); input.className = 'ed-todo-input'; input.placeholder = 'Add a todo and press Enter';
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); const v = input.value.trim(); if (v) { addTodoItem(v); input.value = ''; } } });
+  addWrap.appendChild(input);
+  hdr.appendChild(addWrap);
+  container.appendChild(hdr);
+
+  const list = document.createElement('div'); list.className = 'ed-todo-list';
+  todos.forEach((t, i) => {
+    const it = document.createElement('div'); it.className = 'ed-todo-item' + (t.done ? ' done' : '');
+    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !!t.done; cb.addEventListener('change', () => toggleTodo(i));
+    const span = document.createElement('div'); span.className = 'todo-text'; span.textContent = t.text || '';
+    const del = document.createElement('button'); del.className = 'todo-del'; del.innerHTML = '✕'; del.addEventListener('click', () => removeTodo(i));
+    it.appendChild(cb); it.appendChild(span); it.appendChild(del);
+    list.appendChild(it);
+  });
+  container.appendChild(list);
+
+  wrap.appendChild(container);
+}
+
+function addTodoItem(text) {
+  widgetMeta.widgets = Array.from(new Set([...(widgetMeta.widgets || []), 'todo']));
+  widgetMeta.todos = widgetMeta.todos || [];
+  widgetMeta.todos.push({ text: text, done: false });
+  renderTodoWidget();
+  refreshWidgetBadges();
+  markUnsaved();
+}
+
+function toggleTodo(idx) {
+  widgetMeta.todos = widgetMeta.todos || [];
+  if (!widgetMeta.todos[idx]) return;
+  widgetMeta.todos[idx].done = !widgetMeta.todos[idx].done;
+  renderTodoWidget();
+  markUnsaved();
+}
+
+function removeTodo(idx) {
+  widgetMeta.todos = widgetMeta.todos || [];
+  widgetMeta.todos.splice(idx,1);
+  if (!widgetMeta.todos.length) {
+    // remove widget badge when empty
+    widgetMeta.widgets = (widgetMeta.widgets || []).filter(w => w !== 'todo');
+  }
+  renderTodoWidget();
+  refreshWidgetBadges();
+  markUnsaved();
 }
 
 /* ── Save ─────────────────────────────────────── */
