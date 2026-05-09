@@ -16,3 +16,5 @@ config.py
 
 # Logs
 *.log
+.vercel
+.env*.local

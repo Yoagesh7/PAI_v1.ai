@@ -1,4 +1,4 @@
-# ✅ Supabase DATABASE_URL Setup Guide
+  # ✅ Supabase DATABASE_URL Setup Guide
 
 ## Status: Your app is ready for Supabase!
 
