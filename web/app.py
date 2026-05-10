@@ -2919,7 +2919,18 @@ def smart_create_workspace():
         
         # Generate structured content based on type and prompt
         title = prompt
-        content = generate_workspace_template(block_type, prompt)
+        if block_type in ['task', 'learning', 'reflection', 'read'] and local_rag_system:
+            messages = [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": f"Create a polished, useful {block_type} workspace block for: {prompt}. Include a strong title, a clear outline, and practical details."}
+            ]
+            res = local_rag_system.generate_response(messages)
+            content = (res.get('message') or {}).get('content', '') if isinstance(res, dict) else ''
+        else:
+            content = generate_workspace_template(block_type, prompt)
+
+        if not content.strip():
+            content = generate_workspace_template(block_type, prompt)
         
         # Create the block
         block_id = create_knowledge_block(
@@ -4173,6 +4184,11 @@ def chat_page():
     user_id = session['user_id']
     history = get_chat_history(user_id, limit=50)
     return render_template('chat.html', active_page='chat', history=history)
+
+
+@app.route('/mentor')
+def mentor_redirect():
+    return redirect('/chat')
 
 
 

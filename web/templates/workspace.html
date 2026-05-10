@@ -1,50 +1,5 @@
 {% extends "base.html" %}
 
-{% block content %}
-<style>
-/* =====================================================
-   AI WORKSPACE OS - Futuristic Productivity System
-   ===================================================== */
-
-/* -- Dark Theme (Premium Black & Purple) -- */
-[data-theme="dark"] {
-  --kb-bg:          #0a0a0f;
-  --kb-hdr-bg:      rgba(10,10,15,0.95);
-  --kb-card:        linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-  --kb-card-hov:    linear-gradient(135deg, #2d1b69 0%, #1a0f3d 100%);
-  --kb-border:      rgba(139,92,246,0.25);
-  --kb-border-hov:  rgba(139,92,246,0.5);
-  --kb-title:       #f0f0ff;
-  --kb-sec:         #b8a8d8;
-  --kb-muted:       #6b5b95;
-  --kb-accent:      #a78bfa;
-  --kb-glow:        rgba(167,139,250,0.25);
-  --kb-tab-act:     linear-gradient(135deg,#a78bfa,#8b5cf6);
-  --kb-tab-act-t:   #fff;
-  --kb-tab-idle:    rgba(167,139,250,0.08);
-  --kb-tab-idle-t:  #b8a8d8;
-  --kb-srch-bg:     rgba(167,139,250,0.08);
-  --kb-srch-brd:    rgba(167,139,250,0.2);
-  --kb-fab:         linear-gradient(135deg,#a78bfa,#c084fc);
-  --kb-skel:        rgba(167,139,250,0.08);
-  --kb-skel2:       rgba(167,139,250,0.12);
-}
-/* -- Light Theme -- */
-[data-theme="light"] {
-  --kb-bg:          #f2f2f7;
-  --kb-hdr-bg:      rgba(248,248,255,0.96);
-  --kb-card:        #ffffff;
-  --kb-card-hov:    #f7f5ff;
-  --kb-border:      rgba(0,0,0,0.07);
-  --kb-border-hov:  rgba(124,58,237,0.28);
-  --kb-title:       #18182c;
-  --kb-sec:         #55556e;
-  --kb-muted:       #aaaabc;
-  --kb-accent:      #7C3AED;
-  --kb-glow:        rgba(124,58,237,0.12);
-  --kb-tab-act:     linear-gradient(135deg,#7C3AED,#5B21B6);
-  --kb-tab-act-t:   #fff;
-  --kb-tab-idle:    rgba(0,0,0,0.05);
   --kb-tab-idle-t:  #66667a;
   --kb-srch-bg:     rgba(0,0,0,0.04);
   --kb-srch-brd:    rgba(0,0,0,0.1);
@@ -958,10 +913,6 @@
 }
 
 @media (max-width: 760px) {
-  .ws-title {
-    font-size: 42px;
-  }
-
   .ws-greeting h2 {
     font-size: 52px;
   }
@@ -989,10 +940,6 @@
 }
 
 @media (max-width: 520px) {
-  .ws-title {
-    font-size: 46px;
-  }
-
   .ws-greeting h2 {
     font-size: 36px;
   }
@@ -1010,11 +957,6 @@
 </style>
 
 <div class="kb-page ws-shell">
-  <header class="ws-header">
-    <h1 class="ws-title">Workspace</h1>
-    <div class="ws-ai-pill" aria-label="AI ready">AI</div>
-  </header>
-
   <div class="ws-body">
     <input id="searchInput" type="search" style="display:none" aria-hidden="true" />
 
