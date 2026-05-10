@@ -579,9 +579,7 @@ def reset_account():
     return redirect('/onboarding')
 
 
-@app.route('/focus')
-def focus_mode():
-    return render_template('focus_mode.html', active_page='productivity')
+# /focus route removed (Focus mode feature deprecated and UI removed)
 
 @app.route('/logout')
 def logout():
@@ -590,10 +588,7 @@ def logout():
 
 
 
-@app.route('/community')
-def community_page():
-    if 'user_id' not in session: return render_template('login.html')
-    return render_template('community.html', active_page='community')
+# /community route removed (Community feature deprecated and UI removed)
 
 @app.route('/habits')
 def habits_page():
@@ -604,10 +599,7 @@ def habits_page():
     server_persistent = has_db or has_kv
     return render_template('habits.html', active_page='habits', server_persistent=server_persistent)
 
-@app.route('/group')
-def group_page():
-    if 'user_id' not in session: return render_template('login.html')
-    return render_template('group.html', active_page='group')
+# /group route removed (Groups feature deprecated and UI removed)
 
 @app.route('/productivity')
 def productivity_page():
@@ -1311,27 +1303,7 @@ def get_stats():
 
     })
 
-@app.route('/api/community/posts', methods=['GET', 'POST'])
-def community_api():
-    if request.method == 'GET':
-        posts = get_posts(limit=20)
-        return jsonify(posts)
-    
-    if request.method == 'POST':
-        if 'user_id' not in session:
-            return jsonify({'error': 'Not authenticated'}), 401
-        data = request.json
-        content = data.get('content', '').strip()
-        if not content: return jsonify({'error': 'Empty post'}), 400
-        
-        current_uid = session.get('user_id')
-        if not current_uid:
-            return jsonify({'error': 'Not authenticated'}), 401
-        user = get_user(current_uid)
-        user_name = user[1] if user else f"User {current_uid}"
-        
-        create_post(user_name, content)
-        return jsonify({'success': True})
+# /api/community/posts removed — community endpoints deprecated and UI removed
 
 # --- AI DAILY TASKS API ---
 @app.route('/api/ai-tasks', methods=['GET'])
@@ -4215,13 +4187,7 @@ def report_page_redirect():
 # AI-POWERED ROUTINE REPORT
 # ==========================================
 
-@app.route('/report')
-def report_page():
-    """Render AI-Powered Routine Analysis Page"""
-    if 'user_id' not in session:
-        return redirect('/login')
-    
-    return render_template('report.html')
+# /report route removed — Reports feature deprecated and UI removed
 
 @app.route('/api/routine-analysis-v2', methods=['GET'])
 def get_routine_analysis_v2():
