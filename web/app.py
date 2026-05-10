@@ -60,7 +60,11 @@ def send_email(to_email, subject, body):
 sys.path.append(ROOT_DIR)
 
 # Cloud AI configuration
-from config import NVIDIA_MODEL
+try:
+    from config import NVIDIA_MODEL
+except ImportError:
+    NVIDIA_MODEL = os.getenv("NVIDIA_MODEL", "meta/llama-3.3-70b-instruct")
+
 MAIN_MODEL = NVIDIA_MODEL
 GROUP_MODEL = NVIDIA_MODEL
 MODEL_NAME = MAIN_MODEL
