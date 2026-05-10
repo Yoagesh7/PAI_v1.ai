@@ -112,13 +112,11 @@
 .ws-body {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 12px 18px 22px;
+  padding: 12px 18px 18px;
 }
 
 .ws-section,
-.ws-ai-panel,
 .ws-capture-card,
-.ws-day-card,
 .ws-doc-preview,
 .ws-doc-skel,
 .kb-empty {
@@ -127,16 +125,12 @@
 }
 
 .ws-section {
-  margin-top: 18px;
-}
-
-.ws-section-head {
-  display: none;
+  margin-top: 10px;
 }
 
 .ws-pinned-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: 1fr;
+  gap: 10px;
 }
 
 .ws-doc-preview,
@@ -145,6 +139,50 @@
 }
 
 .ws-greeting { display:none; }
+
+.ws-history-title {
+  display: block;
+  margin: 2px 0 12px;
+  color: var(--kb-muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.ws-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ws-history-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  background: rgba(255,255,255,0.02);
+  border-radius: 14px;
+}
+
+.ws-history-item .ws-doc-preview {
+  width: 54px;
+  height: 54px;
+  flex: 0 0 auto;
+  border-radius: 12px;
+}
+
+.ws-history-item .ws-doc-lines {
+  display: none;
+}
+
+.ws-history-item .ws-doc-name {
+  font-size: 18px;
+  margin-bottom: 2px;
+}
+
+.ws-history-item .ws-doc-meta {
+  margin: 0;
+}
 
 /* -- AI Banner -- */
 .ai-banner {
@@ -1023,19 +1061,6 @@
   <div class="ws-body">
     <input id="searchInput" type="search" style="display:none" aria-hidden="true" />
 
-    <section class="ws-ai-panel" id="workspaceAiPanel">
-      <div class="ws-ai-dot"></div>
-      <div class="ws-ai-copy">
-        <div class="ws-ai-label">AI workspace builder</div>
-        <div class="ws-ai-title" id="workspaceAiTitle">Describe what you need and I’ll shape it into a block</div>
-        <div class="ws-ai-sub" id="workspaceAiSub">Try: “create a document about AI”, “make a daily plan”, or “build a todo for my course”.</div>
-        <div class="ws-ai-loading" id="workspaceAiLoading" style="display:none;">
-          <span class="ws-ai-spinner"></span>
-          <span>AI is thinking...</span>
-        </div>
-      </div>
-    </section>
-
     <section class="ws-capture-card">
       <textarea
         class="ws-capture-input"
@@ -1050,18 +1075,15 @@
     </section>
 
     <section class="ws-section">
-      <div id="myDayList" class="ws-day-list"></div>
-    </section>
-
-    <section class="ws-section">
-      <div class="ws-pinned-grid" id="blocksGrid">
+      <div class="ws-history-title">Create Block History</div>
+      <div class="ws-history-list" id="blocksGrid">
         <div class="ws-doc-card ws-doc-skel"></div>
         <div class="ws-doc-card ws-doc-skel"></div>
       </div>
 
       <div class="kb-empty" id="emptyState" style="display:none;">
-        <div class="kb-empty-ttl">No pinned documents yet</div>
-        <div class="kb-empty-sub">Create your first draft to start organizing your workspace.</div>
+        <div class="kb-empty-ttl">No block history yet</div>
+        <div class="kb-empty-sub">Create your first block to see it here.</div>
         <button class="kb-empty-btn" onclick="document.getElementById('quickCreateInput').focus(); window.scrollTo({top: 0, behavior: 'smooth'});">
           + New Draft
         </button>
@@ -1104,12 +1126,6 @@ const typeIcons = {
 
 document.addEventListener('DOMContentLoaded', () => {
   setGreetingName();
-  setMyDayDate();
-  setWorkspaceAIState(
-    'Describe what you need and I’ll shape it into a block',
-    'Try: “create a document about AI”, “make a daily plan”, or “build a todo for my course”.',
-    false
-  );
   loadBlocks();
   setTimeout(checkAIInsights, 4000);
   
@@ -1122,13 +1138,6 @@ function setGreetingName() {
   if (!el) return;
   const stored = localStorage.getItem('partnerai_user_name') || localStorage.getItem('partnerai_name') || 'Alexander';
   el.textContent = stored;
-}
-
-function setMyDayDate() {
-  const el = document.getElementById('myDayDate');
-  if (!el) return;
-  const now = new Date();
-  el.textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 }
 
 function setWorkspaceAIState(title, sub, loading = false) {
@@ -1374,9 +1383,8 @@ function renderCards(blocks) {
   const grid = document.getElementById('blocksGrid');
   if (!blocks.length) { grid.innerHTML = ''; showEmpty(); return; }
   hideEmpty();
-  const docs = blocks.slice(0, 8);
+  const docs = blocks;
   grid.innerHTML = docs.map(cardHTML).join('');
-  renderMyDay(blocks);
 }
 
 function cardHTML(b) {
@@ -1389,7 +1397,7 @@ function cardHTML(b) {
   const rawLines = String(b.content || '').split('\n').map(s => s.trim()).filter(Boolean);
   const summary = esc((rawLines.find(line => !line.startsWith('#') && !line.startsWith('##') && line !== b.title) || rawLines[0] || 'Open to view content').replace(/^[-*\d\.\)\s]+/, '').slice(0, 96));
   return `
-    <div class="ws-doc-card" onclick="openBlock(${b.id})">
+    <div class="ws-doc-card ws-history-item" onclick="openBlock(${b.id})">
       <div class="ws-doc-preview">
         <div class="ws-doc-icon">${ic}</div>
         <div class="ws-doc-lines">
@@ -1402,32 +1410,6 @@ function cardHTML(b) {
       <div class="ws-doc-meta">${summary}</div>
       <div class="ws-doc-meta">${esc(date)}</div>
     </div>`;
-}
-
-function renderMyDay(blocks) {
-  const dayEl = document.getElementById('myDayList');
-  if (!dayEl) return;
-
-  const tasks = blocks.filter(b => b.type === 'task').slice(0, 2);
-  if (!tasks.length) {
-    dayEl.innerHTML = `<div class="ws-empty-mini">No task blocks yet. Create a todo or daily plan to see it here.</div>`;
-    return;
-  }
-
-  dayEl.innerHTML = tasks.map((task, idx) => {
-    const lines = String(task.content || '').split('\n').filter(Boolean);
-    const desc = esc((lines.find(line => !line.startsWith('#') && !line.startsWith('- [ ]')) || lines[0] || 'Open task details in workspace editor.').slice(0, 72));
-    return `
-      <div class="ws-day-card" onclick="openBlock(${task.id})">
-        <div class="ws-day-ic">${idx === 0 ? '📅' : '✅'}</div>
-        <div>
-          <div class="ws-day-title">${esc(task.title || 'Untitled task')}</div>
-          <div class="ws-day-desc">${desc}</div>
-          <div class="ws-chip-row"><span class="ws-chip">Created</span><span class="ws-chip">Task</span></div>
-        </div>
-        <div class="ws-day-time">Now</div>
-      </div>`;
-  }).join('');
 }
 
 async function createQuickBlock() {
