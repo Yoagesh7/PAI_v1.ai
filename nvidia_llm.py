@@ -36,7 +36,7 @@ class RAGSystem:
             or _load_config_value("NVIDIA_API_KEY", "")
             or ""
         )
-        self.model = os.getenv("NVIDIA_MODEL") or _load_config_value("NVIDIA_MODEL", "meta/llama-3.1-8b-instruct")
+        self.model = os.getenv("NVIDIA_MODEL") or _load_config_value("NVIDIA_MODEL", "meta/llama-3.3-70b-instruct")
         # Tunable retry/backoff settings
         self.max_retries = int(os.getenv('NVIDIA_MAX_RETRIES', '3'))
         self.retry_delay = float(os.getenv('NVIDIA_RETRY_DELAY', '0.8'))
@@ -87,6 +87,14 @@ class RAGSystem:
                     # record failure
                     self._consecutive_failures += 1
                     self._last_failure_time = time.time()
+                    
+                    # Handle "DEGRADED" error with automatic fallback
+                    if "DEGRADED" in detail and "8b" in self.model.lower():
+                        print(f"WARNING: Model {self.model} is DEGRADED. Falling back to meta/llama-3.1-70b-instruct...", flush=True)
+                        self.model = "meta/llama-3.1-70b-instruct"
+                        payload["model"] = self.model
+                        return self._request(payload, stream=stream)
+
                     raise AIConnectionError(f"NVIDIA API error {response.status_code}: {detail}")
                 return response
             except requests.exceptions.RequestException as exc:

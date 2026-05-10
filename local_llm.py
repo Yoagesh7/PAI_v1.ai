@@ -28,7 +28,7 @@ class RAGSystem:
             or os.getenv("NVIDIA_API_TOKEN")
             or ""
         )
-        self.model = os.getenv("NVIDIA_MODEL", "meta/llama-3.1-8b-instruct")
+        self.model = os.getenv("NVIDIA_MODEL", "meta/llama-3.3-70b-instruct")
         self.max_retries = 2
         self.retry_delay = 1.5
         print(f"rag_system initialized with NVIDIA API model={self.model}", flush=True)

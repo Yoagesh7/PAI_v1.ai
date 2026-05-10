@@ -60,8 +60,9 @@ def send_email(to_email, subject, body):
 sys.path.append(ROOT_DIR)
 
 # Cloud AI configuration
-MAIN_MODEL = os.getenv("NVIDIA_MODEL", "meta/llama-3.1-8b-instruct")
-GROUP_MODEL = os.getenv("NVIDIA_MODEL", "meta/llama-3.1-8b-instruct")
+from config import NVIDIA_MODEL
+MAIN_MODEL = NVIDIA_MODEL
+GROUP_MODEL = NVIDIA_MODEL
 MODEL_NAME = MAIN_MODEL
 # ------------------------------------------------
 
@@ -747,7 +748,7 @@ def debug_ai_connection():
         import requests
 
         payload = {
-            'model': getattr(rag_system, 'model', 'meta/llama-3.1-8b-instruct'),
+            'model': getattr(rag_system, 'model', NVIDIA_MODEL),
             'messages': [
                 {'role': 'system', 'content': 'Reply with the single word pong.'},
                 {'role': 'user', 'content': 'ping'},
