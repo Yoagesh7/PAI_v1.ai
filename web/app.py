@@ -4352,8 +4352,70 @@ def command_create():
 
     low = prompt.lower()
     try:
+        def build_ai_document_content(text: str) -> str:
+            topic = text
+            lower = text.lower()
+            if 'about' in lower:
+                topic = text.split('about', 1)[1].strip() or text
+            if 'document' in lower and topic == text:
+                topic = re.sub(r'^(create|write|make)\s+(a\s+)?', '', text, flags=re.I)
+                topic = re.sub(r'\b(document|doc)\b', '', topic, flags=re.I).strip() or text
+
+            topic_title = topic[:1].upper() + topic[1:] if topic else 'AI'
+            return f"""# {topic_title}
+
+## Overview
+{topic_title} is an AI-focused document that explains the idea in a practical and useful way.
+
+## Key Concepts
+- Artificial intelligence systems learn patterns from data.
+- Machine learning helps models improve with experience.
+- Deep learning is useful for complex perception tasks.
+
+## Common Use Cases
+- Writing and summarization
+- Planning and task generation
+- Search, classification, and recommendations
+
+## Example Workflow
+1. Define the problem clearly.
+2. Collect the right data or inputs.
+3. Build or prompt the model.
+4. Review the output and refine it.
+
+## Notes
+- Keep the goal specific.
+- Use AI to accelerate thinking, not replace it.
+- Refine the output into a clear next action.
+"""
+
+        def build_daily_plan_content(text: str) -> str:
+            title = text[:1].upper() + text[1:] if text else 'Daily Plan'
+            return f"""# {title}
+
+## Today’s Focus
+- Choose 3 important tasks
+- Finish the highest priority item first
+- Keep one block for review and reflection
+
+## Morning
+- [ ] Review priorities
+- [ ] Start the main task
+
+## Afternoon
+- [ ] Continue deep work
+- [ ] Respond to messages
+
+## Evening
+- [ ] Wrap up loose ends
+- [ ] Plan tomorrow
+
+## Notes
+- Stay realistic and keep the plan simple.
+"""
+
         # Create checklist/todo blocks
-        if any(k in low for k in ['todo', 'task', 'checklist', 'action items', 'action items']):
+        if any(k in low for k in ['todo', 'task', 'checklist', 'action items', 'action items', 'daily plan', 'daily planner', 'plan for me', 'schedule']):
             items = []
             if local_rag_system:
                 messages = [
@@ -4382,16 +4444,21 @@ def command_create():
             return jsonify({'id': block_id, 'meta': meta, 'content': md}), 201
 
         # Create full document blocks
-        if any(k in low for k in ['create document', 'write document', 'create a document', 'document about', 'write an article', 'write a guide']):
+        if any(k in low for k in ['create document', 'write document', 'create a document', 'document about', 'write an article', 'write a guide', 'ai document', 'document on ai', 'document about ai']):
             if local_rag_system:
                 messages = [
                     {"role":"system","content": SYSTEM_PROMPT},
-                    {"role":"user","content": f"Write a structured document about: {prompt}. Include a short title (on first line), a 2-3 sentence intro, and 3-5 sections with headings and content."}
+                    {"role":"user","content": f"Write a structured, practical document about: {prompt}. Use a clear title, a short overview, 3-5 useful sections, and concrete examples. Avoid meta phrases like 'This document was generated'."}
                 ]
                 res = local_rag_system.generate_response(messages)
                 content = (res.get('message') or {}).get('content','') if isinstance(res, dict) else ''
             else:
-                content = f"# {prompt}\n\nThis document was auto-generated." 
+                if 'daily plan' in low or 'planner' in low or 'schedule' in low:
+                    content = build_daily_plan_content(prompt)
+                elif 'ai document' in low or 'document about ai' in low or 'document on ai' in low:
+                    content = build_ai_document_content(prompt)
+                else:
+                    content = f"# {prompt}\n\nThis document was auto-generated."
             title = (content.splitlines()[0].lstrip('# ').strip() if content.splitlines() else prompt)[:120]
             block_id = None
             if create_knowledge_block:

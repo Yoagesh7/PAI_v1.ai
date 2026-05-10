@@ -623,7 +623,7 @@
 .ws-shell {
   background: var(--kb-bg);
   min-height: 100vh;
-  padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
 }
 
 .ws-header {
@@ -810,6 +810,10 @@
 
 .ws-section {
   margin-top: 28px;
+}
+
+.ws-section:last-child {
+  margin-bottom: 0;
 }
 
 .ws-section-head {
