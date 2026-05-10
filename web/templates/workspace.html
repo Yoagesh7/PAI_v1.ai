@@ -639,8 +639,7 @@
   background: var(--kb-hdr-bg);
 }
 
-.ws-menu,
-.ws-notes {
+.ws-ai-pill {
   width: 36px;
   height: 36px;
   border-radius: 12px;
@@ -653,10 +652,16 @@
   text-decoration: none;
 }
 
-.ws-menu {
-  border: none;
-  background: transparent;
-  width: 28px;
+.ws-ai-pill {
+  border: 1px solid var(--kb-border);
+  background: rgba(255,255,255,0.04);
+  width: auto;
+  min-width: 42px;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .ws-title {
@@ -724,19 +729,6 @@
   justify-content: space-between;
 }
 
-.ws-capture-tools {
-  display: flex;
-  gap: 8px;
-}
-
-.ws-tool-btn {
-  border: none;
-  background: transparent;
-  font-size: 22px;
-  cursor: pointer;
-  color: var(--kb-title);
-}
-
 .ws-post-btn {
   border: 1px solid var(--kb-border);
   border-radius: 7px;
@@ -752,6 +744,69 @@
   color: var(--kb-muted);
   font-size: 12px;
 }
+
+.ws-ai-panel {
+  margin-top: 16px;
+  border: 1px solid var(--kb-border);
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(167,139,250,0.08), rgba(255,255,255,0.02));
+  padding: 14px 16px;
+  display: none;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.ws-ai-panel.active { display: flex; }
+.ws-ai-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--kb-accent);
+  box-shadow: 0 0 0 6px rgba(167,139,250,0.14);
+  margin-top: 4px;
+  flex: 0 0 auto;
+}
+.ws-ai-copy { flex: 1; }
+.ws-ai-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--kb-muted);
+  margin-bottom: 4px;
+  font-weight: 700;
+}
+.ws-ai-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--kb-title);
+  margin-bottom: 4px;
+}
+.ws-ai-sub {
+  font-size: 13px;
+  color: var(--kb-sec);
+  line-height: 1.5;
+}
+
+.ws-ai-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  color: var(--kb-accent);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ws-ai-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid rgba(167,139,250,0.25);
+  border-top-color: var(--kb-accent);
+  animation: wsSpin 0.8s linear infinite;
+}
+
+@keyframes wsSpin { to { transform: rotate(360deg); } }
 
 .ws-section {
   margin-top: 28px;
@@ -952,9 +1007,8 @@
 
 <div class="kb-page ws-shell">
   <header class="ws-header">
-    <button class="ws-menu" type="button" aria-label="Menu">☰</button>
     <h1 class="ws-title">Workspace</h1>
-    <a class="ws-notes" href="/workspace/new" aria-label="New draft">🗒️</a>
+    <div class="ws-ai-pill" aria-label="AI ready">AI</div>
   </header>
 
   <div class="ws-body">
@@ -965,6 +1019,19 @@
       <p>Here is what's on your mind today.</p>
     </section>
 
+    <section class="ws-ai-panel" id="workspaceAiPanel">
+      <div class="ws-ai-dot"></div>
+      <div class="ws-ai-copy">
+        <div class="ws-ai-label">AI workspace builder</div>
+        <div class="ws-ai-title" id="workspaceAiTitle">Describe what you need and I’ll shape it into a block</div>
+        <div class="ws-ai-sub" id="workspaceAiSub">Try: “create a document about AI”, “make a daily plan”, or “build a todo for my course”.</div>
+        <div class="ws-ai-loading" id="workspaceAiLoading" style="display:none;">
+          <span class="ws-ai-spinner"></span>
+          <span>AI is thinking...</span>
+        </div>
+      </div>
+    </section>
+
     <section class="ws-capture-card">
       <textarea
         class="ws-capture-input"
@@ -973,10 +1040,6 @@
         onkeydown="handleQuickCreateKeydown(event)"
         onkeyup="updateQuickCreateHint()"></textarea>
       <div class="ws-capture-bar">
-        <div class="ws-capture-tools">
-          <button class="ws-tool-btn" type="button" aria-label="Attach">📎</button>
-          <button class="ws-tool-btn" type="button" aria-label="Voice">🎤</button>
-        </div>
         <button class="ws-post-btn" type="button" onclick="createBlockFromQuickInput()">Post to Drafts</button>
       </div>
       <div class="ws-capture-hint" id="quickCreateHint">Type and press Enter or use Post to Drafts</div>
@@ -1046,6 +1109,11 @@ const typeIcons = {
 document.addEventListener('DOMContentLoaded', () => {
   setGreetingName();
   setMyDayDate();
+  setWorkspaceAIState(
+    'Describe what you need and I’ll shape it into a block',
+    'Try: “create a document about AI”, “make a daily plan”, or “build a todo for my course”.',
+    false
+  );
   loadBlocks();
   setTimeout(checkAIInsights, 4000);
   
@@ -1065,6 +1133,23 @@ function setMyDayDate() {
   if (!el) return;
   const now = new Date();
   el.textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+}
+
+function setWorkspaceAIState(title, sub, loading = false) {
+  const panel = document.getElementById('workspaceAiPanel');
+  const titleEl = document.getElementById('workspaceAiTitle');
+  const subEl = document.getElementById('workspaceAiSub');
+  const loadingEl = document.getElementById('workspaceAiLoading');
+  if (!panel || !titleEl || !subEl || !loadingEl) return;
+  if (title) titleEl.textContent = title;
+  if (sub) subEl.textContent = sub;
+  loadingEl.style.display = loading ? 'inline-flex' : 'none';
+  panel.classList.add('active');
+}
+
+function resetWorkspaceAIState() {
+  const loadingEl = document.getElementById('workspaceAiLoading');
+  if (loadingEl) loadingEl.style.display = 'none';
 }
 
 /* -- Quick Create (Notion-style) -- */
@@ -1103,16 +1188,23 @@ async function createBlockFromQuickInput() {
   // Show loading state
   input.disabled = true;
   const originalPlaceholder = input.placeholder;
-  input.placeholder = 'Creating workspace...';
+  input.placeholder = 'AI is thinking...';
+  setWorkspaceAIState(
+    'AI is shaping your workspace',
+    prompt,
+    true
+  );
 
   try {
     // Detect command-style prompts (todo, create document, etc)
     const low = prompt.toLowerCase();
     const isCommand = (
-      low.includes('todo') || low.includes('task') || low.includes('checklist') || 
-      low.includes('action item') || low.includes('create document') || 
-      low.includes('write document') || low.includes('write an article') || 
-      low.includes('write a guide')
+      low.includes('todo') || low.includes('task') || low.includes('checklist') ||
+      low.includes('action item') || low.includes('daily plan') || low.includes('daily planner') ||
+      low.includes('plan for me') || low.includes('create document') ||
+      low.includes('create a document') || low.includes('write document') ||
+      low.includes('write an article') || low.includes('write a guide') ||
+      low.includes('make a plan') || low.includes('schedule')
     );
 
     // Route to appropriate endpoint
@@ -1131,6 +1223,11 @@ async function createBlockFromQuickInput() {
     if (data && data.id) {
       // Show success feedback
       input.placeholder = '✓ Workspace created! Opening editor...';
+      setWorkspaceAIState(
+        'Workspace created',
+        'Your request has been converted into a new block. Opening it now.',
+        false
+      );
       
       // Clear input
       input.value = '';
@@ -1152,6 +1249,11 @@ async function createBlockFromQuickInput() {
     // Show error state
     input.style.borderColor = '#ef4444';
     input.placeholder = '⚠ Failed to create. Try again.';
+    setWorkspaceAIState(
+      'AI could not finish the request',
+      'Please try a simpler prompt such as “create a document about AI” or “make a daily plan”.',
+      false
+    );
     
     // Reset after 2 seconds
     setTimeout(() => {
@@ -1159,6 +1261,7 @@ async function createBlockFromQuickInput() {
       input.placeholder = originalPlaceholder;
       input.disabled = false;
       input.focus();
+      resetWorkspaceAIState();
     }, 2000);
   }
 }
