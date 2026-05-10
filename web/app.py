@@ -4368,6 +4368,13 @@ def command_create():
 
     low = prompt.lower()
     try:
+        def clean_title(text: str) -> str:
+            cleaned = re.sub(r'^(create|write|make|build|start|draft)\s+', '', text, flags=re.I)
+            cleaned = re.sub(r'\b(a|an|the)\b\s+', '', cleaned, flags=re.I)
+            cleaned = re.sub(r'\b(document|doc|workspace|page|note|plan|todo|task|checklist)\b', '', cleaned, flags=re.I)
+            cleaned = re.sub(r'\s+', ' ', cleaned).strip(' -:,.')
+            return cleaned[:120] or text[:120]
+
         def build_ai_document_content(text: str) -> str:
             topic = text
             lower = text.lower()
@@ -4430,8 +4437,49 @@ def command_create():
 - Stay realistic and keep the plan simple.
 """
 
+        is_document_prompt = any(k in low for k in [
+            'create document', 'write document', 'create a document',
+            'document about', 'write an article', 'write a guide',
+            'ai document', 'document on ai', 'document about ai',
+            'create a ai document', 'create an ai document'
+        ])
+        is_plan_prompt = any(k in low for k in ['daily plan', 'daily planner', 'plan for me', 'make a plan', 'schedule'])
+        is_todo_prompt = any(k in low for k in ['todo', 'task', 'checklist', 'action items'])
+
+        # Create full document blocks first so document requests are not misread as tasks
+        if is_document_prompt:
+            if local_rag_system:
+                messages = [
+                    {"role":"system","content": SYSTEM_PROMPT},
+                    {"role":"user","content": f"Write a structured, practical document about: {prompt}. Use a clear title, a short overview, 3-5 useful sections, and concrete examples. Avoid meta phrases like 'This document was generated'."}
+                ]
+                res = local_rag_system.generate_response(messages)
+                content = (res.get('message') or {}).get('content','') if isinstance(res, dict) else ''
+            else:
+                content = build_ai_document_content(prompt)
+
+            if not content.strip():
+                content = build_ai_document_content(prompt)
+
+            first_line = next((line for line in content.splitlines() if line.strip()), prompt)
+            title = first_line.lstrip('# ').strip()[:120] if first_line.startswith('#') else clean_title(prompt)
+            if not title:
+                title = 'AI Document'
+            block_id = None
+            if create_knowledge_block:
+                block_id = create_knowledge_block(session['user_id'], 'learning', title, content, tags=[], meta={'template': 'ai-document', 'prompt': prompt[:200]})
+            return jsonify({'id': block_id, 'content': content, 'title': title}), 201
+
+        if is_plan_prompt:
+            content = build_daily_plan_content(prompt)
+            title = 'Daily Plan'
+            block_id = None
+            if create_knowledge_block:
+                block_id = create_knowledge_block(session['user_id'], 'task', title, content, tags=[], meta={'template': 'daily-plan', 'prompt': prompt[:200]})
+            return jsonify({'id': block_id, 'content': content, 'title': title}), 201
+
         # Create checklist/todo blocks
-        if any(k in low for k in ['todo', 'task', 'checklist', 'action items', 'action items', 'daily plan', 'daily planner', 'plan for me', 'schedule']):
+        if is_todo_prompt:
             items = []
             if local_rag_system:
                 messages = [
@@ -4452,37 +4500,15 @@ def command_create():
                 items = [{'text': f"{prompt} - step {i+1}", 'done': False} for i in range(3)]
 
             md = '\n'.join([f"- [ ] {t['text']}" for t in items])
-            title = prompt.split(' for ')[0][:120]
+            title = clean_title(prompt.split(' for ')[0])
             meta = {'widgets': ['todo'], 'todos': items}
             block_id = None
             if create_knowledge_block:
                 block_id = create_knowledge_block(session['user_id'], 'task', title, md, tags=[], meta=meta)
             return jsonify({'id': block_id, 'meta': meta, 'content': md}), 201
 
-        # Create full document blocks
-        if any(k in low for k in ['create document', 'write document', 'create a document', 'document about', 'write an article', 'write a guide', 'ai document', 'document on ai', 'document about ai']):
-            if local_rag_system:
-                messages = [
-                    {"role":"system","content": SYSTEM_PROMPT},
-                    {"role":"user","content": f"Write a structured, practical document about: {prompt}. Use a clear title, a short overview, 3-5 useful sections, and concrete examples. Avoid meta phrases like 'This document was generated'."}
-                ]
-                res = local_rag_system.generate_response(messages)
-                content = (res.get('message') or {}).get('content','') if isinstance(res, dict) else ''
-            else:
-                if 'daily plan' in low or 'planner' in low or 'schedule' in low:
-                    content = build_daily_plan_content(prompt)
-                elif 'ai document' in low or 'document about ai' in low or 'document on ai' in low:
-                    content = build_ai_document_content(prompt)
-                else:
-                    content = f"# {prompt}\n\nThis document was auto-generated."
-            title = (content.splitlines()[0].lstrip('# ').strip() if content.splitlines() else prompt)[:120]
-            block_id = None
-            if create_knowledge_block:
-                block_id = create_knowledge_block(session['user_id'], 'learning', title, content, tags=[], meta={})
-            return jsonify({'id': block_id, 'content': content}), 201
-
         # General fallback: create an idea block
-        title = prompt.splitlines()[0][:120]
+        title = clean_title(prompt.splitlines()[0])
         content = prompt
         block_id = None
         if create_knowledge_block:

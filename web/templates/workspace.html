@@ -859,6 +859,15 @@
   gap: 12px;
 }
 
+.ws-empty-mini {
+  padding: 14px 16px;
+  border: 1px dashed var(--kb-border);
+  border-radius: 14px;
+  color: var(--kb-muted);
+  font-size: 14px;
+  background: rgba(255,255,255,0.02);
+}
+
 .ws-day-card {
   border: 1.5px solid var(--kb-border);
   border-radius: 14px;
@@ -1394,6 +1403,8 @@ function cardHTML(b) {
   const date = metaDate
     ? `Edited ${new Date(metaDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
     : 'Edited recently';
+  const rawLines = String(b.content || '').split('\n').map(s => s.trim()).filter(Boolean);
+  const summary = esc((rawLines.find(line => !line.startsWith('#') && !line.startsWith('##') && line !== b.title) || rawLines[0] || 'Open to view content').replace(/^[-*\d\.\)\s]+/, '').slice(0, 96));
   return `
     <div class="ws-doc-card" onclick="openBlock(${b.id})">
       <div class="ws-doc-preview">
@@ -1405,6 +1416,7 @@ function cardHTML(b) {
         </div>
       </div>
       <div class="ws-doc-name">${fileName}</div>
+      <div class="ws-doc-meta">${summary}</div>
       <div class="ws-doc-meta">${esc(date)}</div>
     </div>`;
 }
@@ -1415,39 +1427,22 @@ function renderMyDay(blocks) {
 
   const tasks = blocks.filter(b => b.type === 'task').slice(0, 2);
   if (!tasks.length) {
-    dayEl.innerHTML = `
-      <div class="ws-day-card">
-        <div class="ws-day-ic">📅</div>
-        <div>
-          <div class="ws-day-title">Product Sync</div>
-          <div class="ws-day-desc">Reviewing Q4 roadmap with the design team.</div>
-          <div class="ws-chip-row"><span class="ws-chip">Priority</span><span class="ws-chip">Internal</span></div>
-        </div>
-        <div class="ws-day-time">10:00 AM</div>
-      </div>
-      <div class="ws-day-card">
-        <div class="ws-day-ic" style="background:#e8e8e8;color:#242424;">✅</div>
-        <div>
-          <div class="ws-day-title">Approve Brand Assets</div>
-          <div class="ws-day-desc">Final sign-off on the new iconography set.</div>
-        </div>
-        <div class="ws-day-time">Due 2PM</div>
-      </div>`;
+    dayEl.innerHTML = `<div class="ws-empty-mini">No task blocks yet. Create a todo or daily plan to see it here.</div>`;
     return;
   }
 
   dayEl.innerHTML = tasks.map((task, idx) => {
     const lines = String(task.content || '').split('\n').filter(Boolean);
-    const desc = esc((lines[0] || 'Open task details in workspace editor.').slice(0, 72));
+    const desc = esc((lines.find(line => !line.startsWith('#') && !line.startsWith('- [ ]')) || lines[0] || 'Open task details in workspace editor.').slice(0, 72));
     return `
       <div class="ws-day-card" onclick="openBlock(${task.id})">
         <div class="ws-day-ic">${idx === 0 ? '📅' : '✅'}</div>
         <div>
           <div class="ws-day-title">${esc(task.title || 'Untitled task')}</div>
           <div class="ws-day-desc">${desc}</div>
-          ${idx === 0 ? '<div class="ws-chip-row"><span class="ws-chip">Priority</span><span class="ws-chip">Internal</span></div>' : ''}
+          <div class="ws-chip-row"><span class="ws-chip">Created</span><span class="ws-chip">Task</span></div>
         </div>
-        <div class="ws-day-time">${idx === 0 ? 'Today' : 'Due soon'}</div>
+        <div class="ws-day-time">Now</div>
       </div>`;
   }).join('');
 }
