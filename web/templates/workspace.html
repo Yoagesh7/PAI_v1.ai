@@ -619,111 +619,409 @@
   .card-title { font-size:13px; }
   .card-preview { font-size:11px; }
 }
+
+/* =====================================================
+   WORKSPACE MENU REDESIGN (Image-matched, mobile-first)
+   ===================================================== */
+.ws-shell {
+  background: #f6f6f6;
+  min-height: 100vh;
+  padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+}
+
+.ws-header {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 18px;
+  border-bottom: 1px solid #d8d2c9;
+  background: #f6f6f6;
+}
+
+.ws-menu,
+.ws-notes {
+  width: 36px;
+  height: 36px;
+  border: 1px solid #cfc8be;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #efefef;
+  color: #222;
+  font-size: 20px;
+  text-decoration: none;
+}
+
+.ws-menu {
+  border: none;
+  background: transparent;
+  width: 28px;
+}
+
+.ws-title {
+  margin: 0;
+  font-size: 44px;
+  line-height: 1;
+  font-weight: 800;
+  color: #181818;
+  letter-spacing: -0.02em;
+  flex: 1;
+}
+
+.ws-body {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 18px;
+}
+
+.ws-greeting h2 {
+  margin: 8px 0 8px;
+  font-size: 56px;
+  line-height: 1.02;
+  font-weight: 850;
+  letter-spacing: -0.03em;
+  color: #151515;
+}
+
+.ws-greeting p {
+  margin: 0;
+  color: #444;
+  font-size: 30px;
+}
+
+.ws-capture-card {
+  margin-top: 18px;
+  border: 1.5px solid #cbc4ba;
+  border-radius: 14px;
+  background: #f8f8f8;
+  padding: 18px;
+}
+
+.ws-capture-input {
+  width: 100%;
+  min-height: 170px;
+  border: none;
+  resize: vertical;
+  background: transparent;
+  color: #232323;
+  font-size: 37px;
+  line-height: 1.35;
+  font-family: inherit;
+  outline: none;
+}
+
+.ws-capture-input::placeholder {
+  color: #6a6963;
+}
+
+.ws-capture-bar {
+  margin-top: 16px;
+  border-top: 1px solid #cfcac1;
+  padding-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ws-capture-tools {
+  display: flex;
+  gap: 8px;
+}
+
+.ws-tool-btn {
+  border: none;
+  background: transparent;
+  font-size: 25px;
+  cursor: pointer;
+}
+
+.ws-post-btn {
+  border: 1px solid #222;
+  border-radius: 7px;
+  background: #2b2824;
+  color: #fff;
+  padding: 8px 16px;
+  font-size: 22px;
+  font-weight: 500;
+}
+
+.ws-capture-hint {
+  margin-top: 10px;
+  color: #6b6b6b;
+  font-size: 12px;
+}
+
+.ws-section {
+  margin-top: 28px;
+}
+
+.ws-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.ws-section h3 {
+  margin: 0;
+  font-size: 43px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #121212;
+}
+
+.ws-date {
+  color: #4f4f4f;
+  font-size: 30px;
+}
+
+.ws-more {
+  border: none;
+  background: transparent;
+  color: #555;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.ws-day-list {
+  display: grid;
+  gap: 12px;
+}
+
+.ws-day-card {
+  border: 1.5px solid #cbc4ba;
+  border-radius: 14px;
+  background: #f8f8f8;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  gap: 14px;
+  align-items: start;
+}
+
+.ws-day-ic {
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  background: #2d2b27;
+  color: #fff;
+}
+
+.ws-day-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #181818;
+  margin-bottom: 4px;
+}
+
+.ws-day-desc {
+  font-size: 16px;
+  color: #2f2f2f;
+  line-height: 1.4;
+}
+
+.ws-day-time {
+  font-size: 18px;
+  color: #383838;
+  white-space: nowrap;
+}
+
+.ws-chip-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.ws-chip {
+  padding: 5px 10px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  border-radius: 4px;
+  text-transform: uppercase;
+  background: #ececec;
+  color: #444;
+  font-weight: 700;
+}
+
+.ws-pinned-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.ws-doc-card {
+  cursor: pointer;
+}
+
+.ws-doc-preview {
+  border: 1.5px solid #cbc4ba;
+  border-radius: 14px;
+  background: #f8f8f8;
+  height: 186px;
+  padding: 12px;
+  margin-bottom: 8px;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.ws-doc-icon {
+  font-size: 22px;
+}
+
+.ws-doc-lines {
+  margin-top: auto;
+  display: grid;
+  gap: 7px;
+}
+
+.ws-doc-line {
+  height: 8px;
+  border-radius: 999px;
+  background: #e4e4e4;
+}
+
+.ws-doc-name {
+  font-size: 19px;
+  font-weight: 600;
+  color: #202020;
+  line-height: 1.3;
+}
+
+.ws-doc-meta {
+  font-size: 14px;
+  color: #575757;
+}
+
+.ws-doc-skel {
+  border: 1.5px solid #cbc4ba;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #f2f2f2, #ededed);
+  height: 236px;
+}
+
+@media (max-width: 760px) {
+  .ws-title {
+    font-size: 42px;
+  }
+
+  .ws-greeting h2 {
+    font-size: 52px;
+  }
+
+  .ws-greeting p {
+    font-size: 18px;
+  }
+
+  .ws-capture-input {
+    font-size: 17px;
+    min-height: 140px;
+  }
+
+  .ws-post-btn {
+    font-size: 16px;
+  }
+
+  .ws-section h3 {
+    font-size: 40px;
+  }
+
+  .ws-date {
+    font-size: 17px;
+  }
+}
+
+@media (max-width: 520px) {
+  .ws-title {
+    font-size: 46px;
+  }
+
+  .ws-greeting h2 {
+    font-size: 36px;
+  }
+
+  .ws-section h3 {
+    font-size: 37px;
+  }
+
+  .ws-pinned-grid {
+    overflow-x: auto;
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+    padding-bottom: 4px;
+  }
+}
 </style>
 
-<div class="kb-page">
-
-  <!-- Sticky Header -->
-  <header class="kb-hdr">
-    <div class="kb-hdr-top">
-      <div class="kb-logo">&#x1F9E0; Knowledge</div>
-      <div class="kb-srch-wrap">
-        <svg class="kb-srch-ic" width="14" height="14" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="2.5">
-          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-        </svg>
-        <input class="kb-srch" id="searchInput" type="search"
-               placeholder="Search blocks..." oninput="onSearch()" />
-      </div>
-    </div>
-
-    <!-- Tabs -->
-    <div class="kb-tabs" id="tabsRow">
-      <button class="kb-tab active" onclick="setTab(this,'all')">All</button>
-      <button class="kb-tab" onclick="setTab(this,'idea')">&#x1F4A1; Ideas</button>
-      <button class="kb-tab" onclick="setTab(this,'task')">&#x2705; Tasks</button>
-      <button class="kb-tab" onclick="setTab(this,'learning')">&#x1F9E0; Learnings</button>
-      <button class="kb-tab" onclick="setTab(this,'reflection')">&#x1FA9E; Reflections</button>
-      <button class="kb-tab" onclick="setTab(this,'read')">&#x1F4D6; Reads</button>
-    </div>
+<div class="kb-page ws-shell">
+  <header class="ws-header">
+    <button class="ws-menu" type="button" aria-label="Menu">☰</button>
+    <h1 class="ws-title">Workspace</h1>
+    <a class="ws-notes" href="/workspace/new" aria-label="New draft">🗒️</a>
   </header>
 
-  <div class="kb-body">
+  <div class="ws-body">
+    <input id="searchInput" type="search" style="display:none" aria-hidden="true" />
 
-    <!-- Quick Create Input (Notion-style) -->
-    <div class="kb-quick-create-wrap">
-      <input 
-        class="kb-quick-input" 
+    <section class="ws-greeting">
+      <h2>Good morning,<br><span id="userGreetingName">Alexander</span></h2>
+      <p>Here is what's on your mind today.</p>
+    </section>
+
+    <section class="ws-capture-card">
+      <textarea
+        class="ws-capture-input"
         id="quickCreateInput"
-        type="text" 
-        placeholder="What's your next idea? Describe anything and we'll create a full workspace..." 
+        placeholder="Capture a thought or start an AI draft..."
         onkeydown="handleQuickCreateKeydown(event)"
-        onkeyup="updateQuickCreateHint()"
-      />
-      <span class="kb-quick-hint" id="quickCreateHint">Enter</span>
-    </div>
+        onkeyup="updateQuickCreateHint()"></textarea>
+      <div class="ws-capture-bar">
+        <div class="ws-capture-tools">
+          <button class="ws-tool-btn" type="button" aria-label="Attach">📎</button>
+          <button class="ws-tool-btn" type="button" aria-label="Voice">🎤</button>
+        </div>
+        <button class="ws-post-btn" type="button" onclick="createBlockFromQuickInput()">Post to Drafts</button>
+      </div>
+      <div class="ws-capture-hint" id="quickCreateHint">Type and press Enter or use Post to Drafts</div>
+    </section>
 
-    <!-- AI Banner -->
-    <div class="ai-banner" id="aiBanner" onclick="openAIBanner()">
-      <span style="font-size:20px;">&#x2728;</span>
-      <div class="ai-banner-text">
-        <strong id="aiBannerMsg">AI spotted a connection</strong><br>
-        <span id="aiBannerSub">Click to explore how your blocks relate.</span>
+    <section class="ws-section">
+      <div class="ws-section-head">
+        <h3>My Day</h3>
+        <span class="ws-date" id="myDayDate"></span>
       </div>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-           stroke-width="2.5" style="color:var(--kb-accent);flex-shrink:0">
-        <path d="M5 12h14M12 5l7 7-7 7"/>
-      </svg>
-    </div>
+      <div id="myDayList" class="ws-day-list"></div>
+    </section>
 
-    <!-- Stats -->
-    <div class="kb-stats" id="statsRow" style="display:none">
-      <div class="kb-stat">
-        <div class="kb-stat-v" id="sTotal">0</div>
-        <div class="kb-stat-l">Total</div>
+    <section class="ws-section">
+      <div class="ws-section-head">
+        <h3>Pinned Documents</h3>
+        <button type="button" class="ws-more" onclick="location.href='/workspace/new'">•••</button>
       </div>
-      <div class="kb-stat t-idea">
-        <div class="kb-stat-v" id="sIdeas">0</div>
-        <div class="kb-stat-l">Ideas</div>
-      </div>
-      <div class="kb-stat t-task">
-        <div class="kb-stat-v" id="sTasks">0</div>
-        <div class="kb-stat-l">Tasks</div>
-      </div>
-      <div class="kb-stat t-learning">
-        <div class="kb-stat-v" id="sLearn">0</div>
-        <div class="kb-stat-l">Learning</div>
-      </div>
-      <div class="kb-stat t-reflection">
-        <div class="kb-stat-v" id="sReflect">0</div>
-        <div class="kb-stat-l">Reflect</div>
-      </div>
-    </div>
 
-    <!-- Grid -->
-    <div class="kb-grid" id="blocksGrid">
-      <div class="kb-skel-card"><div class="sk w6"></div><div class="sk w8"></div><div class="sk w4"></div></div>
-      <div class="kb-skel-card"><div class="sk w8"></div><div class="sk w6"></div><div class="sk w4"></div></div>
-      <div class="kb-skel-card"><div class="sk w4"></div><div class="sk w8"></div><div class="sk w6"></div></div>
-    </div>
-
-    <!-- Empty State -->
-    <div class="kb-empty" id="emptyState">
-      <div class="kb-empty-ic">&#x1F4D3;</div>
-      <div class="kb-empty-ttl">Your knowledge space is empty</div>
-      <div class="kb-empty-sub">
-        Capture ideas, tasks, learnings and reflections &mdash; your AI-powered second brain.
+      <div class="ws-pinned-grid" id="blocksGrid">
+        <div class="ws-doc-card ws-doc-skel"></div>
+        <div class="ws-doc-card ws-doc-skel"></div>
       </div>
-      <button class="kb-empty-btn" onclick="document.getElementById('kbTitle').focus(); window.scrollTo({top: 0, behavior: 'smooth'});">
-        + Create your first block
-      </button>
-    </div>
 
-  </div><!-- /kb-body -->
-</div><!-- /kb-page -->
-
-<!-- FAB -->
-<a href="/workspace/new" class="kb-fab" title="New block">+</a>
+      <div class="kb-empty" id="emptyState" style="display:none;">
+        <div class="kb-empty-ttl">No pinned documents yet</div>
+        <div class="kb-empty-sub">Create your first draft to start organizing your workspace.</div>
+        <button class="kb-empty-btn" onclick="document.getElementById('quickCreateInput').focus(); window.scrollTo({top: 0, behavior: 'smooth'});">
+          + New Draft
+        </button>
+      </div>
+    </section>
+  </div>
+</div>
 
 <script>
 /* === WORKSPACE JS === */
@@ -758,12 +1056,28 @@ const typeIcons = {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+  setGreetingName();
+  setMyDayDate();
   loadBlocks();
   setTimeout(checkAIInsights, 4000);
   
   // Focus quick create input on load (optional, comment out for accessibility)
   // document.getElementById('quickCreateInput').focus();
 });
+
+function setGreetingName() {
+  const el = document.getElementById('userGreetingName');
+  if (!el) return;
+  const stored = localStorage.getItem('partnerai_user_name') || localStorage.getItem('partnerai_name') || 'Alexander';
+  el.textContent = stored;
+}
+
+function setMyDayDate() {
+  const el = document.getElementById('myDayDate');
+  if (!el) return;
+  const now = new Date();
+  el.textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+}
 
 /* -- Quick Create (Notion-style) -- */
 async function handleQuickCreateKeydown(event) {
@@ -877,13 +1191,15 @@ async function loadBlocks() {
     });
     saveLocalBlocks(allBlocks);
     renderView();
-    if (allBlocks.length) document.getElementById('statsRow').style.display = 'flex';
+    const statsRow = document.getElementById('statsRow');
+    if (allBlocks.length && statsRow) statsRow.style.display = 'flex';
     updateStats();
   } catch (e) {
     console.error('loadBlocks:', e);
     allBlocks = loadLocalBlocks();
     renderView();
-    if (allBlocks.length) document.getElementById('statsRow').style.display = 'flex';
+    const statsRow = document.getElementById('statsRow');
+    if (allBlocks.length && statsRow) statsRow.style.display = 'flex';
     updateStats();
     showEmpty();
   }
@@ -971,42 +1287,74 @@ function renderCards(blocks) {
   const grid = document.getElementById('blocksGrid');
   if (!blocks.length) { grid.innerHTML = ''; showEmpty(); return; }
   hideEmpty();
-  grid.innerHTML = blocks.map(cardHTML).join('');
+  const docs = blocks.slice(0, 8);
+  grid.innerHTML = docs.map(cardHTML).join('');
+  renderMyDay(blocks);
 }
 
 function cardHTML(b) {
-  const ic   = typeIcons[b.type] || '\u{1F4DD}';
-  const date = b.created_at
-    ? new Date(b.created_at).toLocaleDateString('en-US', {month:'short', day:'numeric'})
-    : '';
-  const prev = esc((b.content || '').slice(0, 130));
+  const ic = b.type === 'task' ? '🗂️' : (b.type === 'learning' ? '📊' : (b.type === 'read' ? '📄' : '📑'));
+  const fileName = esc(b.title || 'Untitled');
+  const metaDate = b.updated_at || b.created_at;
+  const date = metaDate
+    ? `Edited ${new Date(metaDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+    : 'Edited recently';
   return `
-    <div class="kb-card t-${b.type}" onclick="openBlock(${b.id})">
-      <div class="card-top">
-        <div class="card-icon">${ic}</div>
-        <span class="card-badge">${b.type}</span>
-      </div>
-      <div class="card-title">${esc(b.title || 'Untitled')}</div>
-      ${renderBlockExtras(b)}
-      ${prev ? `<div class="card-preview">${prev}</div>` : ''}
-      <div class="card-foot">
-        <span class="card-date">${date}</span>
-        <div class="card-acts" onclick="event.stopPropagation()">
-          <button class="card-btn" title="Edit" onclick="editBlock(${b.id})">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-            </svg>
-          </button>
-          <button class="card-btn" title="Delete" onclick="delBlock(${b.id})">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
-              <path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
-            </svg>
-          </button>
+    <div class="ws-doc-card" onclick="openBlock(${b.id})">
+      <div class="ws-doc-preview">
+        <div class="ws-doc-icon">${ic}</div>
+        <div class="ws-doc-lines">
+          <div class="ws-doc-line" style="width:84%"></div>
+          <div class="ws-doc-line" style="width:92%"></div>
+          <div class="ws-doc-line" style="width:66%"></div>
         </div>
       </div>
+      <div class="ws-doc-name">${fileName}</div>
+      <div class="ws-doc-meta">${esc(date)}</div>
     </div>`;
+}
+
+function renderMyDay(blocks) {
+  const dayEl = document.getElementById('myDayList');
+  if (!dayEl) return;
+
+  const tasks = blocks.filter(b => b.type === 'task').slice(0, 2);
+  if (!tasks.length) {
+    dayEl.innerHTML = `
+      <div class="ws-day-card">
+        <div class="ws-day-ic">📅</div>
+        <div>
+          <div class="ws-day-title">Product Sync</div>
+          <div class="ws-day-desc">Reviewing Q4 roadmap with the design team.</div>
+          <div class="ws-chip-row"><span class="ws-chip">Priority</span><span class="ws-chip">Internal</span></div>
+        </div>
+        <div class="ws-day-time">10:00 AM</div>
+      </div>
+      <div class="ws-day-card">
+        <div class="ws-day-ic" style="background:#e8e8e8;color:#242424;">✅</div>
+        <div>
+          <div class="ws-day-title">Approve Brand Assets</div>
+          <div class="ws-day-desc">Final sign-off on the new iconography set.</div>
+        </div>
+        <div class="ws-day-time">Due 2PM</div>
+      </div>`;
+    return;
+  }
+
+  dayEl.innerHTML = tasks.map((task, idx) => {
+    const lines = String(task.content || '').split('\n').filter(Boolean);
+    const desc = esc((lines[0] || 'Open task details in workspace editor.').slice(0, 72));
+    return `
+      <div class="ws-day-card" onclick="openBlock(${task.id})">
+        <div class="ws-day-ic">${idx === 0 ? '📅' : '✅'}</div>
+        <div>
+          <div class="ws-day-title">${esc(task.title || 'Untitled task')}</div>
+          <div class="ws-day-desc">${desc}</div>
+          ${idx === 0 ? '<div class="ws-chip-row"><span class="ws-chip">Priority</span><span class="ws-chip">Internal</span></div>' : ''}
+        </div>
+        <div class="ws-day-time">${idx === 0 ? 'Today' : 'Due soon'}</div>
+      </div>`;
+  }).join('');
 }
 
 async function createQuickBlock() {
@@ -1086,11 +1434,17 @@ async function delBlock(id) {
 
 /* -- Stats -- */
 function updateStats() {
-  document.getElementById('sTotal').textContent   = allBlocks.length;
-  document.getElementById('sIdeas').textContent   = allBlocks.filter(b => b.type === 'idea').length;
-  document.getElementById('sTasks').textContent   = allBlocks.filter(b => b.type === 'task').length;
-  document.getElementById('sLearn').textContent   = allBlocks.filter(b => b.type === 'learning').length;
-  document.getElementById('sReflect').textContent = allBlocks.filter(b => b.type === 'reflection').length;
+  const total = document.getElementById('sTotal');
+  const ideas = document.getElementById('sIdeas');
+  const tasks = document.getElementById('sTasks');
+  const learn = document.getElementById('sLearn');
+  const refl = document.getElementById('sReflect');
+  if (!total || !ideas || !tasks || !learn || !refl) return;
+  total.textContent = allBlocks.length;
+  ideas.textContent = allBlocks.filter(b => b.type === 'idea').length;
+  tasks.textContent = allBlocks.filter(b => b.type === 'task').length;
+  learn.textContent = allBlocks.filter(b => b.type === 'learning').length;
+  refl.textContent = allBlocks.filter(b => b.type === 'reflection').length;
 }
 
 /* -- Empty state -- */
@@ -1100,6 +1454,10 @@ function hideEmpty() { document.getElementById('emptyState').style.display = 'no
 /* -- AI Insight Banner -- */
 async function checkAIInsights() {
   if (allBlocks.length < 2) return;
+  const msgEl = document.getElementById('aiBannerMsg');
+  const subEl = document.getElementById('aiBannerSub');
+  const bannerEl = document.getElementById('aiBanner');
+  if (!msgEl || !subEl || !bannerEl) return;
   try {
     const res  = await fetch('/api/knowledge/insight', {
       method: 'POST',
@@ -1109,9 +1467,9 @@ async function checkAIInsights() {
     const data = await res.json();
     if (data && data.reason) {
       aiConn = data;
-      document.getElementById('aiBannerMsg').textContent = 'AI found a connection';
-      document.getElementById('aiBannerSub').textContent = data.reason;
-      document.getElementById('aiBanner').style.display  = 'flex';
+      msgEl.textContent = 'AI found a connection';
+      subEl.textContent = data.reason;
+      bannerEl.style.display = 'flex';
     }
   } catch (_) {}
 }
