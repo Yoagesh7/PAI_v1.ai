@@ -122,35 +122,26 @@
 .ws-doc-preview,
 .ws-doc-skel,
 .kb-empty {
-  border: 1px solid var(--kb-border);
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.02) inset;
+  border: none;
+  box-shadow: none;
 }
 
 .ws-section {
-  margin-top: 22px;
+  margin-top: 18px;
 }
 
 .ws-section-head {
-  margin-bottom: 14px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--kb-border);
-}
-
-.ws-section h3 {
-  font-size: 34px;
-}
-
-.ws-date {
-  font-size: 18px;
+  display: none;
 }
 
 .ws-pinned-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .ws-doc-preview,
 .ws-doc-skel {
-  background: var(--kb-card);
+  background: transparent;
 }
 
 .ws-greeting { display:none; }
@@ -1059,18 +1050,10 @@
     </section>
 
     <section class="ws-section">
-      <div class="ws-section-head">
-        <h3>My Day</h3>
-        <span class="ws-date" id="myDayDate"></span>
-      </div>
       <div id="myDayList" class="ws-day-list"></div>
     </section>
 
     <section class="ws-section">
-      <div class="ws-section-head">
-        <h3>Pinned Documents</h3>
-      </div>
-
       <div class="ws-pinned-grid" id="blocksGrid">
         <div class="ws-doc-card ws-doc-skel"></div>
         <div class="ws-doc-card ws-doc-skel"></div>
