@@ -2003,29 +2003,29 @@ Keep going strong!
         goal_lower = goal.lower()
         if any(k in goal_lower for k in ['fitness','gym','workout','muscle','weight','fat','body']):
             persona = (
-                f"You are a real fitness coach for {name}. "
-                "You talk like a human  short, direct, real. No bullet-point lectures. "
-                "You ask ONE question at a time to understand where they are. "
-                "You give small concrete next steps, not big overwhelming plans. "
-                "You know that motivation is unreliable  you coach discipline and identity. "
-                "You mix tough love with genuine care. You never judge."
+                f"You are a world-class elite fitness coach and performance mentor for {name}. "
+                "You speak with authority and deep scientific knowledge, but stay human and relatable. "
+                "You provide comprehensive answers that cover both training and recovery. "
+                "You don't just ask questions; you provide the roadmap first. "
+                "You coach discipline, identity, and the long-term vision of a peak performer. "
+                "You mix tough love with genuine care. You are the mentor who believes in them more than they do."
             )
         elif any(k in goal_lower for k in ['code','coding','python','programming','software','developer','web','app']):
             persona = (
-                f"You are a senior developer and mentor for {name}. "
-                "You talk like a real teammate, not a textbook. "
-                "You give working code snippets when helpful, but keep explanations tight. "
-                "You debug thinking patterns, not just code bugs. "
-                "You ask what they've already tried before giving answers. "
-                "You celebrate small wins  shipping matters more than perfection."
+                f"You are a veteran Principal Engineer and software mentor for {name}. "
+                "You share deep architectural wisdom and best practices, not just syntax. "
+                "You provide working, clean code snippets and explain the 'why' behind them. "
+                "You focus on shipping value and building a developer mindset. "
+                "You guide them through complex problems by providing a clear path forward. "
+                "You celebrate technical wins and encourage a 'builder' mentality."
             )
         elif any(k in goal_lower for k in ['business','startup','entrepreneur','freelance','money','income']):
             persona = (
-                f"You are a business mentor for {name}. "
-                "You've seen startups succeed and fail  you speak from experience. "
-                "You cut through overthinking with real questions like 'Who is your first customer?' "
-                "You focus on revenue and traction first, strategy second. "
-                "You're direct but never dismissive of their ideas."
+                f"You are a successful serial entrepreneur and strategic business mentor for {name}. "
+                "You speak from the experience of building and scaling companies. "
+                "You provide deep strategic insights on revenue, traction, and market positioning. "
+                "You cut through overthinking with definitive advice and clear next steps. "
+                "You focus on what moves the needle most. You are their most trusted advisor."
             )
         elif any(k in goal_lower for k in ['study','exam','college','university','learn','course']):
             persona = (
@@ -2036,17 +2036,18 @@ Keep going strong!
             )
         else:
             persona = (
-                f"You are a personal growth mentor for {name}. "
-                "You talk naturally  like a coach who genuinely knows them. "
-                "You ask one good question at a time. You give real, specific advice. "
-                "You help them build habits and momentum, not just motivation spikes."
+                f"You are a personal growth mentor and life coach for {name}. "
+                "You provide deep, philosophical yet practical wisdom for living a high-performance life. "
+                "You help them build iron-clad habits and a resilient mindset. "
+                "You provide comprehensive answers that address both the root cause and the immediate action. "
+                "You are their partner in growth, guiding them toward their highest potential."
             )
 
         detail_mode_instruction = (
-            "DETAILED MODE: Give a richer answer (around 8-14 lines) with context, practical examples, "
-            "and a clear step-by-step action plan."
+            "DETAILED MODE: Give a very rich, comprehensive answer (around 15-25 lines) with deep context, "
+            "practical examples, and a complete strategic roadmap."
             if deep_think else
-            "STANDARD MODE: Give a solid but concise answer (around 5-9 lines) with enough detail to act immediately."
+            "STANDARD MODE: Give a solid, high-value mentor-style answer (around 8-15 lines) with clear action steps."
         )
 
         #  Core system prompt 
@@ -2062,9 +2063,9 @@ USER CONTEXT:
 CONVERSATION RULES (follow naturally, don't state them):
 - You remember everything from this conversation. Reference it when relevant.
 - Never repeat the same advice twice. If you already covered something, build on it.
-- Keep responses conversational but content-rich. Default to 5-9 lines; if the user asks for depth/plan/strategy, expand to 8-14 lines.
-- Never start with "Great!", "Absolutely!", "Of course!" or similar filler openers.
-- Ask at most ONE question per reply. Make it specific and useful.
+- Keep responses conversational, content-rich, and authoritative. Default to 8-15 lines.
+- Never start with filler openers like "Great!", "Absolutely!", or "Of course!". Dive straight into the value.
+- Ask a question ONLY if it is essential for the user to take the next step. Your primary role is to provide answers and guidance.
 - IMPORTANT: When you ask ANY question, you MUST end your reply with [OPTIONS: choice1 | choice2 | choice3] on a new line. This creates clickable buttons for the user. Examples:
   - Yes/no question  [OPTIONS: Yes | No | Tell me more]
   - Choice question  [OPTIONS: Option A | Option B | Option C]
@@ -2085,6 +2086,25 @@ CONVERSATION RULES (follow naturally, don't state them):
                 system_prompt += "\n\n" + rag_context
         except Exception as _rag_err:
             print(f"DEBUG: RAG context error (non-fatal): {_rag_err}", flush=True)
+
+        is_workspace_creation = False
+        if "create a workspace" in text.lower() or "generate notes" in text.lower():
+            is_workspace_creation = True
+            system_prompt = """You are a Notion AI workspace generator. The user gives you a prompt and you generate a COMPLETE, rich, structured Markdown document for it.
+Rules:
+- Start with a clear # Title
+- Use ## and ### headers to organize sections
+- Use bullet lists (- item) for key points
+- Use checklists (- [ ] item) for actionable tasks and todo items
+- Use **bold** and *italic* for emphasis
+- Use > blockquotes for tips, callouts, or important notes
+- Use tables (| col | col |) when comparing things or listing data
+- Use numbered lists (1. 2. 3.) for sequential steps
+- Use --- for section dividers
+- Include practical, actionable content — not placeholder text
+- Write like a knowledgeable assistant, not a generic template
+- Do NOT include meta text like "This document was generated by AI"
+- Keep content between 300-600 words for depth without bloat"""
 
         #  Extract user memory in background (non-blocking) 
         threading.Thread(
@@ -2128,15 +2148,57 @@ CONVERSATION RULES (follow naturally, don't state them):
                 yield token
             # Save full reply to history
             ai_reply = ''.join(full_text_accumulator)
-            # Format response with bullets, emojis, and better formatting
-            formatted_reply = format_ai_response(ai_reply)
-            save_chat_message(_uid, 'ai', formatted_reply)
-            # Extract actionable tasks in background (non-blocking)
-            threading.Thread(
-                target=_extract_tasks_from_chat,
-                args=(_uid, _user_text, formatted_reply, _user_goal),
-                daemon=True,
-            ).start()
+            
+            if is_workspace_creation:
+                save_chat_message(_uid, 'ai', ai_reply)
+                
+                # Parse widgets natively and save to workspace
+                from knowledge_db import create_knowledge_block
+                title = "Workspace Block"
+                for line in ai_reply.splitlines():
+                    stripped = line.strip()
+                    if stripped.startswith('# ') and len(stripped) > 3:
+                        title = stripped.lstrip('# ').strip()[:120]
+                        break
+                
+                meta = {'template': 'notion-ai-generated', 'prompt': _user_text[:200], 'block_type': 'idea', 'widgets': [], 'todos': []}
+                import re
+                for line in ai_reply.split('\n'):
+                    m = re.match(r'^\s*-\s*\[([ xX])\]\s+(.*)$', line)
+                    if m:
+                        meta['todos'].append({'done': m.group(1).lower() == 'x', 'text': m.group(2).strip()})
+                if meta['todos']:
+                    meta['widgets'].append('todo')
+                
+                lower_content = ai_reply.lower()
+                if 'due date:' in lower_content:
+                    meta['widgets'].append('calendar')
+                if 'progress:' in lower_content or 'milestone:' in lower_content:
+                    meta['widgets'].append('progress')
+                if 'time estimate:' in lower_content or 'focus window:' in lower_content:
+                    meta['widgets'].append('time')
+
+                block_id = create_knowledge_block(
+                    _uid,
+                    'idea',
+                    title,
+                    ai_reply,
+                    tags=[],
+                    meta=meta
+                )
+                
+                link_msg = f"\n\n> 📦 **Workspace Created!** [Open it here](/workspace/{block_id}/edit)"
+                save_chat_message(_uid, 'ai', link_msg)
+                yield link_msg
+            else:
+                formatted_reply = format_ai_response(ai_reply)
+                save_chat_message(_uid, 'ai', formatted_reply)
+                # Extract actionable tasks in background (non-blocking)
+                threading.Thread(
+                    target=_extract_tasks_from_chat,
+                    args=(_uid, _user_text, formatted_reply, _user_goal),
+                    daemon=True,
+                ).start()
 
         response = Response(stream_with_context(stream_chat_response()), mimetype='text/plain')
         # Add strategy as response header for RLHF feedback tracking
@@ -2861,49 +2923,106 @@ Output JSON: {{"pattern": "...", "tip": "...", "recommendation": "..."}}"""
 from knowledge_db import create_knowledge_block, get_user_knowledge_blocks, delete_knowledge_block, get_knowledge_block, update_knowledge_block
 
 @app.route('/api/knowledge/smart-create', methods=['POST'])
+@rate_limit('smart_create', limit=8, window=30)
 def smart_create_workspace():
-    """AI-powered workspace creator - analyzes prompt and generates structured content"""
+    """AI-powered Notion-style workspace creator — generates rich structured blocks"""
     if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
-    
+
     try:
         data = request.json or {}
         prompt = data.get('prompt', '').strip()
-        
+
         if not prompt:
             return jsonify({'error': 'Empty prompt'}), 400
-        
+
         user_id = session['user_id']
-        
-        # Smart type detection
+
+        # ── Smart type detection ──────────────────────────────────────
         prompt_lower = prompt.lower()
-        block_type = 'idea'  # default
-        
-        if any(w in prompt_lower for w in ['task', 'todo', 'do', 'need to', 'should', 'must', 'fix', 'build', 'create']):
+        block_type = 'idea'
+
+        if any(w in prompt_lower for w in ['task', 'todo', 'checklist', 'do', 'need to', 'should', 'must', 'fix', 'build', 'action item', 'daily plan', 'plan for me', 'schedule']):
             block_type = 'task'
-        elif any(w in prompt_lower for w in ['learn', 'study', 'understand', 'how to', 'tutorial', 'guide']):
+        elif any(w in prompt_lower for w in ['learn', 'study', 'understand', 'how to', 'tutorial', 'guide', 'explain', 'teach']):
             block_type = 'learning'
-        elif any(w in prompt_lower for w in ['think', 'thought', 'feel', 'reflect', 'question', 'wonder']):
+        elif any(w in prompt_lower for w in ['think', 'thought', 'feel', 'reflect', 'question', 'wonder', 'journal', 'diary']):
             block_type = 'reflection'
-        elif any(w in prompt_lower for w in ['read', 'article', 'book', 'paper', 'blog', 'resource']):
+        elif any(w in prompt_lower for w in ['read', 'article', 'book', 'paper', 'blog', 'resource', 'summary', 'notes on']):
             block_type = 'read'
-        else:
-            block_type = 'idea'
-        
-        # Generate structured content based on type and prompt
+
+        # ── AI Content Generation (use NVIDIA rag_system) ─────────────
+        NOTION_SYSTEM_PROMPT = """You are a Notion AI workspace generator. The user gives you a prompt and you generate a COMPLETE, rich, structured Markdown document for it.
+
+Rules:
+- Start with a clear # Title
+- Use ## and ### headers to organize sections
+- Use bullet lists (- item) for key points
+- Use checklists (- [ ] item) for actionable tasks and todo items
+- Use **bold** and *italic* for emphasis
+- Use > blockquotes for tips, callouts, or important notes
+- Use tables (| col | col |) when comparing things or listing data
+- Use numbered lists (1. 2. 3.) for sequential steps
+- Use --- for section dividers
+- Include practical, actionable content — not placeholder text
+- Write like a knowledgeable assistant, not a generic template
+- Do NOT include meta text like "This document was generated by AI"
+- Make it feel like a real Notion page that someone would actually use
+- Keep content between 300-600 words for depth without bloat"""
+
         title = prompt
-        if block_type in ['task', 'learning', 'reflection', 'read'] and local_rag_system:
+        content = ''
+
+        # Try NVIDIA cloud AI first, then local, then fallback template
+        ai_system = rag_system or local_rag_system
+        if ai_system:
+            type_hint = {
+                'task': 'Include a priority matrix, checklist with specific action items (- [ ] format), timeline, and dependencies.',
+                'learning': 'Include learning objectives, key concepts with explanations, a study plan with checklist items, practice exercises, and resources.',
+                'reflection': 'Include thought prompts, analysis sections, multiple perspectives, key insights, and next steps with action items.',
+                'read': 'Include source info, main ideas, key takeaways, notable quotes, practical applications, and a rating.',
+                'idea': 'Include the concept overview, why it matters, key components, potential use cases, challenges, and next steps with checklist items.',
+            }.get(block_type, '')
+
             messages = [
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": f"Create a polished, useful {block_type} workspace block for: {prompt}. Include a strong title, a clear outline, and practical details."}
+                {"role": "system", "content": NOTION_SYSTEM_PROMPT},
+                {"role": "user", "content": f"Create a comprehensive Notion-style {block_type} page for:\n\n\"{prompt}\"\n\n{type_hint}"}
             ]
-            res = local_rag_system.generate_response(messages)
-            content = (res.get('message') or {}).get('content', '') if isinstance(res, dict) else ''
-        else:
-            content = generate_workspace_template(block_type, prompt)
+            try:
+                res = ai_system.generate_response(messages, temperature=0.7)
+                content = (res.get('message') or {}).get('content', '') if isinstance(res, dict) else ''
+            except Exception as ai_err:
+                logging.warning(f"AI generation failed, using template: {ai_err}")
+                content = ''
 
         if not content.strip():
             content = generate_workspace_template(block_type, prompt)
+
+        # Extract a clean title from the AI output if possible
+        for line in content.splitlines():
+            stripped = line.strip()
+            if stripped.startswith('# ') and len(stripped) > 3:
+                title = stripped.lstrip('# ').strip()[:120]
+                break
+
+        # Extract widgets natively
+        meta = {'template': 'notion-ai-generated', 'prompt': prompt[:200], 'block_type': block_type, 'widgets': [], 'todos': []}
+        import re
+        for line in content.split('\n'):
+            m = re.match(r'^\s*-\s*\[([ xX])\]\s+(.*)$', line)
+            if m:
+                meta['todos'].append({'done': m.group(1).lower() == 'x', 'text': m.group(2).strip()})
         
+        if meta['todos']:
+            meta['widgets'].append('todo')
+            
+        lower_content = content.lower()
+        if 'due date:' in lower_content:
+            meta['widgets'].append('calendar')
+        if 'progress:' in lower_content or 'milestone:' in lower_content:
+            meta['widgets'].append('progress')
+        if 'time estimate:' in lower_content or 'focus window:' in lower_content:
+            meta['widgets'].append('time')
+
         # Create the block
         block_id = create_knowledge_block(
             user_id,
@@ -2911,9 +3030,9 @@ def smart_create_workspace():
             title,
             content,
             tags=[],
-            meta={'template': 'smart-generated', 'prompt': prompt[:200]}
+            meta=meta
         )
-        
+
         return jsonify({
             'id': block_id,
             'status': 'success',
@@ -2922,167 +3041,233 @@ def smart_create_workspace():
             'content': content,
             'message': f'Created {block_type} workspace from prompt'
         })
-    
+
     except Exception as e:
-        logging.error(f"Smart create error: {e}")
+        logging.error(f"Smart create error: {e}", exc_info=True)
         return jsonify({'error': str(e), 'code': 'SMART_CREATE_FAILED'}), 500
 
 
 def generate_workspace_template(block_type, prompt):
-    """Generate structured workspace content based on type and prompt"""
-    
+    """Generate rich Notion-style structured workspace content based on type and prompt"""
+    from datetime import datetime
+    today = datetime.now().strftime('%B %d, %Y')
+
     templates = {
         'task': f"""# {prompt}
+
+> 📋 **Project workspace** — Created {today}
 
 ## Overview
 {prompt}
 
-## Steps
-- [ ] Step 1
-- [ ] Step 2
-- [ ] Step 3
+---
+
+## Priority Matrix
+
+| Priority | Task | Status |
+|----------|------|--------|
+| 🔴 High | Define core requirements | Pending |
+| 🟡 Medium | Research best approach | Pending |
+| 🟢 Low | Document findings | Pending |
+
+## Action Items
+- [ ] Break down the project into milestones
+- [ ] Set up initial structure
+- [ ] Define success criteria
+- [ ] Identify blockers and dependencies
+- [ ] Schedule review checkpoints
 
 ## Timeline
-- Start: 
-- Deadline: 
+- **Start date:** {today}
+- **Target completion:** TBD
+- **Review cadence:** Weekly
 
-## Resources
-- Link 1
-- Link 2
+## Resources & Links
+- Resource 1
+- Resource 2
+
+---
 
 ## Notes
+*Add your working notes below…*
+
 """,
         'learning': f"""# {prompt}
 
-## Objective
-Understand and master {prompt.lower()}
+> 🧠 **Learning workspace** — Created {today}
+
+## Learning Objective
+Understand and master **{prompt.lower()}** through structured study.
+
+---
 
 ## Key Concepts
-- Concept 1
-- Concept 2
-- Concept 3
+- **Concept 1** — Core foundational idea
+- **Concept 2** — Intermediate building block
+- **Concept 3** — Advanced application
 
-## Learning Path
-1. Foundation
-   - [ ] Subtopic 1
-   - [ ] Subtopic 2
+## Study Plan
 
-2. Intermediate
-   - [ ] Subtopic 3
-   - [ ] Subtopic 4
+### Phase 1: Foundation
+- [ ] Read introductory material
+- [ ] Watch overview tutorials
+- [ ] Take notes on core concepts
 
-3. Advanced
-   - [ ] Subtopic 5
+### Phase 2: Practice
+- [ ] Complete hands-on exercises
+- [ ] Build a small demo project
+- [ ] Review and document learnings
+
+### Phase 3: Mastery
+- [ ] Tackle advanced topics
+- [ ] Teach concepts to someone else
+- [ ] Apply knowledge to a real project
 
 ## Resources
-- Tutorial: 
-- Documentation: 
-- Examples: 
 
-## Practice
-- [ ] Exercise 1
-- [ ] Exercise 2
-- [ ] Build project
+| Type | Resource | Status |
+|------|----------|--------|
+| 📖 Tutorial | TBD | Not started |
+| 📄 Documentation | TBD | Not started |
+| 🎥 Video | TBD | Not started |
+
+---
 
 ## Notes & Insights
+*Capture your "aha moments" here…*
+
 """,
         'reflection': f"""# {prompt}
+
+> 🪞 **Reflection workspace** — {today}
 
 ## What I'm Thinking About
 {prompt}
 
+---
+
 ## Key Questions
-- What exactly am I questioning?
-- Why is this important?
-- What do I already know?
-- What am I uncertain about?
+- What exactly am I trying to understand?
+- Why does this matter to me right now?
+- What do I already know about this?
+- What assumptions am I making?
 
 ## Analysis
-### Perspectives
-- View 1:
-- View 2:
-- View 3:
 
-### Evidence
-- Point 1:
-- Point 2:
+### Different Perspectives
+1. **Optimistic view** — What's the best case scenario?
+2. **Pragmatic view** — What's most likely to happen?
+3. **Critical view** — What could go wrong?
 
-## Insights
-- Insight 1:
-- Insight 2:
+### Evidence & Data
+- Supporting point 1
+- Supporting point 2
+- Counter-argument 1
 
-## Action
-- Decision:
-- Next steps:
+## Key Insights
+- 💡 Insight 1
+- 💡 Insight 2
+- 💡 Insight 3
+
+## Decision & Next Steps
+- [ ] Make a decision based on the analysis
+- [ ] Take the first concrete action
+- [ ] Revisit and adjust after one week
+
+---
+
+*Reflect again in 7 days…*
+
 """,
         'read': f"""# {prompt}
 
-## Source Info
-- Title: 
-- Author: 
-- URL: 
-- Read Date: 
+> 📖 **Reading notes** — {today}
 
-## Main Ideas
-- Idea 1:
-- Idea 2:
-- Idea 3:
+## Source Information
+
+| Field | Detail |
+|-------|--------|
+| **Title** | {prompt} |
+| **Author** | TBD |
+| **URL/Source** | TBD |
+| **Date Read** | {today} |
+| **Rating** | ⭐⭐⭐⭐⭐ |
+
+---
+
+## Summary
+*One-paragraph summary of the main argument…*
 
 ## Key Takeaways
-1. Takeaway 1
-2. Takeaway 2
-3. Takeaway 3
+1. **Takeaway 1** — The most important idea
+2. **Takeaway 2** — An actionable insight
+3. **Takeaway 3** — Something that challenged my thinking
 
-## Highlights & Quotes
-- Quote 1
-- Quote 2
+## Notable Quotes
+> "Quote that stood out…"
 
-## How This Applies
-- Application 1:
-- Application 2:
+> "Another powerful line…"
+
+## How This Applies to My Work
+- [ ] Apply insight 1 to current project
+- [ ] Share takeaway 2 with team
+- [ ] Research related topic further
 
 ## Questions It Raised
-- Question 1:
-- Question 2:
+- Question 1?
+- Question 2?
 
-## Rating: ⭐⭐⭐⭐⭐
+---
+
+*Related reading: TBD*
+
 """,
         'idea': f"""# {prompt}
+
+> 💡 **Idea workspace** — Created {today}
 
 ## The Concept
 {prompt}
 
+---
+
 ## Why This Matters
-- Reason 1:
-- Reason 2:
-- Reason 3:
+- **Impact:** Describe the potential impact
+- **Urgency:** Why now?
+- **Uniqueness:** What makes this different?
 
 ## Key Components
-- Component 1:
-- Component 2:
-- Component 3:
 
-## Potential Applications
-- Use case 1:
-- Use case 2:
-- Use case 3:
+| Component | Description | Priority |
+|-----------|-------------|----------|
+| Core feature | TBD | 🔴 High |
+| Supporting feature | TBD | 🟡 Medium |
+| Nice-to-have | TBD | 🟢 Low |
 
-## Challenges
-- Challenge 1:
-- Challenge 2:
+## Use Cases
+1. **Primary use case** — The main way people would use this
+2. **Secondary use case** — Another valuable application
+3. **Edge case** — Less common but important scenario
+
+## Risks & Challenges
+- ⚠️ Challenge 1
+- ⚠️ Challenge 2
 
 ## Next Steps
-- [ ] Research more
-- [ ] Discuss with team
-- [ ] Create prototype
-- [ ] Test hypothesis
+- [ ] Validate the idea with research
+- [ ] Create a rough prototype or mockup
+- [ ] Get feedback from 3 people
+- [ ] Decide: build, pivot, or shelve
 
-## Related Ideas
-- Idea 1:
-- Idea 2:
+---
+
+## Related Ideas & Links
+- Related idea 1
+- Related idea 2
+
 """
     }
-    
+
     return templates.get(block_type, templates['idea'])
 
 
@@ -3239,6 +3424,7 @@ def knowledge_ai_assist():
     title   = data.get('title', '')
     content = data.get('content', '')
     mode    = data.get('mode', 'improve')
+    custom  = data.get('custom_prompt', '')
 
     mode_prompts = {
         'improve':  (
@@ -3261,6 +3447,12 @@ def knowledge_ai_assist():
             f"Suggest 5 short, relevant tags for this knowledge block:\n"
             f"Title: {title}\n{content}\n\nReturn as comma-separated tags only (e.g. productivity, habits, mindset)."
         ),
+        'custom': (
+            f"The user wants you to: {custom}\n\n"
+            f"Context Document Title: {title}\n"
+            f"Context Document Content:\n{content}\n\n"
+            f"Provide a helpful response incorporating the context if relevant. Format with markdown if appropriate. Do not include introductory/closing conversational text, just the generated content."
+        )
     }
 
     prompt = mode_prompts.get(mode, mode_prompts['improve'])

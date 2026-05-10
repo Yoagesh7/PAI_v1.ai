@@ -1,10 +1,27 @@
 {% extends "base.html" %}
 
+{% block head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.1/marked.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+{% endblock %}
+
 {% block content %}
+<button id="editToggleBtn" class="mode-toggle-btn" onclick="toggleEditMode()">
+  <span>✏️</span> <span id="toggleText">Edit</span>
+</button>
+
+<div class="ed-page is-view-mode" id="editorContainer">
 <style>
 /* =====================================================
    BLOCK EDITOR — Notion-like Page Editor
    ===================================================== */
+
+/* -- View Mode Control -- */
+.is-view-mode .ed-topbar .ed-type-pill,
+.is-view-mode .ed-topbar .ed-tb-btn { pointer-events: none; opacity: 0.7; }
+.is-view-mode .ed-emoji-wrap { pointer-events: none; opacity: 0.7; }
+.is-view-mode .ed-title { cursor: default; }
 
 /* -- Dark theme (matches app design-system) -- */
 [data-theme="dark"] {
@@ -276,6 +293,48 @@
 }
 .ed-ai-panel.open { display: block; }
 
+.ed-ai-custom-prompt {
+  margin-bottom: 16px;
+}
+
+.ed-ai-prompt-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.ed-ai-spark {
+  font-size: 16px;
+  animation: sparkPulse 2s ease-in-out infinite;
+}
+
+.ed-ai-prompt-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ed-title-c);
+}
+
+.ed-ai-prompt-input {
+  width: 100%;
+  background: var(--ed-surface);
+  border: 1px solid var(--ed-border);
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 14px;
+  color: var(--ed-body-c);
+  resize: vertical;
+  min-height: 70px;
+  outline: none;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.ed-ai-prompt-input:focus {
+  border-color: var(--ed-accent);
+  box-shadow: 0 0 0 3px rgba(139,92,246,0.1);
+}
+
 /* AI action buttons */
 .ed-ai-actions {
   display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px;
@@ -404,8 +463,155 @@
   border:1px solid rgba(139,92,246,.2); background:rgba(139,92,246,.08); color:var(--ed-accent); font-size:11px; font-weight:700; text-transform: uppercase; letter-spacing: .3px;
 }
 
-/* Todo widget styles removed (migrated/disabled) */
+/* ── Premium Todo Widget ───────────────────────── */
+.ed-todo-wrap {
+  margin-top: 24px;
+  background: var(--ed-surface);
+  border: 1px solid var(--ed-border);
+  border-radius: 16px;
+  padding: 20px 24px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
 
+.ed-todo-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  gap: 16px;
+}
+
+.ed-todo-hdr strong {
+  font-size: 15px;
+  color: var(--ed-title-c);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ed-todo-add {
+  flex: 1;
+  max-width: 300px;
+}
+
+.ed-todo-input {
+  width: 100%;
+  background: rgba(139,92,246,0.05);
+  border: 1px dashed rgba(139,92,246,0.3);
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  color: var(--ed-body-c);
+  outline: none;
+  transition: all 0.2s;
+}
+
+.ed-todo-input::placeholder {
+  color: var(--ed-muted);
+}
+
+.ed-todo-input:focus {
+  background: var(--ed-surface);
+  border-color: var(--ed-accent);
+  box-shadow: 0 0 0 3px rgba(139,92,246,0.1);
+}
+
+.ed-todo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ed-todo-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: transparent;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+.ed-todo-item:hover {
+  background: rgba(139,92,246,0.03);
+  border-color: rgba(139,92,246,0.1);
+}
+
+/* Custom Checkbox */
+.ed-todo-item input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 2px solid rgba(167,139,250,0.4);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.ed-todo-item input[type="checkbox"]:checked {
+  background: var(--ed-accent);
+  border-color: var(--ed-accent);
+}
+
+.ed-todo-item input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 5px;
+  width: 4px;
+  height: 9px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.todo-text {
+  font-size: 14px;
+  color: var(--ed-body-c);
+  flex: 1;
+  transition: all 0.2s;
+}
+
+.ed-todo-item.done .todo-text {
+  text-decoration: line-through;
+  color: var(--ed-muted);
+}
+
+.todo-del {
+  background: none;
+  border: none;
+  color: var(--ed-muted);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  opacity: 0;
+  transition: all 0.2s;
+}
+
+.ed-todo-item:hover .todo-del {
+  opacity: 1;
+}
+
+.todo-del:hover {
+  background: rgba(239,68,68,0.1);
+  color: #EF4444;
+}
+
+@media (max-width: 640px) {
+  .ed-todo-hdr {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .ed-todo-add {
+    max-width: 100%;
+  }
+}
 /* ── Skeleton / loading ─────────────────────────── */
 .ed-loading {
   display: none;
@@ -425,7 +631,90 @@
 
 /* -- Responsive: Mobile (≤768px — matches base.html) -- */
 @media (max-width: 768px) {
+  /* Hide navigation in edit mode to maximize space, but show in view mode */
+  .ed-page:not(.is-view-mode) ~ .mobile-bottom-nav, 
+  .ed-page:not(.is-view-mode) ~ .sidebar { display: none !important; }
+  
+  /* If editor is child of app-container, we need to target parents or use body classes */
+  body:has(.ed-page:not(.is-view-mode)) .mobile-bottom-nav,
+  body:has(.ed-page:not(.is-view-mode)) .sidebar { display: none !important; }
 
+  .app-container { padding-bottom: 0 !important; margin-left: 0 !important; }
+}
+
+/* ─── Mode Toggle Button ─── */
+.mode-toggle-btn {
+  position: fixed;
+  bottom: 30px;
+  right: 20px;
+  z-index: 1000;
+  padding: 12px 24px;
+  background: var(--ed-accent);
+  color: white;
+  border-radius: 40px;
+  border: none;
+  font-weight: 600;
+  box-shadow: 0 10px 30px var(--ed-glow);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  min-width: 100px;
+  height: 54px;
+}
+.mode-toggle-btn:hover { transform: translateY(-3px); box-shadow: 0 15px 40px var(--ed-glow); }
+.mode-toggle-btn:active { transform: scale(0.92); }
+
+/* View Mode Constraints */
+.is-view-mode .ed-block-gutter,
+.is-view-mode .ed-add-block-btn,
+.is-view-mode .ed-block-del-btn {
+  display: none !important;
+}
+.is-view-mode .ed-block {
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+}
+.is-view-mode .ed-display-mode {
+  cursor: default !important;
+}
+
+/* ─── Premium View Polish ─── */
+.ed-main {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.ed-header {
+  margin-bottom: 40px;
+  padding: 0 10px;
+}
+
+.ed-title-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 12px;
+}
+
+#blockEmoji {
+  font-size: 48px;
+  line-height: 1;
+}
+
+.ed-title {
+  font-size: 42px;
+  font-weight: 700;
+  color: var(--ed-title-c);
+  border: none;
+  background: transparent;
+  width: 100%;
+  outline: none;
+  padding: 0;
+}
   .ed-page { padding-bottom: 160px; }
 
   /* ─── Topbar: compact, single row ─── */
@@ -487,7 +776,438 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* ─── Tags ─── */
+  /* ─── Block Editor Specifics ─── */
+.ed-block-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 300px;
+  padding-bottom: 100px;
+}
+
+.ed-block {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  padding: 2px 0;
+  margin-left: -40px; /* Gutter for controls */
+  padding-left: 40px;
+  border-radius: 6px;
+  transition: background 0.1s ease;
+}
+
+.ed-block:hover {
+  background: rgba(255,255,255,0.02);
+}
+
+/* Gutter Controls */
+.ed-block-gutter {
+  position: absolute;
+  left: 0;
+  top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  width: 36px;
+  align-items: center;
+}
+
+.ed-block:hover .ed-block-gutter {
+  opacity: 1;
+}
+
+.ed-drag-handle {
+  cursor: grab;
+  color: var(--ed-muted);
+  padding: 4px;
+  font-size: 14px;
+  user-select: none;
+  border-radius: 4px;
+}
+.ed-drag-handle:hover { background: var(--ed-btn-bg); color: var(--ed-title-c); }
+
+.ed-block-del-btn {
+  cursor: pointer;
+  color: var(--ed-muted);
+  padding: 4px;
+  font-size: 12px;
+  border-radius: 4px;
+}
+.ed-block-del-btn:hover { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+
+.ed-block-content {
+  flex-grow: 1;
+  min-width: 0;
+  padding: 2px 4px;
+}
+
+/* Display Mode */
+.ed-display-mode {
+  cursor: text;
+  min-height: 1.6em;
+  color: var(--ed-body-c);
+  line-height: 1.6;
+  outline: none;
+}
+.ed-display-mode p { margin-bottom: 0.8em; }
+.ed-display-mode h1, .ed-display-mode h2, .ed-display-mode h3 { 
+  color: var(--ed-title-c); 
+  margin-top: 1.2em; 
+  margin-bottom: 0.4em;
+  font-weight: 600;
+}
+.ed-display-mode h1 { font-size: 1.8em; }
+.ed-display-mode h2 { font-size: 1.4em; border-bottom: 1px solid var(--ed-border); padding-bottom: 4px; }
+.ed-display-mode h3 { font-size: 1.2em; }
+
+.ed-display-mode table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5em 0;
+  font-size: 0.95em;
+  background: rgba(255,255,255,0.01);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.ed-display-mode th, .ed-display-mode td {
+  border: 1px solid var(--ed-border);
+  padding: 12px 16px;
+  text-align: left;
+}
+.ed-display-mode th {
+  background: var(--ed-btn-bg);
+  color: var(--ed-title-c);
+  font-weight: 600;
+}
+
+.ed-display-mode blockquote {
+  border-left: 4px solid var(--ed-accent);
+  margin: 1.5em 0;
+  padding: 1em 1.5em;
+  background: var(--ed-ai-bg);
+  color: var(--ed-ai-txt);
+  border-radius: 0 12px 12px 0;
+  font-style: italic;
+}
+
+.ed-display-mode ul, .ed-display-mode ol {
+  margin: 1em 0;
+  padding-left: 1.5em;
+}
+
+.ed-display-mode li {
+  margin-bottom: 0.5em;
+}
+
+.ed-display-mode a {
+  color: var(--ed-accent);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+/* Edit Mode */
+.ed-edit-mode {
+  display: none;
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-left: 2px solid var(--ed-accent);
+  color: var(--ed-body-c);
+  font-size: 16px;
+  line-height: 1.6;
+  resize: none;
+  outline: none;
+  padding: 4px 12px;
+  font-family: 'JetBrains Mono', monospace; /* Use mono for markdown editing */
+}
+
+.ed-block.is-editing .ed-display-mode { display: none; }
+.ed-block.is-editing .ed-edit-mode { display: block; }
+.ed-block.is-editing { background: var(--ed-btn-bg); }
+.ed-block.is-editing .ed-block-gutter { opacity: 0; }
+
+.ed-add-block-btn {
+  margin: 40px 0 100px 40px;
+  padding: 12px;
+  color: var(--ed-muted);
+  cursor: pointer;
+  border-radius: 8px;
+  border: 1px dashed var(--ed-border);
+  transition: all 0.2s;
+  text-align: center;
+  font-size: 14px;
+  opacity: 0.5;
+}
+.ed-add-block-btn:hover {
+  background: var(--ed-btn-bg);
+  color: var(--ed-title-c);
+  opacity: 1;
+  border-style: solid;
+}
+
+/* Todo Widget inline */
+.ed-block .todo-card {
+  margin: 0;
+  width: 100%;
+}
+
+/* ─── Premium Widget Redesign ─── */
+.ed-widget-block {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: linear-gradient(145deg, var(--ed-surface), rgba(30,30,36,0.5));
+  border: 1px solid var(--ed-border);
+  padding: 24px;
+  border-radius: 16px;
+  width: 100%;
+  margin: 16px 0;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.ed-widget-block:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+  border-color: var(--ed-accent);
+}
+
+.ed-widget-icon {
+  font-size: 28px;
+  width: 60px;
+  height: 60px;
+  background: var(--ed-ai-bg);
+  color: var(--ed-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  border: 1px solid var(--ed-ai-brd);
+  flex-shrink: 0;
+}
+
+.ed-widget-body {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.ed-widget-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ed-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+
+.ed-widget-input {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--ed-title-c);
+  width: 100%;
+  font-size: 18px;
+  font-weight: 500;
+  padding: 4px 0;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.ed-widget-input:focus {
+  border-bottom-color: var(--ed-accent);
+}
+
+/* Full Month Calendar */
+.ed-full-calendar {
+  width: 100%;
+  background: var(--ed-surface);
+  border: 1px solid var(--ed-border);
+  border-radius: 16px;
+  padding: 16px;
+  margin-top: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.cal-hdr {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 0 4px;
+}
+.cal-month-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ed-title-c);
+}
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.cal-day-name {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--ed-muted);
+  text-align: center;
+  font-weight: 800;
+  padding: 4px 0;
+}
+.cal-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--ed-body-c);
+}
+.cal-day:not(.empty):hover { background: var(--ed-btn-hov); color: var(--ed-accent); }
+.cal-day.today { background: var(--ed-ai-bg); color: var(--ed-accent); font-weight: 700; border: 1px solid var(--ed-ai-brd); }
+.cal-day.selected { background: var(--ed-accent); color: white !important; font-weight: 700; }
+.cal-day.empty { cursor: default; opacity: 0.2; }
+
+/* Progress Slider & Bar */
+.ed-progress-container {
+  margin-top: 12px;
+}
+.ed-progress-track {
+  height: 8px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 4px;
+  margin-bottom: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.03);
+}
+.ed-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--ed-accent), #c4b5fd);
+  border-radius: 4px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 15px var(--ed-glow);
+}
+.ed-progress-slider {
+  width: 100%;
+  height: 4px;
+  -webkit-appearance: none;
+  background: var(--ed-border);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+.ed-progress-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  background: var(--ed-title-c);
+  border: 3px solid var(--ed-accent);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+  transition: transform 0.1s;
+}
+.ed-progress-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+/* Premium Todo Card */
+.todo-card {
+  background: linear-gradient(145deg, var(--ed-surface), rgba(30,30,36,0.5));
+  border: 1px solid var(--ed-border);
+  border-radius: 16px;
+  padding: 24px;
+  margin: 16px 0;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+.todo-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--ed-border);
+}
+.todo-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ed-title-c);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.todo-count {
+  font-size: 12px;
+  padding: 4px 10px;
+  background: var(--ed-ai-bg);
+  color: var(--ed-accent);
+  border-radius: 20px;
+  font-weight: 700;
+}
+.todo-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.02);
+  transition: all 0.2s;
+}
+.todo-item:last-child { border: none; }
+.todo-item.done .todo-txt {
+  color: var(--ed-muted);
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+.todo-cb {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 2px solid var(--ed-border);
+  appearance: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.todo-cb:checked {
+  background: var(--ed-accent);
+  border-color: var(--ed-accent);
+}
+.todo-cb:checked::after {
+  content: '✓';
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* Full Pack / Dashboard Mix */
+.ed-mix-dashboard {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  background: var(--ed-btn-bg);
+  padding: 20px;
+  border-radius: 20px;
+  border: 1px solid var(--ed-border);
+  margin: 20px 0;
+}
+.ed-mix-stat {
+  background: var(--ed-surface);
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--ed-border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ed-mix-stat .val {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ed-title-c);
+}
+
   .ed-tags-row {
     margin-top: 18px; padding-top: 14px; gap: 6px;
   }
@@ -643,14 +1363,9 @@
 
     <div class="ed-divider"></div>
 
-    <!-- Body -->
-    <textarea class="ed-body" id="blockBody"
-      placeholder="Start writing… or press / for AI assist"
-      oninput="autoResize(this); markUnsaved()"
-      onkeydown="bodyKeydown(event)"></textarea>
-
-    <!-- Visual Todo widget container -->
-    <div id="todoWidgetWrap"></div>
+    <!-- Body: Block Container -->
+    <div id="blockEditorContainer" class="ed-block-container"></div>
+    <div class="ed-add-block-btn" onclick="addTextBlock()">+ Add Block</div>
 
     <!-- Tags -->
     <div class="ed-tags-row" id="tagsRow">
@@ -689,6 +1404,14 @@
   <div class="ed-ai-wrap">
 
     <div class="ed-ai-panel" id="aiPanel">
+      <div class="ed-ai-custom-prompt">
+        <div class="ed-ai-prompt-top">
+          <span class="ed-ai-spark">✨</span>
+          <span class="ed-ai-prompt-label">Ask AI to generate content</span>
+        </div>
+        <textarea class="ed-ai-prompt-input" id="aiCustomPrompt" placeholder="E.g., Write an intro about machine learning..." onkeydown="if(event.key==='Enter' && !event.shiftKey) { event.preventDefault(); runAI('custom'); }"></textarea>
+      </div>
+
       <div class="ed-ai-actions">
         <button class="ed-ai-btn" onclick="runAI('improve')">✍️ Improve</button>
         <button class="ed-ai-btn" onclick="runAI('summarize')">📋 Summarize</button>
@@ -820,6 +1543,7 @@ let saveTimer     = null;
 let aiOutContent  = '';
 let aiOutMode     = '';
 let widgetMeta    = { widgets: [] };
+let isViewMode    = true; // Start in View Mode
 
 const typeMap = {
   idea:       { emoji:'💡', label:'Idea' },
@@ -845,17 +1569,436 @@ document.addEventListener('DOMContentLoaded', () => {
   } else {
     setSaveStatus('unsaved', 'Unsaved');
     setType('idea');
+    // Initialize with one empty text block
+    parseMarkdownToBlocks('');
+    renderBlocks();
   }
   autoResize(document.getElementById('blockTitle'));
-  autoResize(document.getElementById('blockBody'));
   updateCharCount();
   document.getElementById('blockTitle').focus();
+  
+  window.addEventListener('beforeunload', (e) => {
+    if (isDirty) {
+      e.preventDefault();
+      e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+    }
+  });
 });
+
+/* ── Block Editor Engine ────────────────────────── */
+let blocks = []; // Array of { id, type, content, data }
+let blockIdCounter = 0;
+
+function parseMarkdownToBlocks(markdown) {
+  blocks = [];
+  if (!markdown) markdown = '';
+  
+  const mainTitle = document.getElementById('blockTitle').value.trim();
+  const rawBlocks = markdown.split(/\n\s*\n/);
+  
+  for (let i = 0; i < rawBlocks.length; i++) {
+    let b = rawBlocks[i];
+    if (!b.trim()) continue;
+    
+    // De-duplication: If the first block is just the title (e.g. "# Title"), skip it
+    if (i === 0 && mainTitle) {
+       const cleanB = b.replace(/^#+\s+/, '').trim();
+       if (cleanB.toLowerCase() === mainTitle.toLowerCase()) continue;
+    }
+
+    // Check if it's a checklist block
+    if (b.match(/^\s*-\s*\[([ xX])\]\s+(.*)$/m)) {
+       let items = [];
+       b.split('\n').forEach(line => {
+          let m = line.match(/^\s*-\s*\[([ xX])\]\s+(.*)$/);
+          if (m) items.push({ text: m[2].trim(), done: m[1].toLowerCase() === 'x' });
+       });
+       blocks.push({ id: ++blockIdCounter, type: 'todo', data: items });
+    } 
+    // Check if it's a calendar block (Due date: ...)
+    else if (b.match(/^Due date:\s*(.*)$/i)) {
+       let date = b.match(/^Due date:\s*(.*)$/i)[1].trim();
+       blocks.push({ id: ++blockIdCounter, type: 'calendar', data: date });
+    }
+    // Check if it's a progress block (Progress: ...)
+    else if (b.match(/^Progress:\s*(\d+)%(.*)$/i)) {
+       let match = b.match(/^Progress:\s*(\d+)%(.*)$/i);
+       blocks.push({ id: ++blockIdCounter, type: 'progress', data: { percent: parseInt(match[1]), text: match[2].trim() } });
+    }
+    // Check if it's a time block (Time estimate: ...)
+    else if (b.match(/^Time estimate:\s*(.*)$/i)) {
+       let time = b.match(/^Time estimate:\s*(.*)$/i)[1].trim();
+       blocks.push({ id: ++blockIdCounter, type: 'time', data: time });
+    }
+    // Check if it's a Full Pack (Mix) block
+    else if (b.match(/^Full pack:\s*(.*)$/i)) {
+       let raw = b.match(/^Full pack:\s*(.*)$/i)[1].trim();
+       let data = { time: '2h', date: 'Next Friday', progress: 50 };
+       try { data = JSON.parse(raw); } catch(e) {}
+       blocks.push({ id: ++blockIdCounter, type: 'mix', data: data });
+    }
+    else {
+       // Normal text block
+       blocks.push({ id: ++blockIdCounter, type: 'text', content: b });
+    }
+  }
+  
+  if (blocks.length === 0) {
+    blocks.push({ id: ++blockIdCounter, type: 'text', content: '' });
+  }
+}
+
+function renderBlocks() {
+  const container = document.getElementById('blockEditorContainer');
+  if (!container) return;
+  container.innerHTML = '';
+  
+  blocks.forEach((block, index) => {
+    const bDiv = document.createElement('div');
+    bDiv.className = 'ed-block';
+    bDiv.dataset.id = block.id;
+    bDiv.draggable = !isViewMode;
+    
+    // Gutter for controls (Drag & Delete)
+    const gutter = document.createElement('div');
+    gutter.className = 'ed-block-gutter';
+    
+    const handle = document.createElement('div');
+    handle.className = 'ed-drag-handle';
+    handle.innerHTML = '⋮⋮';
+    gutter.appendChild(handle);
+    
+    const delBtn = document.createElement('div');
+    delBtn.className = 'ed-block-del-btn';
+    delBtn.innerHTML = '✕';
+    delBtn.onclick = (e) => {
+      e.stopPropagation();
+      if (blocks.length > 1) {
+        blocks.splice(index, 1);
+        renderBlocks();
+        markUnsaved();
+      }
+    };
+    gutter.appendChild(delBtn);
+    bDiv.appendChild(gutter);
+    
+    const contentWrap = document.createElement('div');
+    contentWrap.className = 'ed-block-content';
+    
+    if (block.type === 'text') {
+      const displayDiv = document.createElement('div');
+      displayDiv.className = 'ed-display-mode';
+      // Render markdown or placeholder
+      const mdContent = block.content.trim() ? marked.parse(block.content) : '<p style="color:var(--ed-ph)">Click to start typing...</p>';
+      displayDiv.innerHTML = mdContent;
+      // Highlight JS
+      if (typeof hljs !== 'undefined') {
+        displayDiv.querySelectorAll('pre code').forEach(el => hljs.highlightElement(el));
+      }
+      
+      const editArea = document.createElement('textarea');
+      editArea.className = 'ed-edit-mode';
+      editArea.value = block.content;
+      
+      // Toggle edit mode
+      displayDiv.onclick = (e) => {
+         if (isViewMode) return;
+         if (e.target.tagName === 'A' || e.target.closest('a')) return;
+         bDiv.classList.add('is-editing');
+         editArea.focus();
+         autoResize(editArea);
+      };
+      
+      editArea.onblur = () => {
+         block.content = editArea.value;
+         bDiv.classList.remove('is-editing');
+         renderBlocks(); // re-render to update markdown
+         markUnsaved();
+      };
+      
+      editArea.oninput = () => { autoResize(editArea); markUnsaved(); };
+      
+      contentWrap.appendChild(displayDiv);
+      contentWrap.appendChild(editArea);
+    } else if (block.type === 'todo') {
+       contentWrap.innerHTML = buildTodoHtml(block);
+    } else if (block.type === 'calendar') {
+       contentWrap.innerHTML = buildCalendarHtml(block);
+    } else if (block.type === 'progress') {
+       contentWrap.innerHTML = buildProgressHtml(block);
+    } else if (block.type === 'time') {
+       contentWrap.innerHTML = buildTimeHtml(block);
+    } else if (block.type === 'mix') {
+       contentWrap.innerHTML = buildMixHtml(block);
+    }
+    
+    // Drag events
+    bDiv.ondragstart = (e) => { e.dataTransfer.setData('text/plain', index); bDiv.style.opacity = '0.5'; };
+    bDiv.ondragend = (e) => { bDiv.style.opacity = '1'; };
+    bDiv.ondragover = (e) => { e.preventDefault(); bDiv.style.borderTop = '2px solid var(--ed-accent)'; };
+    bDiv.ondragleave = (e) => { bDiv.style.borderTop = 'none'; };
+    bDiv.ondrop = (e) => {
+       e.preventDefault();
+       bDiv.style.borderTop = 'none';
+       const draggedIdx = parseInt(e.dataTransfer.getData('text/plain'));
+       if (draggedIdx === index || isNaN(draggedIdx)) return;
+       const draggedBlock = blocks.splice(draggedIdx, 1)[0];
+       blocks.splice(index, 0, draggedBlock);
+       renderBlocks();
+       markUnsaved();
+    };
+    
+    bDiv.appendChild(contentWrap);
+    container.appendChild(bDiv);
+  });
+}
+
+function buildTodoHtml(block) {
+  let listHtml = block.data.map((item, idx) => `
+      <div class="todo-item ${item.done ? 'done' : ''}">
+        <input type="checkbox" class="todo-cb" ${item.done ? 'checked' : ''} 
+               onchange="toggleBlockTodo(${block.id}, ${idx})">
+        <span class="todo-txt">${esc(item.text)}</span>
+      </div>
+    `).join('');
+    
+  return `
+    <div class="todo-card">
+      <div class="todo-header">
+        <span class="todo-title">📋 Checklist</span>
+        <span class="todo-count">${block.data.filter(t=>t.done).length}/${block.data.length}</span>
+      </div>
+      <div class="todo-list">${listHtml}</div>
+    </div>
+  `;
+}
+
+function buildCalendarHtml(block) {
+  const dateStr = block.data || new Date().toISOString().split('T')[0];
+  return `
+    <div class="ed-widget-block" style="flex-direction: column; align-items: stretch; gap: 12px;">
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <div class="ed-widget-icon">📅</div>
+        <div class="ed-widget-body">
+          <div class="ed-widget-label">Deadline / Date</div>
+          <input type="text" class="ed-widget-input" value="${esc(block.data)}" 
+                 onchange="updateBlockData(${block.id}, this.value)" placeholder="Set date (e.g. 2024-05-15)...">
+        </div>
+      </div>
+      <div class="ed-full-calendar">
+        ${renderFullMonthGrid(block.id, dateStr)}
+      </div>
+    </div>
+  `;
+}
+
+function renderFullMonthGrid(blockId, dateStr) {
+  let date;
+  try {
+     date = dateStr ? new Date(dateStr) : new Date();
+     if (isNaN(date.getTime())) date = new Date();
+  } catch(e) { date = new Date(); }
+
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const today = new Date();
+  
+  const firstDay = new Date(year, month, 1).getDay(); // 0 (Sun) to 6 (Sat)
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const monthName = date.toLocaleString('default', { month: 'long' });
+
+  // Adjust first day to start with Monday (optional, Notion style often starts Sunday, but let's do 0=Sun)
+  // We'll stick to 0=Sun for simplicity.
+  const names = ['S','M','T','W','T','F','S'];
+  let html = `<div class="cal-hdr"><div class="cal-month-name">${monthName} ${year}</div></div>`;
+  html += `<div class="cal-grid">`;
+  
+  // Headers
+  names.forEach(n => html += `<div class="cal-day-name">${n}</div>`);
+  
+  // Padding
+  for (let i = 0; i < firstDay; i++) {
+    html += `<div class="cal-day empty"></div>`;
+  }
+  
+  // Days
+  const selectedDay = date.getDate();
+  for (let d = 1; d <= daysInMonth; d++) {
+    const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === d;
+    const isSelected = selectedDay === d;
+    const dateVal = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    
+    html += `
+      <div class="cal-day ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''}" 
+           onclick="event.stopPropagation(); updateBlockCalendarDate(${blockId}, '${dateVal}')">
+        ${d}
+      </div>`;
+  }
+  
+  html += `</div>`;
+  return html;
+}
+
+function updateBlockCalendarDate(blockId, dateVal) {
+  const block = blocks.find(b => b.id === blockId);
+  if (block) {
+    block.data = dateVal;
+    renderBlocks();
+    markUnsaved();
+  }
+}
+
+function buildProgressHtml(block) {
+  return `
+    <div class="ed-widget-block">
+      <div class="ed-widget-icon">🚀</div>
+      <div class="ed-widget-body">
+        <div class="ed-widget-label">Completion Progress: ${block.data.percent}%</div>
+        <div class="ed-progress-container">
+          <div class="ed-progress-track">
+            <div class="ed-progress-fill" style="width: ${block.data.percent}%"></div>
+          </div>
+          <input type="range" min="0" max="100" value="${block.data.percent}" 
+                 oninput="updateBlockProgress(${block.id}, this.value)" class="ed-progress-slider">
+        </div>
+        <input type="text" class="ed-widget-input" value="${esc(block.data.text)}" 
+               style="font-size: 14px; margin-top: 8px;"
+               onchange="updateBlockProgressText(${block.id}, this.value)" placeholder="Status update...">
+      </div>
+    </div>
+  `;
+}
+
+function buildTimeHtml(block) {
+  return `
+    <div class="ed-widget-block">
+      <div class="ed-widget-icon">⏱️</div>
+      <div class="ed-widget-body">
+        <div class="ed-widget-label">Time Estimation</div>
+        <input type="text" class="ed-widget-input" value="${esc(block.data)}" 
+               onchange="updateBlockData(${block.id}, this.value)" placeholder="Set time (e.g. 2h)...">
+      </div>
+    </div>
+  `;
+}
+
+function buildMixHtml(block) {
+  return `
+    <div class="ed-mix-dashboard">
+      <div class="ed-mix-stat">
+        <div class="ed-widget-label">Time</div>
+        <div class="val">⏱️ ${esc(block.data.time)}</div>
+      </div>
+      <div class="ed-mix-stat">
+        <div class="ed-widget-label">Due Date</div>
+        <div class="val">📅 ${esc(block.data.date)}</div>
+      </div>
+      <div class="ed-mix-stat" style="grid-column: span 2;">
+        <div class="ed-widget-label">Total Progress</div>
+        <div class="ed-progress-track" style="margin: 4px 0;">
+          <div class="ed-progress-fill" style="width: ${block.data.progress}%"></div>
+        </div>
+        <div class="val" style="font-size: 14px;">${block.data.progress}% Complete</div>
+      </div>
+    </div>
+  `;
+}
+
+function updateBlockData(blockId, val) {
+  const block = blocks.find(b => b.id === blockId);
+  if (block) {
+    block.data = val;
+    markUnsaved();
+  }
+}
+
+function updateBlockProgress(blockId, val) {
+  const block = blocks.find(b => b.id === blockId);
+  if (block) {
+    block.data.percent = parseInt(val);
+    renderBlocks();
+    markUnsaved();
+  }
+}
+
+function updateBlockProgressText(blockId, val) {
+  const block = blocks.find(b => b.id === blockId);
+  if (block) {
+    block.data.text = val;
+    markUnsaved();
+  }
+}
+
+function toggleBlockTodo(blockId, idx) {
+  const block = blocks.find(b => b.id === blockId);
+  if (block && block.data[idx]) {
+     block.data[idx].done = !block.data[idx].done;
+     renderBlocks();
+     markUnsaved();
+  }
+}
+
+function serializeBlocksToMarkdown() {
+  return blocks.map(b => {
+    if (b.type === 'text') return b.content.trim();
+    if (b.type === 'todo') {
+       return b.data.map(t => `- [${t.done ? 'x' : ' '}] ${t.text}`).join('\n');
+    }
+    if (b.type === 'calendar') {
+       return `Due date: ${b.data}`;
+    }
+    if (b.type === 'progress') {
+       return `Progress: ${b.data.percent}% ${b.data.text}`;
+    }
+    if (b.type === 'time') {
+       return `Time estimate: ${b.data}`;
+    }
+    if (b.type === 'mix') {
+       return `Full pack: ${JSON.stringify(b.data)}`;
+    }
+    return '';
+  }).filter(c => c).join('\n\n');
+}
+
+function addTextBlock() {
+  if (isViewMode) return;
+  const id = ++blockIdCounter;
+  blocks.push({ id, type: 'text', content: '' });
+  renderBlocks();
+  markUnsaved();
+  
+  // Focus the new block
+  setTimeout(() => {
+    const newBlock = document.querySelector(`.ed-block[data-id="${id}"] .ed-display-mode`);
+    if (newBlock) newBlock.click();
+  }, 50);
+}
+
+function toggleEditMode() {
+  isViewMode = !isViewMode;
+  const container = document.getElementById('editorContainer');
+  const btn = document.getElementById('editToggleBtn');
+  const text = document.getElementById('toggleText');
+  
+  if (isViewMode) {
+    container.classList.add('is-view-mode');
+    text.innerText = 'Edit';
+    btn.querySelector('span:first-child').innerText = '✏️';
+  } else {
+    container.classList.remove('is-view-mode');
+    text.innerText = 'Done';
+    btn.querySelector('span:first-child').innerText = '✅';
+  }
+  renderBlocks(); // Re-render to update draggability/visibility
+}
 
 /* ── Populate existing block ──────────────────── */
 function populateEditor(b) {
   document.getElementById('blockTitle').value = b.title || '';
-  document.getElementById('blockBody').value  = b.content || '';
+  
+  parseMarkdownToBlocks(b.content);
+  renderBlocks();
+  
   setType(b.type || 'idea');
 
   // Tags
@@ -875,8 +2018,6 @@ function populateEditor(b) {
 
   widgetMeta = normalizeMeta(b.meta);
   refreshWidgetBadges();
-  // Render todo widget if present in meta
-  renderTodoWidget();
 }
 
 /* ── Type selector ────────────────────────────── */
@@ -926,20 +2067,12 @@ function autoResize(el) {
 function titleKeydown(e) {
   if (e.key === 'Enter') {
     e.preventDefault();
-    document.getElementById('blockBody').focus();
+    if (document.querySelector('.ed-edit-mode')) {
+        document.querySelector('.ed-edit-mode').focus();
+    }
   }
   if ((e.ctrlKey || e.metaKey) && e.key === 's') {
     e.preventDefault(); saveBlock();
-  }
-}
-
-function bodyKeydown(e) {
-  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-    e.preventDefault(); saveBlock();
-  }
-  if (e.key === '/' && document.getElementById('blockBody').value === '') {
-    e.preventDefault();
-    openAIPanel();
   }
 }
 
@@ -978,6 +2111,7 @@ function renderTags() {
 /* ── Save status ──────────────────────────────── */
 function setSaveStatus(state, text) {
   const el = document.getElementById('saveStatus');
+  if (!el) return;
   el.className = `ed-save-status ${state}`;
   el.textContent = text;
 }
@@ -994,8 +2128,9 @@ function markUnsaved() {
 }
 
 function updateCharCount() {
-  const n = (document.getElementById('blockBody').value || '').length;
-  document.getElementById('metaChars').textContent = n.toLocaleString() + ' characters';
+  const n = serializeBlocksToMarkdown().length;
+  const el = document.getElementById('metaChars');
+  if (el) el.textContent = n.toLocaleString() + ' characters';
 }
 
 function normalizeMeta(meta) {
@@ -1050,24 +2185,20 @@ function closeWidgetPicker(evt) {
 }
 
 function insertQuickChecklist() {
-  const body = document.getElementById('blockBody');
   const items = [
     { text: 'Define objective', done: false },
     { text: 'Add details', done: false },
     { text: 'Review with team', done: false }
   ];
-  const snippet = items.map(i => `- [ ] ${i.text}`).join('\n');
-  body.value = body.value ? `${body.value}\n${snippet}` : snippet;
-  body.dispatchEvent(new Event('input'));
+  blocks.push({ id: ++blockIdCounter, type: 'todo', data: items });
   widgetMeta.widgets = Array.from(new Set([...(widgetMeta.widgets || []), 'todo']));
-  widgetMeta.todos = items;
+  widgetMeta.todos = [...(widgetMeta.todos || []), ...items];
+  renderBlocks();
   refreshWidgetBadges();
-  renderTodoWidget();
   markUnsaved();
 }
 
 function applyWidgetTemplate(type) {
-  const body = document.getElementById('blockBody');
   const templates = {
     todo: '- [ ] Research competitors\n- [ ] Draft outline\n- [ ] Review and ship',
     calendar: 'Due date: ' + new Date().toLocaleDateString(),
@@ -1076,16 +2207,29 @@ function applyWidgetTemplate(type) {
     image: 'Image reference: paste a link in the notes below.',
     mix: '- [ ] Research competitors\n- [ ] Draft outline\nDue date: ' + new Date().toLocaleDateString() + '\nProgress: 75%\nTime estimate: 45 mins\nImage reference: add URL'
   };
-  body.value = body.value ? `${body.value}\n\n${templates[type] || ''}` : (templates[type] || '');
-  body.dispatchEvent(new Event('input'));
-  widgetMeta.widgets = Array.from(new Set([...(widgetMeta.widgets || []), type]));
-  // If type is todo, also populate structured todo items
-  if (type === 'todo') {
-    const t = templates[type] || '';
-    const items = (t.split('\n')||[]).map(l => l.replace(/^\s*- \[.\]\s*/, '').trim()).filter(Boolean).map(txt => ({ text: txt, done: false }));
-    widgetMeta.todos = items;
-    renderTodoWidget();
+  const tpl = templates[type] || '';
+  if (!tpl) return;
+
+  // Parse the template text into blocks and append
+  const tempBlocks = [];
+  const rawChunks = tpl.split(/\n\s*\n/);
+  for (const chunk of rawChunks) {
+    if (!chunk.trim()) continue;
+    if (chunk.match(/^\s*-\s*\[([ xX])\]\s+(.*)$/m)) {
+      let items = [];
+      chunk.split('\n').forEach(line => {
+        let m = line.match(/^\s*-\s*\[([ xX])\]\s+(.*)$/);
+        if (m) items.push({ text: m[2].trim(), done: m[1].toLowerCase() === 'x' });
+      });
+      tempBlocks.push({ id: ++blockIdCounter, type: 'todo', data: items });
+    } else {
+      tempBlocks.push({ id: ++blockIdCounter, type: 'text', content: chunk });
+    }
   }
+  blocks.push(...tempBlocks);
+
+  widgetMeta.widgets = Array.from(new Set([...(widgetMeta.widgets || []), type]));
+  renderBlocks();
   refreshWidgetBadges();
   markUnsaved();
 }
@@ -1093,78 +2237,12 @@ function applyWidgetTemplate(type) {
 function insertWidget(type) {
   applyWidgetTemplate(type);
   closeWidgetPicker();
-  if (type === 'todo') {
-    renderTodoWidget();
-  }
-  openAIPanel();
-}
-
-/* ── Todo widget renderer / handlers ───────────────── */
-function renderTodoWidget() {
-  const wrap = document.getElementById('todoWidgetWrap');
-  wrap.innerHTML = '';
-  const todos = Array.isArray(widgetMeta.todos) ? widgetMeta.todos : [];
-  if (!todos.length && !(widgetMeta.widgets || []).includes('todo')) return;
-
-  const container = document.createElement('div');
-  container.className = 'ed-todo-wrap';
-
-  const hdr = document.createElement('div'); hdr.className = 'ed-todo-hdr';
-  hdr.innerHTML = '<strong>✅ Todos</strong>';
-  const addWrap = document.createElement('div'); addWrap.className = 'ed-todo-add';
-  const input = document.createElement('input'); input.className = 'ed-todo-input'; input.placeholder = 'Add a todo and press Enter';
-  input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); const v = input.value.trim(); if (v) { addTodoItem(v); input.value = ''; } } });
-  addWrap.appendChild(input);
-  hdr.appendChild(addWrap);
-  container.appendChild(hdr);
-
-  const list = document.createElement('div'); list.className = 'ed-todo-list';
-  todos.forEach((t, i) => {
-    const it = document.createElement('div'); it.className = 'ed-todo-item' + (t.done ? ' done' : '');
-    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !!t.done; cb.addEventListener('change', () => toggleTodo(i));
-    const span = document.createElement('div'); span.className = 'todo-text'; span.textContent = t.text || '';
-    const del = document.createElement('button'); del.className = 'todo-del'; del.innerHTML = '✕'; del.addEventListener('click', () => removeTodo(i));
-    it.appendChild(cb); it.appendChild(span); it.appendChild(del);
-    list.appendChild(it);
-  });
-  container.appendChild(list);
-
-  wrap.appendChild(container);
-}
-
-function addTodoItem(text) {
-  widgetMeta.widgets = Array.from(new Set([...(widgetMeta.widgets || []), 'todo']));
-  widgetMeta.todos = widgetMeta.todos || [];
-  widgetMeta.todos.push({ text: text, done: false });
-  renderTodoWidget();
-  refreshWidgetBadges();
-  markUnsaved();
-}
-
-function toggleTodo(idx) {
-  widgetMeta.todos = widgetMeta.todos || [];
-  if (!widgetMeta.todos[idx]) return;
-  widgetMeta.todos[idx].done = !widgetMeta.todos[idx].done;
-  renderTodoWidget();
-  markUnsaved();
-}
-
-function removeTodo(idx) {
-  widgetMeta.todos = widgetMeta.todos || [];
-  widgetMeta.todos.splice(idx,1);
-  if (!widgetMeta.todos.length) {
-    // remove widget badge when empty
-    widgetMeta.widgets = (widgetMeta.widgets || []).filter(w => w !== 'todo');
-  }
-  renderTodoWidget();
-  refreshWidgetBadges();
-  markUnsaved();
 }
 
 /* ── Save ─────────────────────────────────────── */
 async function saveBlock(isAuto = false) {
   const title   = document.getElementById('blockTitle').value.trim();
-  const content = document.getElementById('blockBody').value;
+  const content = serializeBlocksToMarkdown();
 
   if (!title && !content) {
     if (!isAuto) setSaveStatus('unsaved', '● Title required');
@@ -1257,9 +2335,13 @@ function openAIPanel() {
 
 async function runAI(mode) {
   const title   = document.getElementById('blockTitle').value.trim();
-  const content = document.getElementById('blockBody').value.trim();
+  const content = serializeBlocksToMarkdown();
+  let customPrompt = '';
 
-  if (!content && !title) {
+  if (mode === 'custom') {
+    customPrompt = document.getElementById('aiCustomPrompt').value.trim();
+    if (!customPrompt) return;
+  } else if (!content && !title) {
     showAIOut('ai-hint', '✏️ Write something first, then use AI to improve it.');
     return;
   }
@@ -1270,10 +2352,14 @@ async function runAI(mode) {
     expand:   '🔭 Expanded',
     actions:  '⚡ Action Items',
     tags:     '🏷️ Suggested Tags',
+    custom:   '✨ AI Generated Content'
   };
 
   // Disable all AI buttons while running
   document.querySelectorAll('.ed-ai-btn').forEach(b => b.disabled = true);
+  const promptInput = document.getElementById('aiCustomPrompt');
+  if (promptInput) promptInput.disabled = true;
+
   showAIOut('loading', '<span class="ai-spin">⟳</span> AI is thinking…');
   document.getElementById('aiApplyBtn').style.display = 'none';
 
@@ -1281,7 +2367,7 @@ async function runAI(mode) {
     const res = await fetch('/api/knowledge/ai-assist', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, content, mode }),
+      body: JSON.stringify({ title, content, mode, custom_prompt: customPrompt }),
     });
     const data = await res.json();
 
@@ -1294,7 +2380,7 @@ async function runAI(mode) {
     showAIOut('result', aiOutContent.replace(/\n/g, '<br>'));
 
     // Show apply button for content modes
-    if (['improve', 'expand', 'actions'].includes(mode)) {
+    if (['improve', 'expand', 'actions', 'custom'].includes(mode)) {
       document.getElementById('aiApplyBtn').style.display = 'block';
     } else if (mode === 'tags') {
       // For tags mode show apply as "Add tags"
@@ -1307,6 +2393,13 @@ async function runAI(mode) {
     console.error('AI error:', err);
   } finally {
     document.querySelectorAll('.ed-ai-btn').forEach(b => b.disabled = false);
+    const promptInput = document.getElementById('aiCustomPrompt');
+    if (promptInput) {
+      promptInput.disabled = false;
+      if (mode === 'custom' && !document.getElementById('aiOut').classList.contains('error')) {
+        promptInput.value = '';
+      }
+    }
   }
 }
 
@@ -1333,11 +2426,13 @@ function applyAIOut() {
       document.getElementById('aiApplyBtn').textContent = '+ Add these tags';
     }, 2000);
   } else {
-    // Replace body content
-    const body = document.getElementById('blockBody');
-    body.value = aiOutContent;
-    autoResize(body);
+    // Convert AI Output to blocks
+    let currentContent = serializeBlocksToMarkdown();
+    let newContent = currentContent ? `${currentContent}\n\n${aiOutContent}` : aiOutContent;
+    parseMarkdownToBlocks(newContent);
+    renderBlocks();
     markUnsaved();
+    
     document.getElementById('aiApplyBtn').textContent = '✅ Applied';
     setTimeout(() => {
       document.getElementById('aiApplyBtn').textContent = '↩ Apply to document';
