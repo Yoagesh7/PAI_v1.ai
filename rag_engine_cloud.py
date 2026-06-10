@@ -11,24 +11,7 @@ from collections import Counter
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-
-
-def _default_db_path() -> str:
-    if os.getenv("VERCEL"):
-        return os.getenv("PARTNERAI_DB_PATH", "/tmp/partnerai.db")
-    return os.getenv("PARTNERAI_DB_PATH", str(Path(__file__).resolve().parent / "partnerai.db"))
-
-
-DB_NAME = _default_db_path()
-
-
-@contextmanager
-def _get_db():
-    conn = sqlite3.connect(DB_NAME, check_same_thread=False)
-    try:
-        yield conn
-    finally:
-        conn.close()
+from memory import get_db as _get_db
 
 
 def _tokenize(text: str) -> list[str]:
@@ -47,25 +30,28 @@ def _score_text(query: str, candidate: str) -> float:
 def _init_rag_tables():
     with _get_db() as conn:
         c = conn.cursor()
+        is_pg = bool(getattr(conn, "is_postgres", False) or os.getenv("DATABASE_URL"))
+        id_type = "SERIAL PRIMARY KEY" if is_pg else "INTEGER PRIMARY KEY AUTOINCREMENT"
+        blob_type = "BYTEA" if is_pg else "BLOB"
         c.execute(
-            """
+            f"""
             CREATE TABLE IF NOT EXISTS user_memory_vectors (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id {id_type},
                 user_id INTEGER NOT NULL,
                 content TEXT NOT NULL,
-                embedding BLOB NOT NULL,
+                embedding {blob_type} NOT NULL,
                 importance_score INTEGER DEFAULT 1,
                 created_at TEXT NOT NULL
             )
             """
         )
         c.execute(
-            """
+            f"""
             CREATE TABLE IF NOT EXISTS domain_knowledge (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id {id_type},
                 domain_type TEXT NOT NULL,
                 content TEXT NOT NULL,
-                embedding BLOB NOT NULL
+                embedding {blob_type} NOT NULL
             )
             """
         )
@@ -104,11 +90,14 @@ def save_user_memory(user_id: int, text: str, importance_score: int = 1) -> int:
 
 def retrieve_user_memory(user_id: int, query: str, top_k: int = 3) -> list[str]:
     with _get_db() as conn:
-        conn.row_factory = sqlite3.Row
-        rows = conn.execute(
+        if not getattr(conn, "is_postgres", False):
+            conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        c.execute(
             "SELECT content, importance_score FROM user_memory_vectors WHERE user_id = ?",
             (user_id,),
-        ).fetchall()
+        )
+        rows = c.fetchall()
 
     scored = []
     for row in rows:
@@ -159,11 +148,14 @@ def ingest_domain_file(domain_type: str, file_path: str) -> int:
 
 def retrieve_domain_knowledge(domain_type: str, query: str, top_k: int = 3) -> list[str]:
     with _get_db() as conn:
-        conn.row_factory = sqlite3.Row
-        rows = conn.execute(
+        if not getattr(conn, "is_postgres", False):
+            conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        c.execute(
             "SELECT content FROM domain_knowledge WHERE domain_type = ?",
             (domain_type,),
-        ).fetchall()
+        )
+        rows = c.fetchall()
 
     scored = []
     for row in rows:
@@ -177,8 +169,11 @@ def retrieve_domain_knowledge(domain_type: str, query: str, top_k: int = 3) -> l
 def init_rag_system():
     _init_rag_tables()
     with _get_db() as conn:
-        user_count = conn.execute("SELECT COUNT(*) FROM user_memory_vectors").fetchone()[0]
-        domain_count = conn.execute("SELECT COUNT(*) FROM domain_knowledge").fetchone()[0]
+        c = conn.cursor()
+        c.execute("SELECT COUNT(*) FROM user_memory_vectors")
+        user_count = c.fetchone()[0]
+        c.execute("SELECT COUNT(*) FROM domain_knowledge")
+        domain_count = c.fetchone()[0]
     user_memory_index.size = int(user_count or 0)
     domain_knowledge_index.size = int(domain_count or 0)
     print(

@@ -13,7 +13,8 @@ def init_widgets_db():
         cursor = conn.cursor()
         
         # Check if we are on PostgreSQL
-        id_type = "SERIAL" if "psycopg2" in str(type(conn)) else "INTEGER PRIMARY KEY AUTOINCREMENT"
+        is_pg = bool(getattr(conn, "is_postgres", False) or os.getenv("DATABASE_URL"))
+        id_type = "SERIAL PRIMARY KEY" if is_pg else "INTEGER PRIMARY KEY AUTOINCREMENT"
         
         # Widgets Table
         cursor.execute(f"""
@@ -26,10 +27,10 @@ def init_widgets_db():
                 position_y INTEGER DEFAULT 0,
                 width INTEGER DEFAULT 4,
                 height INTEGER DEFAULT 4,
-                is_visible BOOLEAN DEFAULT 1,
+                is_visible BOOLEAN DEFAULT TRUE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY(user_id) REFERENCES users(id)
+                FOREIGN KEY(user_id) REFERENCES users(user_id)
             )
         """)
         

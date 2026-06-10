@@ -58,6 +58,7 @@ class _SQLiteCompatCursorProxy:
     def __init__(self, cursor):
         object.__setattr__(self, "_cursor", cursor)
         object.__setattr__(self, "_lastrowid", None)
+        object.__setattr__(self, "_fetchone_cache", None)
 
     @staticmethod
     def _translate_sql(sql):
@@ -68,6 +69,10 @@ class _SQLiteCompatCursorProxy:
     def execute(self, sql, params=None):
         sql = self._translate_sql(sql)
         cursor = object.__getattribute__(self, "_cursor")
+        
+        # Clear fetchone cache
+        object.__setattr__(self, "_fetchone_cache", None)
+        
         result = cursor.execute(sql) if params is None else cursor.execute(sql, params)
 
         # Emulate sqlite3 lastrowid for INSERTs on PostgreSQL.
@@ -77,6 +82,7 @@ class _SQLiteCompatCursorProxy:
                 if "RETURNING" in sql.upper():
                     row = cursor.fetchone()
                     if row is not None:
+                        object.__setattr__(self, "_fetchone_cache", row)
                         try:
                             object.__setattr__(self, "_lastrowid", row[0])
                         except Exception:
@@ -84,10 +90,16 @@ class _SQLiteCompatCursorProxy:
                 else:
                     # Best-effort fallback: get the current sequence value.
                     try:
-                        cursor.execute("SELECT LASTVAL()")
-                        row = cursor.fetchone()
-                        if row is not None:
-                            object.__setattr__(self, "_lastrowid", row[0])
+                        # Use a SAVEPOINT to prevent speculative SELECT LASTVAL() from aborting the transaction
+                        cursor.execute("SAVEPOINT lastval_sp")
+                        try:
+                            cursor.execute("SELECT LASTVAL()")
+                            row = cursor.fetchone()
+                            if row is not None:
+                                object.__setattr__(self, "_lastrowid", row[0])
+                            cursor.execute("RELEASE SAVEPOINT lastval_sp")
+                        except Exception:
+                            cursor.execute("ROLLBACK TO SAVEPOINT lastval_sp")
                     except Exception:
                         pass
         except Exception:
@@ -98,6 +110,37 @@ class _SQLiteCompatCursorProxy:
     def executemany(self, sql, seq_of_params):
         sql = self._translate_sql(sql)
         return object.__getattribute__(self, "_cursor").executemany(sql, seq_of_params)
+
+    def fetchone(self):
+        cache = object.__getattribute__(self, "_fetchone_cache")
+        if cache is not None:
+            object.__setattr__(self, "_fetchone_cache", None)
+            return cache
+        return object.__getattribute__(self, "_cursor").fetchone()
+
+    def fetchall(self):
+        cache = object.__getattribute__(self, "_fetchone_cache")
+        rows = object.__getattribute__(self, "_cursor").fetchall()
+        if cache is not None:
+            object.__setattr__(self, "_fetchone_cache", None)
+            return [cache] + list(rows)
+        return rows
+
+    def fetchmany(self, size=None):
+        cache = object.__getattribute__(self, "_fetchone_cache")
+        if cache is not None:
+            object.__setattr__(self, "_fetchone_cache", None)
+            if size is not None and size > 0:
+                if size == 1:
+                    return [cache]
+                rows = object.__getattribute__(self, "_cursor").fetchmany(size - 1)
+                return [cache] + list(rows)
+            else:
+                rows = object.__getattribute__(self, "_cursor").fetchmany()
+                return [cache] + list(rows)
+        if size is not None:
+            return object.__getattribute__(self, "_cursor").fetchmany(size)
+        return object.__getattribute__(self, "_cursor").fetchmany()
 
     @property
     def lastrowid(self):

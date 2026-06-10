@@ -58,26 +58,25 @@ def test_database_connection():
         from memory import get_db, get_user
         
         # Try to get a test connection
-        conn = get_db()
-        if conn:
-            print("\n✅ Database connection successful!")
-            
-            # Check if it's PostgreSQL
-            try:
-                cursor = conn.cursor()
-                cursor.execute("SELECT version();")
-                version = cursor.fetchone()
-                if version:
-                    print(f"✅ PostgreSQL version: {version[0][:50]}...")
-                cursor.close()
-            except Exception as e:
-                print(f"⚠️  Could not fetch PostgreSQL version: {e}")
-            
-            conn.close()
-            return True
-        else:
-            print("\n❌ Could not establish database connection")
-            return False
+        with get_db() as conn:
+            if conn:
+                print("\n✅ Database connection successful!")
+                
+                # Check if it's PostgreSQL
+                try:
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT version();")
+                    version = cursor.fetchone()
+                    if version:
+                        print(f"✅ PostgreSQL version: {version[0][:50]}...")
+                    cursor.close()
+                except Exception as e:
+                    print(f"⚠️  Could not fetch PostgreSQL version: {e}")
+                
+                return True
+            else:
+                print("\n❌ Could not establish database connection")
+                return False
             
     except ImportError:
         print("\n⚠️  Could not import database modules (might be OK in non-dev environment)")
@@ -102,17 +101,17 @@ def test_data_persistence():
         
         # Create a test user with timestamp
         import time
-        test_user_id = f"test_supabase_{int(time.time())}"
+        test_user_id = int(time.time()) % 1000000
         test_data = {
-            "username": f"testuser_{int(time.time())}",
-            "email": f"test_{int(time.time())}@supabase.test",
+            "username": f"tuser_{test_user_id}",
+            "email": f"t_{test_user_id}@supabase.test",
             "password": "test_password_123",
-            "about_me": "Testing Supabase persistence"
+            "name": "Testing Supabase persistence"
         }
         
         # Save user (first request)
         print(f"\n1. Saving test user: {test_user_id}")
-        result = save_user(test_user_id, test_data)
+        result = save_user(test_user_id, **test_data)
         print(f"   ✅ Save result: {result}")
         
         # Retrieve user (simulates new request)
@@ -121,11 +120,13 @@ def test_data_persistence():
         
         if retrieved:
             print("   ✅ User retrieved successfully!")
-            print(f"   Username: {retrieved.get('username')}")
-            print(f"   Email: {retrieved.get('email')}")
-            print(f"   About me: {retrieved.get('about_me')}")
+            # get_user returns: user_id, name, ..., username (index 15), email (index 17)
+            ret_username = retrieved[15] if len(retrieved) > 15 else None
+            ret_email = retrieved[17] if len(retrieved) > 17 else None
+            print(f"   Username: {ret_username}")
+            print(f"   Email: {ret_email}")
             
-            if retrieved.get('username') == test_data['username']:
+            if ret_username == test_data['username']:
                 print("\n✅ DATA PERSISTENCE CONFIRMED!")
                 print("   Supabase is working correctly on Vercel")
                 return True
