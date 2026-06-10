@@ -952,35 +952,19 @@ def signup():
     if username_exists(email) or username_exists(username):
         return jsonify({'error': 'An account already exists with that email or username.'}), 409
 
-    # Generate professional 6-digit OTP
-    import random
-    otp = str(random.randint(100000, 999999))
-    expires_at = (datetime.now() + timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
+    # Directly create account without OTP verification
+    user_id = create_account(username, password, email)
+    if not user_id:
+        return jsonify({'error': 'Failed to create account.'}), 500
+
+    user_row = get_user(user_id)
+    _set_auth_session(user_row)
     
-    # Save for verification
-    save_signup_verification(username, password, email, otp, expires_at)
-    
-    # Send Email
-    subject = "Verify your PartnerAI Account"
-    body = f"""Hello {username}!
-
-Welcome to PartnerAI. To complete your registration, please enter the following verification code:
-
-Verification Code: {otp}
-
-This code will expire in 10 minutes.
-
-If you did not request this, please ignore this email.
-
-Best,
-The PartnerAI Team"""
-    
-    success = send_email(email, subject, body)
-    if success:
-        logging.info(f" Signup OTP sent to {email}")
-        return jsonify({'success': True, 'verification_required': True, 'message': 'Verification code sent to your email.'})
-    else:
-        return jsonify({'error': 'Failed to send verification email. Please check your email address.'}), 500
+    return jsonify({
+        'success': True,
+        'verification_required': False,
+        **_serialize_user(user_row)
+    })
 
 
 @app.route('/api/signup/verify', methods=['POST'])
@@ -1043,28 +1027,13 @@ def login():
     if not verified_user_id:
         return jsonify({'error': 'Incorrect password.'}), 401
 
-    # 3. Professional 2FA Flow
-    import random
-    otp = str(random.randint(100000, 999999))
-    expires_at = (datetime.now() + timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
-    
-    username = user_row[15] or user_row[1]
-    email = user_row[17]
-    
-    save_login_verification(username, otp, expires_at)
-    
-    # Send Email
-    subject = "PartnerAI Login Verification"
-    body = f"Hello {username}!\n\nYour login verification code is: {otp}\n\nIt will expire in 10 minutes."
-    
-    send_email(email, subject, body)
-    logging.info(f" Login OTP sent to {email}")
+    # Directly log the user in without OTP
+    _set_auth_session(user_row)
     
     return jsonify({
         'success': True,
-        'verification_required': True,
-        'username': username,
-        'email': email
+        'verification_required': False,
+        **_serialize_user(user_row)
     })
 
 
