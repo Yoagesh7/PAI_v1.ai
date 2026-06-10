@@ -27,10 +27,10 @@ logger = logging.getLogger(__name__)
 from memory import get_db, get_user, save_chat_message
 
 # Email configuration
-SMTP_SERVER = "smtp.gmail.com"
-SMTP_PORT = 587
-EMAIL_ADDRESS = "dreamsyncai07@gmail.com"
-EMAIL_PASSWORD = "whcvbcvflkgsnicj"
+SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
+EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS", "dreamsyncai07@gmail.com")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "whcvbcvflkgsnicj")
 
 def send_email(to_email, subject, body):
     """Send email via SMTP"""

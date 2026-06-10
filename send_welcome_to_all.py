@@ -4,12 +4,13 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import time
 
+import os
 # --- CONFIG ---
 DB_NAME = "partnerai.db"
-SMTP_SERVER = "smtp.gmail.com"
-SMTP_PORT = 587
-EMAIL_ADDRESS = "dreamsyncai07@gmail.com"
-EMAIL_PASSWORD = "whcvbcvflkgsnicj"
+SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
+EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS", "dreamsyncai07@gmail.com")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "whcvbcvflkgsnicj")
 
 def send_email(to_email, subject, body):
     try:

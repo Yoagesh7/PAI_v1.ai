@@ -22,10 +22,11 @@ def send_email(to_email, subject, body):
     from email.mime.text import MIMEText
     from email.mime.multipart import MIMEMultipart
     
-    SMTP_SERVER = "smtp.gmail.com"
-    SMTP_PORT = 587
-    EMAIL_ADDRESS = "dreamsyncai07@gmail.com"
-    EMAIL_PASSWORD = "whcvbcvflkgsnicj"
+    import os
+    SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+    SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
+    EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS", "dreamsyncai07@gmail.com")
+    EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "whcvbcvflkgsnicj")
     
     try:
         msg = MIMEMultipart()

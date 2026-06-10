@@ -2,13 +2,14 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
+import os
 # --- CONFIG ---
-SMTP_SERVER = "smtp.gmail.com"
-SMTP_PORT = 587
-EMAIL_ADDRESS = "dreamsyncai07@gmail.com"
-EMAIL_PASSWORD = "whcvbcvflkgsnicj"
+SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
+EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS", "dreamsyncai07@gmail.com")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "whcvbcvflkgsnicj")
 
-TO_EMAIL = "haniffazalm@gmail.com"
+TO_EMAIL = os.getenv("TO_EMAIL", "haniffazalm@gmail.com")
 
 def send_test_email():
     try:

@@ -30,10 +30,10 @@ from ai_response_formatter import format_ai_response
 SYSTEM_PROMPT = "You are a helpful, friendly, and intelligent AI assistant. Answer the user's questions clearly and concisely."
 
 # EMAIL CONFIGURATION
-SMTP_SERVER = "smtp.gmail.com"
-SMTP_PORT = 587
-EMAIL_ADDRESS = "dreamsyncai07@gmail.com"
-EMAIL_PASSWORD = "whcvbcvflkgsnicj"
+SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
+EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS", "dreamsyncai07@gmail.com")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "whcvbcvflkgsnicj")
 
 def send_email(to_email, subject, body):
     try:
