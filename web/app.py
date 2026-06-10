@@ -63,6 +63,11 @@ def send_email(to_email, subject, body):
         return True
     except Exception as e:
         logging.error(f"Email failed to {to_email}: {e}")
+        try:
+            from memory import log_system_error
+            log_system_error("EMAIL_FAILURE", f"Failed to send email to {to_email}: {str(e)}")
+        except Exception as log_err:
+            logging.error(f"Failed to log email error: {log_err}")
         return False
 
 # Add parent directory to path to allow importing config

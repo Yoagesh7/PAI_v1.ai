@@ -364,13 +364,23 @@ def init_db():
         )
         """)
 
-        cursor.execute(f"""
+         cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS password_resets (
             id {id_type_ai},
             username TEXT NOT NULL,
             email TEXT NOT NULL,
             code TEXT NOT NULL,
             expires_at TIMESTAMP NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+
+        # --- SYSTEM LOGS ---
+        cursor.execute(f"""
+        CREATE TABLE IF NOT EXISTS system_logs (
+            id {id_type_ai},
+            log_type TEXT NOT NULL,
+            message TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
@@ -383,6 +393,16 @@ try:
     print(f"Database initialized at: {DB_NAME}", flush=True)
 except Exception as e:
     print(f"Warning: DB initialization failed: {e}. Will retry on first query.", flush=True)
+
+
+def log_system_error(log_type, message):
+    """Log system events and errors directly to the persistent database for remote debugging."""
+    try:
+        with get_db() as conn:
+            conn.execute(f"INSERT INTO system_logs (log_type, message) VALUES ({PL}, {PL})", (log_type, message))
+            conn.commit()
+    except Exception as e:
+        print(f"Failed to log system error: {e}", flush=True)
 
 
 # --- AUTH ---
