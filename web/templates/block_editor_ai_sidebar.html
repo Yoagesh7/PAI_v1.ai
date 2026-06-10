@@ -1,0 +1,1003 @@
+<!-- Notion-like AI Chat Sidebar for Block Editor -->
+<!-- Insert into block_editor.html before closing </div> of .ed-page -->
+
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   AI CHAT SIDEBAR - NOTION STYLE
+   ═══════════════════════════════════════════════════════════════ */
+
+.ed-ai-sidebar-wrap {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 380px;
+  height: 100vh;
+  z-index: 1000;
+  display: none;
+  flex-direction: column;
+  background: var(--ed-surface);
+  border-left: 1px solid var(--ed-border);
+  box-shadow: -4px 0 32px rgba(0,0,0,0.2);
+  animation: slideInRight 0.3s cubic-bezier(0.34,0.1,0.68,0.55);
+}
+
+.ed-ai-sidebar-wrap.open {
+  display: flex;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.ed-ai-sidebar-wrap.closing {
+  animation: slideOutRight 0.3s cubic-bezier(0.34,0.1,0.68,0.55) forwards;
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.ed-ai-sidebar-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--ed-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ed-ai-sidebar-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ed-title-c);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ed-ai-sidebar-close {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ed-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 18px;
+}
+
+.ed-ai-sidebar-close:hover {
+  background: rgba(255,255,255,0.06);
+  color: var(--ed-title-c);
+}
+
+.ed-ai-sidebar-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 16px;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.ed-ai-mode-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--ed-border);
+}
+
+.ed-ai-mode-tab {
+  padding: 8px 12px;
+  font-size: 12px;
+  border: 1px solid var(--ed-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ed-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ed-ai-mode-tab:hover {
+  border-color: var(--ed-accent);
+  color: var(--ed-accent);
+}
+
+.ed-ai-mode-tab.active {
+  background: rgba(139,120,204,0.12);
+  color: #c4b5fd;
+  border-color: rgba(139,120,204,0.4);
+}
+
+.ed-ai-messages {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 8px;
+}
+
+.ed-ai-message {
+  display: flex;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.ed-ai-message.user {
+  justify-content: flex-end;
+}
+
+.ed-ai-message-bubble {
+  max-width: 80%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.ed-ai-message.ai .ed-ai-message-bubble {
+  background: rgba(139,120,204,0.1);
+  color: #a7a7b7;
+  border: 1px solid rgba(139,120,204,0.2);
+}
+
+.ed-ai-message.user .ed-ai-message-bubble {
+  background: rgba(139,120,204,0.25);
+  color: #f7f8fa;
+}
+
+.ed-ai-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ed-muted);
+}
+
+.ed-ai-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(139,120,204,0.3);
+  border-top-color: var(--ed-accent);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.ed-ai-prompt-input-wrap {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid var(--ed-border);
+}
+
+.ed-ai-prompt-input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid var(--ed-border);
+  border-radius: 10px;
+  background: var(--ed-btn-bg);
+  color: var(--ed-title-c);
+  font-size: 13px;
+  font-family: inherit;
+  resize: none;
+  max-height: 100px;
+  transition: all 0.2s;
+}
+
+.ed-ai-prompt-input:focus {
+  outline: none;
+  border-color: rgba(139,120,204,0.4);
+  background: rgba(139,120,204,0.06);
+}
+
+.ed-ai-prompt-input::placeholder {
+  color: var(--ed-muted);
+}
+
+.ed-ai-send-btn {
+  padding: 10px 12px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(139,120,204,0.2);
+  color: var(--ed-accent);
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.ed-ai-send-btn:hover:not(:disabled) {
+  background: rgba(139,120,204,0.3);
+}
+
+.ed-ai-send-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Right-click context menu */
+.ed-context-menu {
+  position: fixed;
+  min-width: 200px;
+  padding: 6px;
+  border-radius: 12px;
+  background: var(--ed-surface);
+  border: 1px solid var(--ed-border);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.3);
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 2000;
+}
+
+.ed-context-menu.open {
+  display: flex;
+}
+
+.ed-context-menu-item {
+  padding: 10px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ed-title-c);
+  cursor: pointer;
+  font-size: 13px;
+  text-align: left;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ed-context-menu-item:hover {
+  background: rgba(139,120,204,0.12);
+  color: var(--ed-accent);
+}
+
+.ed-context-menu-item.ai-action {
+  color: var(--ed-accent);
+  font-weight: 500;
+}
+
+.ed-context-menu-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 1024px) {
+  .ed-ai-sidebar-wrap {
+    width: 320px;
+  }
+}
+
+@media (max-width: 640px) {
+  .ed-ai-sidebar-wrap {
+    width: 100%;
+  }
+  
+  .ed-ai-mode-tabs {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Submenu for grouping edit actions */
+.has-submenu {
+  position: relative;
+}
+.ed-context-submenu {
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 0;
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 200px;
+  padding: 6px;
+  border-radius: 12px;
+  background: var(--ed-surface);
+  border: 1px solid var(--ed-border);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.3);
+  z-index: 2100;
+}
+.has-submenu:hover .ed-context-submenu,
+.has-submenu.submenu-open .ed-context-submenu {
+  display: flex;
+}
+
+/* More (three-dot) panel */
+.has-more { position: relative; }
+.ed-context-morepanel {
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 0;
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 200px;
+  padding: 6px;
+  border-radius: 12px;
+  background: var(--ed-surface);
+  border: 1px solid var(--ed-border);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.3);
+  z-index: 2100;
+}
+.has-more:hover .ed-context-morepanel,
+.has-more.more-open .ed-context-morepanel {
+  display: flex;
+}
+
+
+
+/* Blur overlay when sidebar is open */
+.ed-page.ai-sidebar-open {
+  background-color: rgba(0,0,0,0.1);
+}
+
+.ed-page.ai-sidebar-open::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 380px;
+  bottom: 0;
+  background: rgba(0,0,0,0.15);
+  z-index: 900;
+  cursor: pointer;
+}
+
+@media (max-width: 1024px) {
+  .ed-page.ai-sidebar-open::before {
+    right: 320px;
+  }
+}
+
+@media (max-width: 640px) {
+  .ed-page.ai-sidebar-open::before {
+    right: 0;
+  }
+}
+</style>
+
+<!-- AI Sidebar HTML -->
+<div class="ed-ai-sidebar-wrap" id="aiSidebar">
+  <div class="ed-ai-sidebar-header">
+    <div class="ed-ai-sidebar-title">
+      <span>🤖</span>
+      <span>AI Assistant</span>
+    </div>
+    <button class="ed-ai-sidebar-close" onclick="closeAISidebar()">✕</button>
+  </div>
+  
+  <div class="ed-ai-sidebar-content">
+    <div class="ed-ai-mode-tabs">
+      <button class="ed-ai-mode-tab active" onclick="selectAIMode('improve')">✍️ Improve</button>
+      <button class="ed-ai-mode-tab" onclick="selectAIMode('summarize')">📋 Summarize</button>
+      <button class="ed-ai-mode-tab" onclick="selectAIMode('expand')">🔭 Expand</button>
+      <button class="ed-ai-mode-tab" onclick="selectAIMode('actions')">⚡ Actions</button>
+      <button class="ed-ai-mode-tab" onclick="selectAIMode('tags')">🏷️ Tags</button>
+      <button class="ed-ai-mode-tab" onclick="selectAIMode('custom')">🤖 Custom</button>
+    </div>
+    
+    <div class="ed-ai-messages" id="aiMessages"></div>
+  </div>
+  
+  <div class="ed-ai-prompt-input-wrap">
+    <textarea 
+      class="ed-ai-prompt-input" 
+      id="aiPromptInput" 
+      placeholder="Ask AI to edit, improve, or generate content..."
+      onkeydown="handleAIPromptKeydown(event)"
+    ></textarea>
+    <button class="ed-ai-send-btn" onclick="sendAIPrompt()" title="Send (Ctrl+Enter)">↗</button>
+  </div>
+</div>
+
+<!-- Context menu for right-click -->
+<div class="ed-context-menu" id="edContextMenu">
+  <button class="ed-context-menu-item ai-action" id="ctxCreateBlockBtn" onclick="createBlockFromContextMenu()">
+    <span class="ed-context-menu-icon">➕</span>
+    <span>Create block</span>
+  </button>
+  <button class="ed-context-menu-item ai-action" id="ctxAIAssistBtn" onclick="openAIAssistFromContextMenu()">
+    <span class="ed-context-menu-icon">🤖</span>
+    <span>AI Assist</span>
+  </button>
+  <button class="ed-context-menu-item" id="ctxWidgetsBtn" onclick="openWidgetsFromContextMenu()">
+    <span class="ed-context-menu-icon">🧩</span>
+    <span>Widgets</span>
+  </button>
+  <button class="ed-context-menu-item" id="ctxQuickTodoBtn" onclick="insertQuickTodoFromContextMenu()">
+    <span class="ed-context-menu-icon">✅</span>
+    <span>Quick Todo</span>
+  </button>
+  <div class="ed-context-menu-item has-submenu" id="ctxEditSubmenu">
+    <span class="ed-context-menu-icon">✏️</span>
+    <span>Edit</span>
+    <div class="ed-context-submenu" id="ctxEditSubmenuPanel" aria-hidden="true">
+      <button class="ed-context-menu-item" id="ctxToHeaderBtn" onclick="convertSelectedBlockToHeader();">
+        <span class="ed-context-menu-icon">H</span>
+        <span>Make Heading</span>
+      </button>
+      <button class="ed-context-menu-item" id="ctxToBulletBtn" onclick="convertSelectedBlockToBullet();">
+        <span class="ed-context-menu-icon">•</span>
+        <span>Make Bullet List</span>
+      </button>
+      <button class="ed-context-menu-item" id="ctxToColorHeadingBtn" onclick="convertSelectedBlockToColorHeading();">
+        <span class="ed-context-menu-icon">🎨</span>
+        <span>Color Heading</span>
+      </button>
+      <button class="ed-context-menu-item" id="ctxToTodoBtn" onclick="convertSelectedBlockToTodo();">
+        <span class="ed-context-menu-icon">☑️</span>
+        <span>Change to Todo</span>
+      </button>
+      <button class="ed-context-menu-item" id="ctxToTableBtn" onclick="convertSelectedBlockToTable();">
+        <span class="ed-context-menu-icon">▦</span>
+        <span>Change to Table</span>
+      </button>
+    </div>
+  </div>
+  <button class="ed-context-menu-item ai-action" id="ctxEditWithAIBtn" onclick="openAISidebarWithMode('improve')">
+    <span class="ed-context-menu-icon">✍️</span>
+    <span>Edit with AI</span>
+  </button>
+  <button class="ed-context-menu-item ai-action" id="ctxAskAIBtn" onclick="openAISidebarWithMode('custom')">
+    <span class="ed-context-menu-icon">💬</span>
+    <span>Ask AI</span>
+  </button>
+  <button class="ed-context-menu-item" id="ctxCopyBtn" onclick="copySelectedText()">
+    <span class="ed-context-menu-icon">📋</span>
+    <span>Copy</span>
+  </button>
+
+  <!-- Three-dot More menu: Convert to Excel, Share, Save, Delete -->
+  <div class="ed-context-menu-item has-more" id="ctxMoreMenu">
+    <span class="ed-context-menu-icon">⋯</span>
+    <span>More</span>
+    <div class="ed-context-morepanel" id="ctxMorePanel" aria-hidden="true">
+      <button class="ed-context-menu-item" id="ctxConvertExcelBtn" onclick="convertSelectedBlockToExcel()">
+        <span class="ed-context-menu-icon">📤</span>
+        <span>Convert to Excel</span>
+      </button>
+      <button class="ed-context-menu-item" id="ctxShareBtn" onclick="shareSelectedBlock()">
+        <span class="ed-context-menu-icon">🔗</span>
+        <span>Share</span>
+      </button>
+      <button class="ed-context-menu-item" id="ctxSaveBtn" onclick="saveSelectedBlock()">
+        <span class="ed-context-menu-icon">💾</span>
+        <span>Save</span>
+      </button>
+      <button class="ed-context-menu-item" id="ctxDeleteBtn" onclick="deleteSelectedBlock()">
+        <span class="ed-context-menu-icon">🗑️</span>
+        <span>Delete</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// AI SIDEBAR & CONTEXT MENU LOGIC
+// ═══════════════════════════════════════════════════════════════
+
+let currentAIMode = 'improve';
+let aiSidebarOpen = false;
+let selectedTextForAI = '';
+let selectedBlockForAI = null;
+let emptyCanvasContextPoint = null;
+
+function openAISidebar() {
+  const sidebar = document.getElementById('aiSidebar');
+  const page = document.getElementById('editorContainer');
+  if (!sidebar || !page) return;
+  
+  sidebar.classList.add('open');
+  page.classList.add('ai-sidebar-open');
+  aiSidebarOpen = true;
+  document.getElementById('aiPromptInput').focus();
+}
+
+function closeAISidebar() {
+  const sidebar = document.getElementById('aiSidebar');
+  const page = document.getElementById('editorContainer');
+  if (!sidebar || !page) return;
+  
+  sidebar.classList.remove('open');
+  page.classList.remove('ai-sidebar-open');
+  aiSidebarOpen = false;
+}
+
+function openAISidebarWithMode(mode) {
+  currentAIMode = mode;
+  selectAIMode(mode);
+  openAISidebar();
+  closeContextMenu();
+}
+
+function selectAIMode(mode) {
+  currentAIMode = mode;
+  document.querySelectorAll('.ed-ai-mode-tab').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  event?.target?.classList.add('active');
+  
+  const input = document.getElementById('aiPromptInput');
+  if (input) {
+    if (mode === 'custom') {
+      input.placeholder = 'Type your prompt here...';
+      input.focus();
+    } else {
+      input.placeholder = `Ask AI to ${mode} the selected content...`;
+    }
+  }
+}
+
+function handleAIPromptKeydown(e) {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault();
+    sendAIPrompt();
+  }
+}
+
+async function sendAIPrompt() {
+  const input = document.getElementById('aiPromptInput');
+  const prompt = input?.value.trim();
+  
+  if (!prompt) return;
+  
+  // Get content to process
+  const content = getSelectedBlockContent() || serializeBlocksToMarkdown();
+  if (!content) {
+    alert('No content selected. Please select or create content first.');
+    return;
+  }
+  
+  // Add user message to chat
+  addAIMessage('user', prompt);
+  input.value = '';
+  input.style.height = 'auto';
+  
+  // Send to backend
+  try {
+    const response = await fetch('/api/block-ai/process', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        block_id: blockId || 'temp',
+        content: content,
+        mode: currentAIMode,
+        custom_prompt: currentAIMode === 'custom' ? prompt : undefined,
+        block_type: 'text',
+        context: {
+          title: document.getElementById('blockTitle')?.value || 'Untitled'
+        }
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success && data.result) {
+      addAIMessage('ai', data.result);
+      
+      // Show "Apply" button for result
+      showApplyAIResult(data.result);
+    } else {
+      addAIMessage('ai', `Error: ${data.error || 'Unknown error'}`);
+    }
+  } catch (e) {
+    console.error('AI error:', e);
+    addAIMessage('ai', `Error: ${e.message}`);
+  }
+}
+
+function addAIMessage(role, message) {
+  const messagesDiv = document.getElementById('aiMessages');
+  if (!messagesDiv) return;
+  
+  const msgEl = document.createElement('div');
+  msgEl.className = `ed-ai-message ${role}`;
+  
+  const bubble = document.createElement('div');
+  bubble.className = 'ed-ai-message-bubble';
+  bubble.textContent = message;
+  
+  msgEl.appendChild(bubble);
+  messagesDiv.appendChild(msgEl);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+function showApplyAIResult(result) {
+  const messagesDiv = document.getElementById('aiMessages');
+  if (!messagesDiv) return;
+  
+  const actionEl = document.createElement('div');
+  actionEl.style.cssText = 'display: flex; gap: 8px; padding: 8px 0; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 8px; margin-top: 8px;';
+  
+  const applyBtn = document.createElement('button');
+  applyBtn.textContent = '✅ Apply';
+  applyBtn.style.cssText = 'flex: 1; padding: 8px 12px; background: rgba(139,120,204,0.2); color: #c4b5fd; border: none; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 500;';
+  applyBtn.onclick = () => applyAIResult(result);
+  
+  const copyBtn = document.createElement('button');
+  copyBtn.textContent = '📋 Copy';
+  copyBtn.style.cssText = 'flex: 1; padding: 8px 12px; background: rgba(255,255,255,0.06); color: var(--ed-muted); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; cursor: pointer; font-size: 12px;';
+  copyBtn.onclick = () => {
+    navigator.clipboard.writeText(result);
+    copyBtn.textContent = '✓ Copied';
+    setTimeout(() => { copyBtn.textContent = '📋 Copy'; }, 2000);
+  };
+  
+  actionEl.appendChild(applyBtn);
+  actionEl.appendChild(copyBtn);
+  messagesDiv.appendChild(actionEl);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+function applyAIResult(result) {
+  const blockContent = document.querySelector('.ed-display-mode');
+  if (blockContent) {
+    blockContent.innerHTML = marked.parse(result);
+    if (typeof hljs !== 'undefined') {
+      blockContent.querySelectorAll('pre code').forEach(el => hljs.highlightElement(el));
+    }
+  }
+  
+  const editArea = document.querySelector('.ed-edit-mode');
+  if (editArea) {
+    editArea.value = result;
+    markUnsaved();
+  }
+  
+  closeAISidebar();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RIGHT-CLICK CONTEXT MENU
+// ═══════════════════════════════════════════════════════════════
+
+document.addEventListener('contextmenu', (e) => {
+  const blockContent = e.target.closest('.ed-block-content, .ed-display-mode, .ed-edit-mode');
+  const canvas = e.target.closest('#blockEditorContainer, .ed-block-container, .ed-main, .ed-page, #editorContainer');
+  if (!blockContent && !canvas) return;
+  
+  e.preventDefault();
+  
+  selectedTextForAI = window.getSelection().toString();
+  selectedBlockForAI = blockContent ? blockContent.closest('.ed-block') : null;
+  emptyCanvasContextPoint = (canvas)
+    ? { x: e.pageX, y: e.pageY }
+    : null;
+  
+  const hasBlockTarget = !!blockContent;
+  const createBtn = document.getElementById('ctxCreateBlockBtn');
+  const aiAssistBtn = document.getElementById('ctxAIAssistBtn');
+  const widgetsBtn = document.getElementById('ctxWidgetsBtn');
+  const quickTodoBtn = document.getElementById('ctxQuickTodoBtn');
+  const toHeaderBtn = document.getElementById('ctxToHeaderBtn');
+  const toBulletBtn = document.getElementById('ctxToBulletBtn');
+  const toColorHeadingBtn = document.getElementById('ctxToColorHeadingBtn');
+  const toTodoBtn = document.getElementById('ctxToTodoBtn');
+  const toTableBtn = document.getElementById('ctxToTableBtn');
+  const editBtn = document.getElementById('ctxEditWithAIBtn');
+  const askBtn = document.getElementById('ctxAskAIBtn');
+  const copyBtn = document.getElementById('ctxCopyBtn');
+  const delBtn = document.getElementById('ctxDeleteBtn');
+
+  if (createBtn) createBtn.style.display = emptyCanvasContextPoint ? 'flex' : 'none';
+  if (aiAssistBtn) aiAssistBtn.style.display = 'flex';
+  if (widgetsBtn) widgetsBtn.style.display = 'flex';
+  if (quickTodoBtn) quickTodoBtn.style.display = 'flex';
+  if (toHeaderBtn) toHeaderBtn.style.display = hasBlockTarget ? 'flex' : 'none';
+  if (toBulletBtn) toBulletBtn.style.display = hasBlockTarget ? 'flex' : 'none';
+  if (toColorHeadingBtn) toColorHeadingBtn.style.display = hasBlockTarget ? 'flex' : 'none';
+  if (toTodoBtn) toTodoBtn.style.display = hasBlockTarget ? 'flex' : 'none';
+  if (toTableBtn) toTableBtn.style.display = hasBlockTarget ? 'flex' : 'none';
+  if (editBtn) editBtn.style.display = hasBlockTarget ? 'flex' : 'none';
+  if (askBtn) askBtn.style.display = hasBlockTarget ? 'flex' : 'none';
+  if (copyBtn) copyBtn.style.display = hasBlockTarget ? 'flex' : 'none';
+  if (delBtn) delBtn.style.display = hasBlockTarget ? 'flex' : 'none';
+  
+  const menu = document.getElementById('edContextMenu');
+  if (!menu) return;
+  
+  menu.classList.add('open');
+  menu.style.left = e.pageX + 'px';
+  menu.style.top = e.pageY + 'px';
+  // Prevent clicks inside the menu from bubbling to document (which closes it)
+  menu.addEventListener('click', (ev) => ev.stopPropagation());
+
+  // Reset submenu state and attach toggler for touch devices
+  const editSub = document.getElementById('ctxEditSubmenu');
+  if (editSub) {
+    editSub.classList.remove('submenu-open');
+    const panel = document.getElementById('ctxEditSubmenuPanel');
+    if (panel) panel.setAttribute('aria-hidden', 'true');
+    // toggle submenu on click (useful for touch)
+    editSub.onclick = function(ev) {
+      ev.stopPropagation();
+      this.classList.toggle('submenu-open');
+      const p = document.getElementById('ctxEditSubmenuPanel');
+      if (p) p.setAttribute('aria-hidden', String(!this.classList.contains('submenu-open')));
+    };
+  }
+  // Setup More (three-dot) menu for touch devices
+  const more = document.getElementById('ctxMoreMenu');
+  if (more) {
+    more.classList.remove('more-open');
+    const mp = document.getElementById('ctxMorePanel');
+    if (mp) mp.setAttribute('aria-hidden', 'true');
+    more.onclick = function(ev) {
+      ev.stopPropagation();
+      this.classList.toggle('more-open');
+      const mpanel = document.getElementById('ctxMorePanel');
+      if (mpanel) mpanel.setAttribute('aria-hidden', String(!this.classList.contains('more-open')));
+    };
+  }
+});
+
+function closeContextMenu() {
+  const menu = document.getElementById('edContextMenu');
+  if (menu) menu.classList.remove('open');
+  const editSub = document.getElementById('ctxEditSubmenu');
+  if (editSub) {
+    editSub.classList.remove('submenu-open');
+    const panel = document.getElementById('ctxEditSubmenuPanel');
+    if (panel) panel.setAttribute('aria-hidden', 'true');
+  }
+  const more = document.getElementById('ctxMoreMenu');
+  if (more) {
+    more.classList.remove('more-open');
+    const mp = document.getElementById('ctxMorePanel');
+    if (mp) mp.setAttribute('aria-hidden', 'true');
+  }
+  emptyCanvasContextPoint = null;
+}
+
+document.addEventListener('click', () => closeContextMenu());
+
+function getSelectedBlockContent() {
+  if (selectedBlockForAI) {
+    const textarea = selectedBlockForAI.querySelector('.ed-edit-mode');
+    return textarea ? textarea.value : '';
+  }
+  return selectedTextForAI;
+}
+
+function copySelectedText() {
+  if (selectedTextForAI) {
+    navigator.clipboard.writeText(selectedTextForAI);
+    alert('Copied!');
+  }
+}
+
+function deleteSelectedBlock() {
+  if (selectedBlockForAI && blocks.length > 1) {
+    const index = parseInt(selectedBlockForAI.dataset.index, 10);
+    if (index > -1) {
+      blocks.splice(index, 1);
+      renderBlocks();
+      markUnsaved();
+    }
+  }
+}
+
+function createBlockFromContextMenu() {
+  if (typeof window.isViewMode !== 'undefined' && window.isViewMode && typeof window.toggleEditMode === 'function') {
+    window.toggleEditMode();
+  }
+
+  const point = emptyCanvasContextPoint;
+  if (point && typeof window.addTextBlockAt === 'function') {
+    window.addTextBlockAt(point.x, point.y);
+  } else if (typeof window.addTextBlock === 'function') {
+    window.addTextBlock();
+  } else if (typeof addTextBlockAt === 'function') {
+    addTextBlockAt(point?.x || 24, point?.y || 24);
+  }
+  closeContextMenu();
+}
+
+function getSelectedBlockIndex() {
+  if (!selectedBlockForAI) return -1;
+  const idx = parseInt(selectedBlockForAI.dataset.index, 10);
+  return Number.isFinite(idx) ? idx : -1;
+}
+
+function getBlockTextContent(block) {
+  if (!block) return '';
+  if (block.type === 'text') return block.content || '';
+  if (block.type === 'todo' && Array.isArray(block.data)) {
+    return block.data.map(i => i?.text || '').filter(Boolean).join('\n');
+  }
+  if (block.type === 'calendar') return block.data ? `Due date: ${block.data}` : '';
+  if (block.type === 'time') return block.data ? `Time estimate: ${block.data}` : '';
+  if (block.type === 'progress' && block.data) {
+    return `Progress: ${block.data.percent || 0}% ${block.data.text || ''}`.trim();
+  }
+  return '';
+}
+
+function convertSelectedBlockToHeader() {
+  const idx = getSelectedBlockIndex();
+  if (idx < 0 || !Array.isArray(window.blocks) || !window.blocks[idx]) return;
+  const block = window.blocks[idx];
+  const text = getBlockTextContent(block).trim() || 'New Heading';
+  block.type = 'text';
+  block.content = `## ${text.replace(/^#+\s*/, '')}`;
+  if (block.data) delete block.data;
+  window.renderBlocks?.();
+  window.markUnsaved?.();
+  closeContextMenu();
+}
+
+function convertSelectedBlockToColorHeading() {
+  const idx = getSelectedBlockIndex();
+  if (idx < 0 || !Array.isArray(window.blocks) || !window.blocks[idx]) return;
+  const block = window.blocks[idx];
+  const text = getBlockTextContent(block).trim() || 'Colored Heading';
+  // Use explicit HTML block so the color is preserved reliably
+  block.type = 'html';
+  block.content = `<h2 style="color:#8b78cc; margin:0;">${text.replace(/^#+\s*/, '')}</h2>`;
+  if (block.data) delete block.data;
+  window.renderBlocks?.();
+  window.markUnsaved?.();
+  closeContextMenu();
+}
+
+function convertSelectedBlockToBullet() {
+  const idx = getSelectedBlockIndex();
+  if (idx < 0 || !Array.isArray(window.blocks) || !window.blocks[idx]) return;
+  const block = window.blocks[idx];
+  const raw = getBlockTextContent(block).trim();
+  const lines = raw ? raw.split('\n').map(s => s.trim()).filter(Boolean) : ['List item'];
+  block.type = 'text';
+  block.content = lines.map(line => `- ${line.replace(/^[-*]\s+/, '')}`).join('\n');
+  if (block.data) delete block.data;
+  window.renderBlocks?.();
+  window.markUnsaved?.();
+  closeContextMenu();
+}
+
+function convertSelectedBlockToTodo() {
+  const idx = getSelectedBlockIndex();
+  if (idx < 0 || !Array.isArray(window.blocks) || !window.blocks[idx]) return;
+  const block = window.blocks[idx];
+  const raw = getBlockTextContent(block).trim();
+  const lines = raw ? raw.split('\n').map(s => s.trim()).filter(Boolean) : ['Todo item'];
+  block.type = 'todo';
+  block.data = lines.map(text => ({ text: text.replace(/^[-*]\s+/, ''), done: false }));
+  if (block.content) delete block.content;
+  window.renderBlocks?.();
+  window.markUnsaved?.();
+  closeContextMenu();
+}
+
+function convertSelectedBlockToTable() {
+  const idx = getSelectedBlockIndex();
+  if (idx < 0 || !Array.isArray(window.blocks) || !window.blocks[idx]) return;
+  const block = window.blocks[idx];
+  const seed = getBlockTextContent(block).trim() || 'Item';
+  // Build a simple HTML table for reliable rendering
+  block.type = 'html';
+  block.content = `
+    <table>
+      <thead>
+        <tr><th>Name</th><th>Value</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>${esc(seed)}</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+  `;
+  if (block.data) delete block.data;
+  window.renderBlocks?.();
+  window.markUnsaved?.();
+  closeContextMenu();
+}
+
+function convertSelectedBlockToExcel() {
+  const idx = getSelectedBlockIndex();
+  if (idx < 0 || !Array.isArray(window.blocks) || !window.blocks[idx]) return;
+  const block = window.blocks[idx];
+  const text = getBlockTextContent(block).trim() || '';
+  const rows = text.split('\n').map(r => [r.replace(/\|/g, ',')]);
+  // simple CSV as single-column export
+  const csv = rows.map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `block-${idx + 1}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  closeContextMenu();
+}
+
+function shareSelectedBlock() {
+  const content = getSelectedBlockContent() || '';
+  if (!content) { alert('No content to share'); return; }
+  // Try Web Share API first
+  if (navigator.share) {
+    navigator.share({ text: content }).catch(() => {
+      navigator.clipboard.writeText(content);
+      alert('Content copied to clipboard');
+    });
+  } else {
+    navigator.clipboard.writeText(content);
+    alert('Content copied to clipboard');
+  }
+  closeContextMenu();
+}
+
+function saveSelectedBlock() {
+  // Prefer app-provided save function if available
+  if (typeof window.saveBlocks === 'function') {
+    window.saveBlocks();
+    alert('Saved');
+  } else if (typeof window.saveAllChanges === 'function') {
+    window.saveAllChanges();
+    alert('Saved');
+  } else {
+    alert('Save not available — no save handler registered.');
+  }
+  closeContextMenu();
+}
+
+function openAIAssistFromContextMenu() {
+  openAISidebar();
+  closeContextMenu();
+}
+
+function openWidgetsFromContextMenu() {
+  if (typeof window.openWidgetPicker === 'function') {
+    window.openWidgetPicker();
+  }
+  closeContextMenu();
+}
+
+function insertQuickTodoFromContextMenu() {
+  if (typeof window.insertQuickChecklist === 'function') {
+    window.insertQuickChecklist();
+  }
+  closeContextMenu();
+}
+
+// Keyboard shortcut for AI sidebar (Cmd/Ctrl + Shift + A)
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'A') {
+    e.preventDefault();
+    aiSidebarOpen ? closeAISidebar() : openAISidebar();
+  }
+});
+</script>

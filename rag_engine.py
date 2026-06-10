@@ -252,7 +252,8 @@ def maybe_extract_memory(user_id: int, user_message: str):
             if SequenceMatcher(None, existing[0].lower(), lower).ratio() > 0.75:
                 return
         save_user_memory(user_id, user_message)
-        print(f" Saved memory for user {user_id}: {user_message[:60]}", flush=True)"""rag_engine.py  lightweight retrieval helpers for PartnerAI.
+        print(f" Saved memory for user {user_id}: {user_message[:60]}", flush=True)
+"""rag_engine.py  lightweight retrieval helpers for PartnerAI.
 
 This version avoids heavy local embedding libraries so it can run in
 serverless environments such as Vercel.
@@ -506,7 +507,8 @@ def maybe_extract_memory(user_id: int, user_message: str):
             if SequenceMatcher(None, existing[0].lower(), lower).ratio() > 0.75:
                 return
         save_user_memory(user_id, user_message)
-        print(f" Saved memory for user {user_id}: {user_message[:60]}", flush=True)"""
+        print(f" Saved memory for user {user_id}: {user_message[:60]}", flush=True)
+"""
 rag_engine.py  Retrieval-Augmented Generation for PartnerAI
 
 Provides:

@@ -1,4 +1,5 @@
 import smtplib
+import socket
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
@@ -16,12 +17,23 @@ def send_test_email():
         msg = MIMEMultipart()
         msg['From'] = EMAIL_ADDRESS
         msg['To'] = TO_EMAIL
-        msg['Subject'] = "PartnerAI Email Test"
-        msg.attach(MIMEText("This is a test email from PartnerAI Debugger.", 'plain'))
+        msg['Subject'] = "PartnerAI Email Test (Forced IPv4)"
+        msg.attach(MIMEText("This is a test email from PartnerAI Debugger with forced IPv4 resolution.", 'plain'))
 
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-        server.set_debuglevel(1) # Enable verbose debug
-        server.starttls()
+        # Force IPv4
+        try:
+            resolved_ip = socket.gethostbyname(SMTP_SERVER)
+            print(f"Resolved {SMTP_SERVER} to IPv4: {resolved_ip}")
+            server = smtplib.SMTP(resolved_ip, SMTP_PORT, timeout=10)
+            server.set_debuglevel(1)
+            server.host = SMTP_SERVER # Force SSL to verify domain
+            server.starttls()
+        except Exception as dns_err:
+            print(f"Forced IPv4 resolution failed: {dns_err}. Falling back to default.")
+            server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=10)
+            server.set_debuglevel(1)
+            server.starttls()
+
         server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
         text = msg.as_string()
         server.sendmail(EMAIL_ADDRESS, TO_EMAIL, text)

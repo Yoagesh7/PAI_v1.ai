@@ -364,7 +364,7 @@ def init_db():
         )
         """)
 
-         cursor.execute(f"""
+        cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS password_resets (
             id {id_type_ai},
             username TEXT NOT NULL,

@@ -109,6 +109,10 @@
   padding: 12px 20px;
 }
 
+/* Only show the three-dot menu in the topbar; hide other topbar-right controls visually
+   This keeps AI, Save, Delete, etc. hidden and accessible only from the ⋯ menu. */
+.ed-topbar-right > *:not(.ed-topbar-more) { display: none !important; }
+
 /* Back button */
 .ed-back {
   display: flex; align-items: center; gap: 6px;
@@ -191,8 +195,10 @@
    MAIN EDITOR
    ════════════════════════════════════════════════ */
 .ed-main {
-  max-width: 740px; width: 100%; margin: 0 auto;
-  padding: 32px 24px 0;
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  padding: 24px 8px 0;
   display: flex; flex-direction: column; gap: 0;
 }
 
@@ -262,6 +268,11 @@
   font-family: inherit; width: 80px; min-width: 60px;
 }
 .ed-tag-input::placeholder { color: var(--ed-muted); }
+
+/* Hide old footer/action strips (moved to right-click menu) */
+.ed-footer-hidden {
+  display: none !important;
+}
 
 /* ════════════════════════════════════════════════
    AI ASSIST PANEL
@@ -683,14 +694,15 @@
 
 /* ─── Premium View Polish ─── */
 .ed-main {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 40px 20px;
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  padding: 24px 8px 0;
 }
 
 .ed-header {
   margin-bottom: 40px;
-  padding: 0 10px;
+  padding: 0;
 }
 
 .ed-title-row {
@@ -750,7 +762,7 @@
   .ed-tb-btn { padding: 7px 10px; font-size: 12px; min-height: 34px; }
 
   /* ─── Main editor: full-width ─── */
-  .ed-main { padding: 20px 16px 0; }
+  .ed-main { padding: 18px 8px 0; }
   .ed-emoji-wrap { margin-bottom: 16px; }
   .ed-emoji { font-size: 42px; }
 
@@ -781,8 +793,8 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  min-height: 300px;
-  padding-bottom: 100px;
+  min-height: 180px;
+  padding-bottom: 24px;
 }
 
 .ed-block {
@@ -790,8 +802,8 @@
   display: flex;
   align-items: flex-start;
   padding: 2px 0;
-  margin-left: -40px; /* Gutter for controls */
-  padding-left: 40px;
+  margin-left: -24px; /* slimmer gutter for controls */
+  padding-left: 24px;
   border-radius: 6px;
   transition: background 0.1s ease;
 }
@@ -810,7 +822,7 @@
   gap: 2px;
   opacity: 0;
   transition: opacity 0.2s;
-  width: 36px;
+  width: 22px;
   align-items: center;
 }
 
@@ -842,6 +854,78 @@
   min-width: 0;
   padding: 2px 4px;
 }
+
+/* ═══════════════════════════════════════════════
+   DRAGGABLE & RESIZABLE BLOCKS
+   ═════════════════════════════════════════════════ */
+.ed-block.dragging {
+  opacity: 0.6;
+  background: rgba(139, 120, 204, 0.1);
+  border: 2px dashed rgba(139, 120, 204, 0.5);
+}
+
+.ed-block.drag-over {
+  border-top: 3px solid var(--ed-accent);
+  padding-top: 8px;
+}
+
+/* Resize handle */
+.ed-block-resize {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  bottom: 0;
+  right: 0;
+  cursor: nwse-resize;
+  background: linear-gradient(135deg, transparent 50%, var(--ed-accent) 50%);
+  border-radius: 0 0 4px 0;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: auto;
+  user-select: none;
+}
+
+.ed-block:hover .ed-block-resize {
+  opacity: 0.5;
+}
+
+.ed-block-resize:hover {
+  opacity: 1 !important;
+}
+
+.ed-block.resizing {
+  box-shadow: 0 8px 32px rgba(139, 120, 204, 0.25);
+  border-color: var(--ed-accent);
+}
+
+/* Per-block More (three-dot) menu */
+.ed-block-more-btn {
+  cursor: pointer;
+  color: var(--ed-muted);
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-size: 14px;
+  user-select: none;
+}
+.ed-block-more-btn:hover { background: var(--ed-btn-bg); color: var(--ed-title-c); }
+.ed-block-morepanel {
+  position: absolute;
+  top: 36px;
+  right: 6px;
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 180px;
+  padding: 8px;
+  border-radius: 12px;
+  background: var(--ed-surface);
+  border: 1px solid var(--ed-border);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.2);
+  z-index: 50;
+}
+.ed-block.more-open .ed-block-morepanel { display: flex; }
+.ed-block-morepanel .ed-context-menu-item { padding: 8px 10px; border-radius: 8px; font-size:13px; }
+.ed-block-morepanel .ed-context-menu-item:hover { background: rgba(139,120,204,0.06); }
 
 /* Display Mode */
 .ed-display-mode {
@@ -1273,7 +1357,7 @@
 /* -- Extra-small screens (iPhone SE etc.) -- */
 @media (max-width: 375px) {
   .ed-topbar { padding: 8px 10px; gap: 6px; }
-  .ed-main { padding: 14px 14px 0; }
+  .ed-main { padding: 12px 8px 0; }
   .ed-ai-wrap { padding: 14px 14px 0; }
   .ed-emoji { font-size: 36px; }
   .ed-title { font-size: 22px; }
@@ -1320,19 +1404,22 @@
 
     <div class="ed-topbar-mid"></div>
 
-    <!-- Right controls -->
+    <!-- Right controls: collapsed into the three-dot More menu -->
     <div class="ed-topbar-right">
-      <span class="ed-save-status" id="saveStatus">All changes saved</span>
-      <button class="ed-tb-btn primary" id="saveBtn" onclick="saveBlock()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-          <polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
-        </svg>
-        Save
-      </button>
-      <button class="ed-tb-btn danger" id="deleteBtn" onclick="deleteBlock()" style="display:none">
-        🗑️
-      </button>
+      <div class="ed-topbar-more" id="topbarMore">
+        <button class="ed-tb-btn" id="topbarMoreBtn">⋯</button>
+        <div class="ed-topbar-morepanel" id="topbarMorePanel" aria-hidden="true">
+          <!-- AI status submenu opener -->
+          <button class="ed-context-menu-item topbar-ai-item" id="topbarAIItem">🤖 AI status</button>
+          <div id="topbarAIPanel" class="topbar-ai-panel" aria-hidden="true" style="display:none; flex-direction:column; gap:8px; padding:8px 10px; border-top:1px solid var(--ed-border); margin-top:8px;"></div>
+          <button class="ed-context-menu-item" id="topbarAIBtn">Open AI Chat</button>
+          <button class="ed-context-menu-item" id="saveBtn">💾 Save</button>
+          <button class="ed-context-menu-item" id="topbarDeleteBtn">🗑️ Delete</button>
+          <div style="height:8px"></div>
+          <button class="ed-context-menu-item" id="topbarConvertExcelBtn">📤 Convert to Excel</button>
+          <button class="ed-context-menu-item" id="topbarShareBtn">🔗 Share</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1365,10 +1452,10 @@
 
     <!-- Body: Block Container -->
     <div id="blockEditorContainer" class="ed-block-container"></div>
-    <div class="ed-add-block-btn" onclick="addTextBlock()">+ Add Block</div>
+    <div class="ed-add-block-btn ed-footer-hidden" onclick="addTextBlock()">+ Add Block</div>
 
     <!-- Tags -->
-    <div class="ed-tags-row" id="tagsRow">
+    <div class="ed-tags-row ed-footer-hidden" id="tagsRow">
       <span class="ed-tag-lbl">🏷️ Tags:</span>
       <div id="tagsContainer"></div>
       <input class="ed-tag-input" id="tagInput" placeholder="+ add tag"
@@ -1376,7 +1463,7 @@
     </div>
 
     <!-- Meta -->
-    <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--ed-border);
+    <div class="ed-footer-hidden" style="margin-top:16px; padding-top:14px; border-top:1px solid var(--ed-border);
                 display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
       <span id="metaDate" style="font-size:12px; color:var(--ed-muted)"></span>
       <span id="metaChars" style="font-size:12px; color:var(--ed-muted)">0 characters</span>
@@ -1386,7 +1473,7 @@
   <!-- ════════════════════════════════════════════
        AI + WIDGETS PANEL
        ════════════════════════════════════════════ -->
-  <div class="ed-toolbar">
+  <div class="ed-toolbar ed-footer-hidden">
     <button class="ed-tool-btn" id="aiToggleBtn" onclick="toggleAIPanel()">
       <span>✨</span>
       <span>AI Assist</span>
@@ -1401,7 +1488,7 @@
     </button>
   </div>
 
-  <div class="ed-ai-wrap">
+  <div class="ed-ai-wrap ed-footer-hidden">
 
     <div class="ed-ai-panel" id="aiPanel">
       <div class="ed-ai-custom-prompt">
@@ -1652,12 +1739,27 @@ function renderBlocks() {
   const container = document.getElementById('blockEditorContainer');
   if (!container) return;
   container.innerHTML = '';
+  container.style.position = 'relative';
   
   blocks.forEach((block, index) => {
+    // Initialize size properties if not present
+    if (!block.width) block.width = null;
+    if (!block.minHeight) block.minHeight = null;
+    if (block.x == null) block.x = 18;
+    if (block.y == null) block.y = 18 + (index * 128);
+    
     const bDiv = document.createElement('div');
     bDiv.className = 'ed-block';
     bDiv.dataset.id = block.id;
-    bDiv.draggable = !isViewMode;
+    bDiv.dataset.index = index;
+    bDiv.style.position = 'absolute';
+    bDiv.style.left = (block.x || 0) + 'px';
+    bDiv.style.top = (block.y || 0) + 'px';
+    bDiv.style.zIndex = '1';
+    
+    // Apply saved dimensions
+    bDiv.style.width = block.width || 'min(100%, 760px)';
+    if (block.minHeight) bDiv.style.minHeight = block.minHeight;
     
     // Gutter for controls (Drag & Delete)
     const gutter = document.createElement('div');
@@ -1668,19 +1770,71 @@ function renderBlocks() {
     handle.innerHTML = '⋮⋮';
     gutter.appendChild(handle);
     
-    const delBtn = document.createElement('div');
-    delBtn.className = 'ed-block-del-btn';
-    delBtn.innerHTML = '✕';
-    delBtn.onclick = (e) => {
+    // Replace simple delete with a More (three-dot) menu attached to the block header
+    const moreBtn = document.createElement('div');
+    moreBtn.className = 'ed-block-more-btn';
+    moreBtn.innerHTML = '⋯';
+    moreBtn.title = 'More';
+    moreBtn.onclick = (e) => {
       e.stopPropagation();
-      if (blocks.length > 1) {
-        blocks.splice(index, 1);
-        renderBlocks();
-        markUnsaved();
-      }
+      const parent = bDiv;
+      parent.classList.toggle('more-open');
+      const panel = parent.querySelector('.ed-block-morepanel');
+      if (panel) panel.setAttribute('aria-hidden', String(!parent.classList.contains('more-open')));
     };
-    gutter.appendChild(delBtn);
+    gutter.appendChild(moreBtn);
     bDiv.appendChild(gutter);
+    // More panel (attached to block) - placed inside block for easy positioning
+    const morePanel = document.createElement('div');
+    morePanel.className = 'ed-block-morepanel';
+    morePanel.setAttribute('aria-hidden', 'true');
+    morePanel.onclick = (ev) => ev.stopPropagation();
+    morePanel.innerHTML = `
+      <button class="ed-context-menu-item" data-action="ai">🤖 AI Assist</button>
+      <button class="ed-context-menu-item" data-action="excel">📤 Convert to Excel</button>
+      <button class="ed-context-menu-item" data-action="share">🔗 Share</button>
+      <button class="ed-context-menu-item" data-action="save">💾 Save</button>
+      <button class="ed-context-menu-item" data-action="delete">🗑️ Delete</button>
+    `;
+    // wire actions
+    morePanel.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const act = btn.getAttribute('data-action');
+        // mark this block as selected for existing handlers
+        selectedBlockForAI = bDiv;
+        if (act === 'ai') {
+          openAISidebar();
+        } else if (act === 'excel') {
+          convertSelectedBlockToExcel();
+        } else if (act === 'share') {
+          shareSelectedBlock();
+        } else if (act === 'save') {
+          saveSelectedBlock();
+        } else if (act === 'delete') {
+          deleteSelectedBlock();
+        }
+        // close panel
+        bDiv.classList.remove('more-open');
+        morePanel.setAttribute('aria-hidden', 'true');
+      });
+    });
+    bDiv.appendChild(morePanel);
+    
+    // Add resize handle
+    const resizeHandle = document.createElement('div');
+    resizeHandle.className = 'ed-block-resize';
+    bDiv.appendChild(resizeHandle);
+    
+    // Free-move handle
+    handle.addEventListener('mousedown', (e) => startBlockMove(e, bDiv, index));
+    // Allow dragging by the three-dot More button too (non-blocking so clicks still open the menu)
+    moreBtn.addEventListener('mousedown', (e) => coreStartBlockMove(e, bDiv, index, false));
+
+    // Resize event listener
+    if (!isViewMode) {
+      resizeHandle.addEventListener('mousedown', (e) => startBlockResize(e, bDiv, index));
+    }
     
     const contentWrap = document.createElement('div');
     contentWrap.className = 'ed-block-content';
@@ -1689,7 +1843,9 @@ function renderBlocks() {
       const displayDiv = document.createElement('div');
       displayDiv.className = 'ed-display-mode';
       // Render markdown or placeholder
-      const mdContent = block.content.trim() ? marked.parse(block.content) : '<p style="color:var(--ed-ph)">Click to start typing...</p>';
+      const mdContent = block.content && block.content.trim()
+        ? marked.parse(block.content)
+        : '<p style="color:var(--ed-ph)">Click to start typing...</p>';
       displayDiv.innerHTML = mdContent;
       // Highlight JS
       if (typeof hljs !== 'undefined') {
@@ -1699,6 +1855,7 @@ function renderBlocks() {
       const editArea = document.createElement('textarea');
       editArea.className = 'ed-edit-mode';
       editArea.value = block.content;
+      editArea.spellcheck = true;
       
       // Toggle edit mode
       displayDiv.onclick = (e) => {
@@ -1716,12 +1873,22 @@ function renderBlocks() {
          markUnsaved();
       };
       
-      editArea.oninput = () => { autoResize(editArea); markUnsaved(); };
+      editArea.oninput = () => {
+        autoResize(editArea);
+        handleTextShortcutInput(block, editArea, index);
+        markUnsaved();
+      };
       
       contentWrap.appendChild(displayDiv);
       contentWrap.appendChild(editArea);
     } else if (block.type === 'todo') {
        contentWrap.innerHTML = buildTodoHtml(block);
+    } else if (block.type === 'html') {
+      // Render raw HTML block (used for guaranteed visual conversions)
+      const displayDiv = document.createElement('div');
+      displayDiv.className = 'ed-display-mode';
+      displayDiv.innerHTML = block.content || '';
+      contentWrap.appendChild(displayDiv);
     } else if (block.type === 'calendar') {
        contentWrap.innerHTML = buildCalendarHtml(block);
     } else if (block.type === 'progress') {
@@ -1732,25 +1899,11 @@ function renderBlocks() {
        contentWrap.innerHTML = buildMixHtml(block);
     }
     
-    // Drag events
-    bDiv.ondragstart = (e) => { e.dataTransfer.setData('text/plain', index); bDiv.style.opacity = '0.5'; };
-    bDiv.ondragend = (e) => { bDiv.style.opacity = '1'; };
-    bDiv.ondragover = (e) => { e.preventDefault(); bDiv.style.borderTop = '2px solid var(--ed-accent)'; };
-    bDiv.ondragleave = (e) => { bDiv.style.borderTop = 'none'; };
-    bDiv.ondrop = (e) => {
-       e.preventDefault();
-       bDiv.style.borderTop = 'none';
-       const draggedIdx = parseInt(e.dataTransfer.getData('text/plain'));
-       if (draggedIdx === index || isNaN(draggedIdx)) return;
-       const draggedBlock = blocks.splice(draggedIdx, 1)[0];
-       blocks.splice(index, 0, draggedBlock);
-       renderBlocks();
-       markUnsaved();
-    };
-    
     bDiv.appendChild(contentWrap);
     container.appendChild(bDiv);
   });
+
+  updateCanvasHeight();
 }
 
 function buildTodoHtml(block) {
@@ -1962,16 +2115,72 @@ function serializeBlocksToMarkdown() {
 
 function addTextBlock() {
   if (isViewMode) return;
-  const id = ++blockIdCounter;
-  blocks.push({ id, type: 'text', content: '' });
-  renderBlocks();
-  markUnsaved();
+  addTextBlockAt(24 + (blocks.length * 28), 24 + (blocks.length * 28));
   
   // Focus the new block
   setTimeout(() => {
-    const newBlock = document.querySelector(`.ed-block[data-id="${id}"] .ed-display-mode`);
+    const newBlock = document.querySelector(`.ed-block[data-id="${blockIdCounter}"] .ed-display-mode`);
     if (newBlock) newBlock.click();
   }, 50);
+}
+
+function addTextBlockAt(x, y) {
+  if (isViewMode && typeof toggleEditMode === 'function') {
+    toggleEditMode();
+  }
+  if (isViewMode) return null;
+  const container = document.getElementById('blockEditorContainer');
+  const rect = container ? container.getBoundingClientRect() : { left: 0, top: 0 };
+  const pageX = Number.isFinite(x) ? x : 0;
+  const pageY = Number.isFinite(y) ? y : 0;
+  const localX = Math.max(0, Math.round(pageX - rect.left - window.scrollX));
+  const localY = Math.max(0, Math.round(pageY - rect.top - window.scrollY));
+
+  const id = ++blockIdCounter;
+  blocks.push({ id, type: 'text', content: '', x: localX, y: localY });
+  renderBlocks();
+  markUnsaved();
+  updateCanvasHeight();
+  return id;
+}
+
+window.addTextBlock = addTextBlock;
+window.addTextBlockAt = addTextBlockAt;
+
+function handleTextShortcutInput(block, editArea, index) {
+  const raw = editArea.value;
+  const trimmed = raw.trimStart();
+  const shortcut = trimmed.match(/^(\*|==|&|>|\[\]|-\s)\s*$/);
+
+  if (!shortcut) {
+    block.content = raw;
+    return;
+  }
+
+  const marker = shortcut[1];
+  if (marker === '*' || marker === '-') {
+    editArea.value = '- ';
+  } else if (marker === '==') {
+    editArea.value = '## ';
+  } else if (marker === '&' || marker === '>') {
+    editArea.value = '> ';
+  } else if (marker === '[]') {
+    editArea.value = '- [ ] ';
+  }
+
+  block.content = editArea.value;
+  autoResize(editArea);
+}
+
+function updateCanvasHeight() {
+  const container = document.getElementById('blockEditorContainer');
+  if (!container) return;
+  const maxBottom = blocks.reduce((max, b) => {
+    const y = Number.isFinite(b.y) ? b.y : 0;
+    const h = b.minHeight ? parseInt(b.minHeight, 10) : 120;
+    return Math.max(max, y + h + 24);
+  }, 180);
+  container.style.minHeight = Math.max(maxBottom, 220) + 'px';
 }
 
 function toggleEditMode() {
@@ -2030,6 +2239,59 @@ document.addEventListener('click', e => {
   if (!e.target.closest('.ed-type-pill')) {
     document.getElementById('typeDrop').classList.remove('open');
     document.getElementById('typePill').classList.remove('open');
+  }
+});
+
+// Close any open per-block More panels when clicking elsewhere
+document.addEventListener('click', (e) => {
+  document.querySelectorAll('.ed-block.more-open').forEach(b => {
+    if (!b.contains(e.target)) {
+      b.classList.remove('more-open');
+      const p = b.querySelector('.ed-block-morepanel');
+      if (p) p.setAttribute('aria-hidden', 'true');
+    }
+  });
+});
+
+// Topbar more panel toggling and wiring
+document.getElementById('topbarMoreBtn')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const wrap = document.getElementById('topbarMore');
+  wrap.classList.toggle('open');
+  const panel = document.getElementById('topbarMorePanel');
+  if (panel) panel.setAttribute('aria-hidden', String(!wrap.classList.contains('open')));
+});
+
+// Wire topbar actions
+document.getElementById('topbarConvertExcelBtn')?.addEventListener('click', () => {
+  if (!selectedBlockForAI) selectedBlockForAI = document.querySelector('.ed-block');
+  convertSelectedBlockToExcel();
+});
+document.getElementById('topbarShareBtn')?.addEventListener('click', () => { if (!selectedBlockForAI) selectedBlockForAI = document.querySelector('.ed-block'); shareSelectedBlock(); });
+// wire topbar save (keeps old saveBtn id for flashSaveSuccess compatibility)
+document.getElementById('saveBtn')?.addEventListener('click', () => { saveBlock(); });
+document.getElementById('topbarDeleteBtn')?.addEventListener('click', () => { if (!selectedBlockForAI) selectedBlockForAI = document.querySelector('.ed-block'); deleteSelectedBlock(); });
+// wire topbar AI button
+document.getElementById('topbarAIBtn')?.addEventListener('click', () => { openAISidebar(); });
+// Toggle AI status submenu inside topbar more
+document.getElementById('topbarAIItem')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const panel = document.getElementById('topbarAIPanel');
+  const wrap = document.getElementById('topbarMore');
+  if (!panel || !wrap) return;
+  const open = wrap.classList.toggle('ai-open');
+  panel.style.display = open ? 'flex' : 'none';
+  panel.setAttribute('aria-hidden', String(!open));
+});
+
+// Close topbar panel on outside click
+document.addEventListener('click', (e) => {
+  const wrap = document.getElementById('topbarMore');
+  if (!wrap) return;
+  if (!wrap.contains(e.target)) {
+    wrap.classList.remove('open');
+    const panel = document.getElementById('topbarMorePanel');
+    if (panel) panel.setAttribute('aria-hidden', 'true');
   }
 });
 
@@ -2389,7 +2651,7 @@ async function runAI(mode) {
     }
 
   } catch (err) {
-    showAIOut('error', '⚠️ AI unavailable. Make sure the LLM server is running.');
+    showAIOut('error', '⚠️ AI temporarily unavailable. Check your LLM server or API key, then try again.');
     console.error('AI error:', err);
   } finally {
     document.querySelectorAll('.ed-ai-btn').forEach(b => b.disabled = false);
@@ -2404,6 +2666,58 @@ async function runAI(mode) {
 }
 
 function showAIOut(type, html) {
+  // If this is an error, do not show inline AI panel; surface it in the topbar More menu instead
+  if (type === 'error') {
+    // hide inline AI out if present
+    const out = document.getElementById('aiOut');
+    if (out) out.classList.remove('visible');
+
+    // place message into topbar AI panel if available
+    const panel = document.getElementById('topbarAIPanel');
+    const topWrap = document.getElementById('topbarMore');
+    if (panel && topWrap) {
+      panel.innerHTML = '';
+      const msg = document.createElement('div');
+      msg.textContent = html.replace(/<[^>]+>/g, '');
+      msg.style.color = 'var(--ed-muted)';
+      msg.style.fontSize = '13px';
+      panel.appendChild(msg);
+
+      const btnWrap = document.createElement('div');
+      btnWrap.style.display = 'flex';
+      btnWrap.style.gap = '8px';
+      btnWrap.style.marginTop = '8px';
+
+      const retry = document.createElement('button');
+      retry.className = 'ed-context-menu-item';
+      retry.textContent = 'Retry AI';
+      retry.onclick = () => openAISidebar();
+      btnWrap.appendChild(retry);
+
+      const report = document.createElement('button');
+      report.className = 'ed-context-menu-item';
+      report.textContent = 'Diagnostics';
+      report.onclick = () => alert('Check LLM server, API keys, and logs.');
+      btnWrap.appendChild(report);
+
+      panel.appendChild(btnWrap);
+
+      // Open topbar more and reveal the AI panel
+      topWrap.classList.add('open');
+      topWrap.classList.add('ai-open');
+      panel.style.display = 'flex';
+      panel.setAttribute('aria-hidden', 'false');
+    } else {
+      const outF = document.getElementById('aiOut');
+      const txtF = document.getElementById('aiOutText');
+      if (outF && txtF) {
+        outF.classList.add('visible');
+        txtF.innerHTML = html;
+      }
+    }
+    return;
+  }
+
   const out = document.getElementById('aiOut');
   const txt = document.getElementById('aiOutText');
   out.classList.add('visible');
@@ -2456,9 +2770,214 @@ function esc(s) {
   return d.innerHTML;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   FREE-MOVE HANDLERS
+   ═════════════════════════════════════════════════════════════════ */
+let isMovingBlock = false;
+let movingBlock = null;
+let movingBlockIndex = null;
+let moveOffsetX = 0;
+let moveOffsetY = 0;
+let isMovingBlockPending = false;
+let moveStartClientX = 0;
+let moveStartClientY = 0;
+
+function startBlockMove(e, blockElement, index) {
+  return coreStartBlockMove(e, blockElement, index, true);
+}
+
+function coreStartBlockMove(e, blockElement, index, stopPropagation) {
+  if (isResizing || e.button !== 0) return;
+  // If we're in view mode, enter edit mode automatically when the user starts dragging
+  if (isViewMode && typeof toggleEditMode === 'function') {
+    toggleEditMode();
+  }
+  e.preventDefault();
+  if (stopPropagation) e.stopPropagation();
+
+  // Begin a pending move; only start the actual move after a small drag threshold
+  isMovingBlockPending = true;
+  movingBlock = blockElement;
+  movingBlockIndex = index;
+  moveStartClientX = e.clientX;
+  moveStartClientY = e.clientY;
+
+  const rect = blockElement.getBoundingClientRect();
+  moveOffsetX = e.clientX - rect.left;
+  moveOffsetY = e.clientY - rect.top;
+
+  document.addEventListener('mousemove', doBlockMove);
+  document.addEventListener('mouseup', stopBlockMove);
+}
+
+function doBlockMove(e) {
+  if ((!isMovingBlock && !isMovingBlockPending) || !movingBlock || movingBlockIndex === null) return;
+  const container = document.getElementById('blockEditorContainer');
+  if (!container) return;
+
+  // If move is pending, require a small drag threshold before starting the move
+  const dragThreshold = 6;
+  if (!isMovingBlock && isMovingBlockPending) {
+    const dx = Math.abs(e.clientX - moveStartClientX);
+    const dy = Math.abs(e.clientY - moveStartClientY);
+    if (dx < dragThreshold && dy < dragThreshold) return;
+    // activate move
+    isMovingBlock = true;
+    isMovingBlockPending = false;
+    movingBlock.classList.add('dragging');
+    movingBlock.style.zIndex = '40';
+    document.body.style.userSelect = 'none';
+  }
+
+  const rect = container.getBoundingClientRect();
+  const x = Math.max(0, e.clientX - rect.left - moveOffsetX);
+  const y = Math.max(0, e.clientY - rect.top - moveOffsetY);
+
+  movingBlock.style.left = `${x}px`;
+  movingBlock.style.top = `${y}px`;
+
+  const blockH = movingBlock.offsetHeight || 120;
+  // Update the in-memory block position while dragging so canvas height can follow
+  if (Number.isFinite(movingBlockIndex) && Array.isArray(blocks) && blocks[movingBlockIndex]) {
+    blocks[movingBlockIndex].x = x;
+    blocks[movingBlockIndex].y = y;
+  }
+  updateCanvasHeight();
+}
+
+function stopBlockMove() {
+  if ((!isMovingBlock && !isMovingBlockPending) || !movingBlock || movingBlockIndex === null) return;
+
+  // If move was pending (no significant movement), just clear pending state
+  if (isMovingBlockPending && !isMovingBlock) {
+    isMovingBlockPending = false;
+    movingBlock = null;
+    movingBlockIndex = null;
+    document.removeEventListener('mousemove', doBlockMove);
+    document.removeEventListener('mouseup', stopBlockMove);
+    return;
+  }
+
+  blocks[movingBlockIndex].x = parseInt(movingBlock.style.left, 10) || 0;
+  blocks[movingBlockIndex].y = parseInt(movingBlock.style.top, 10) || 0;
+
+  movingBlock.classList.remove('dragging');
+  movingBlock.style.zIndex = '1';
+  document.body.style.userSelect = '';
+
+  isMovingBlock = false;
+  isMovingBlockPending = false;
+  movingBlock = null;
+  movingBlockIndex = null;
+  document.removeEventListener('mousemove', doBlockMove);
+  document.removeEventListener('mouseup', stopBlockMove);
+  markUnsaved();
+  // Ensure canvas height is correct after move completes
+  updateCanvasHeight();
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   QUICK BLOCK SHORTCUTS
+   ═════════════════════════════════════════════════════════════════ */
+function normalizeShortcutText(value) {
+  const trimmed = value.replace(/^\s+/, '');
+  if (/^\*\s*$/.test(trimmed) || /^-\s*$/.test(trimmed)) return '- ';
+  if (/^==\s*$/.test(trimmed)) return '## ';
+  if (/^&\s*$/.test(trimmed) || /^>\s*$/.test(trimmed)) return '> ';
+  if (/^\[\]\s*$/.test(trimmed)) return '- [ ] ';
+  return value;
+}
+
+function handleTextShortcutInput(block, editArea) {
+  const nextValue = normalizeShortcutText(editArea.value);
+  if (nextValue !== editArea.value) {
+    editArea.value = nextValue;
+    autoResize(editArea);
+  }
+  block.content = editArea.value;
+}
+
+function updateCanvasHeight() {
+  const container = document.getElementById('blockEditorContainer');
+  if (!container) return;
+  const bottomMost = blocks.reduce((max, b) => {
+    const y = Number.isFinite(b.y) ? b.y : 0;
+    const h = b.minHeight ? parseInt(b.minHeight, 10) : 120;
+    return Math.max(max, y + h + 24);
+  }, 180);
+  container.style.minHeight = `${Math.max(bottomMost, 220)}px`;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESIZE HANDLERS
+   ═════════════════════════════════════════════════════════════════ */
+let isResizing = false;
+let resizeBlock = null;
+let resizeIndex = null;
+let startX = 0;
+let startY = 0;
+let startWidth = 0;
+let startHeight = 0;
+
+function startBlockResize(e, blockElement, index) {
+  e.preventDefault();
+  e.stopPropagation();
+  isResizing = true;
+  resizeBlock = blockElement;
+  resizeIndex = index;
+  startX = e.clientX;
+  startY = e.clientY;
+  startWidth = blockElement.offsetWidth;
+  startHeight = blockElement.offsetHeight;
+  
+  blockElement.classList.add('resizing');
+  
+  document.addEventListener('mousemove', doBlockResize);
+  document.addEventListener('mouseup', stopBlockResize);
+}
+
+function doBlockResize(e) {
+  if (!isResizing || !resizeBlock) return;
+  
+  const deltaX = e.clientX - startX;
+  const deltaY = e.clientY - startY;
+  
+  const newWidth = Math.max(200, startWidth + deltaX);
+  const newHeight = Math.max(80, startHeight + deltaY);
+  
+  resizeBlock.style.width = newWidth + 'px';
+  resizeBlock.style.minHeight = newHeight + 'px';
+}
+
+function stopBlockResize() {
+  if (!isResizing || !resizeBlock) return;
+  
+  isResizing = false;
+  resizeBlock.classList.remove('resizing');
+  
+  // Save size to block data
+  if (resizeIndex !== null && resizeIndex < blocks.length) {
+    blocks[resizeIndex].width = resizeBlock.style.width;
+    blocks[resizeIndex].minHeight = resizeBlock.style.minHeight;
+    markUnsaved();
+  }
+  
+  resizeBlock = null;
+  resizeIndex = null;
+  
+  document.removeEventListener('mousemove', doBlockResize);
+  document.removeEventListener('mouseup', stopBlockResize);
+}
+
 // Prevent accidental navigation when unsaved
 window.addEventListener('beforeunload', e => {
   if (isDirty) { e.preventDefault(); e.returnValue = ''; }
 });
 </script>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     NOTION-LIKE AI SIDEBAR & CONTEXT MENU
+     ═══════════════════════════════════════════════════════════════ -->
+{% include 'block_editor_ai_sidebar.html' %}
+
 {% endblock %}
