@@ -1,0 +1,61 @@
+# Exclude Python virtual environments and caches
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+*.pyd
+
+# Exclude local config, secrets, databases, and logs
+.env
+.env.local
+.env.*
+config.py
+partnerai.db
+*.db
+partnerai.log
+*.log
+
+# Exclude large documents, images, and media assets
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.pdf
+*.docx
+*.doc
+*.zip
+*.rar
+wallpaper/
+song/
+
+# Exclude non-production mockups and landing pages
+landing-page/
+stitch_home_dashboard/
+ui-ux-pro-max-skill/
+rlhf/
+
+# Exclude development scripts, tests, and temporary scratch directories
+tests/
+scripts/
+scratch/
+test_*.py
+debug_*.py
+verify_*.py
+check_*.py
+wipe_db.py
+reset_user_data.py
+send_welcome_to_all.py
+migrate_passwords.py
+migrate_production.py
+migrate_agent_engine.py
+migrate_execution_coach.py
+fix_habits_schema.py
+
+# Exclude local documentation markdown files
+*.md
+docs/
