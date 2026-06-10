@@ -37,7 +37,6 @@ song/
 landing-page/
 stitch_home_dashboard/
 ui-ux-pro-max-skill/
-rlhf/
 
 # Exclude development scripts, tests, and temporary scratch directories
 tests/

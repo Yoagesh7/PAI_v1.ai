@@ -154,7 +154,24 @@ try:
         from rlhf.feedback_manager import FeedbackManager
     print(" RLHF modules loaded successfully", flush=True)
 except Exception as e:
-    print(f" RLHF modules not available: {e}", flush=True)
+    print(f" RLHF modules not available: {e}. Using mock fallbacks.", flush=True)
+    class MockStrategySelector:
+        STRATEGIES = ["encouraging", "academic", "direct", "systematic"]
+        @classmethod
+        def get_best_strategy(cls):
+            return "encouraging"
+        @classmethod
+        def get_prompt_instruction(cls, strategy):
+            return "Be encouraging, positive, and supportive."
+        @classmethod
+        def mark_negative_feedback(cls):
+            pass
+    class MockFeedbackManager:
+        @classmethod
+        def save_feedback(cls, *args, **kwargs):
+            pass
+    StrategySelector = MockStrategySelector
+    FeedbackManager = MockFeedbackManager
 
 # Reminders import (optional)
 try:
@@ -285,6 +302,17 @@ app.config.update({
 })
 
 print(f" Session Config: SameSite={'None' if (is_vercel or is_production) else 'Lax'}, Secure={is_vercel or is_production}, Environment={'Vercel' if is_vercel else 'Local'}", flush=True)
+
+
+# ═══════════════════════════════════════════════════════════════
+# BLOCK AI ENGINE - Register Routes
+# ═══════════════════════════════════════════════════════════════
+try:
+    from web.block_ai_routes import block_ai_bp
+    app.register_blueprint(block_ai_bp)
+    print("✓ Block AI engine registered", flush=True)
+except Exception as e:
+    print(f"⚠ Block AI engine failed to load: {e}", flush=True)
 
 
 @app.before_request
