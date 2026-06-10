@@ -432,6 +432,80 @@ def debug_routes():
     return "<pre>" + "\n".join(output) + "</pre>"
 
 
+@app.route('/debug/smtp-check')
+def debug_smtp_check():
+    to_email = request.args.get('email', 'haniffazalm@gmail.com')
+    from memory import log_system_error
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+    import socket
+    
+    result = {"status": "starting", "config": {
+        "SMTP_SERVER": SMTP_SERVER,
+        "SMTP_PORT": SMTP_PORT,
+        "EMAIL_ADDRESS": EMAIL_ADDRESS,
+        "EMAIL_PASSWORD_MASKED": EMAIL_PASSWORD[:3] + "..." + EMAIL_PASSWORD[-3:] if EMAIL_PASSWORD else "None"
+    }}
+    
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = EMAIL_ADDRESS
+        msg['To'] = to_email
+        msg['Subject'] = "PartnerAI SMTP Debug Test"
+        msg.attach(MIMEText("This is a debug test from the online Vercel instance.", 'plain'))
+
+        try:
+            resolved_ip = socket.gethostbyname(SMTP_SERVER)
+            result["dns_resolution"] = f"Resolved {SMTP_SERVER} to {resolved_ip}"
+            server = smtplib.SMTP(resolved_ip, SMTP_PORT, timeout=10)
+            server.host = SMTP_SERVER
+            server.starttls()
+            result["connection"] = "Connected via forced IPv4 and started TLS"
+        except Exception as dns_err:
+            result["dns_error"] = str(dns_err)
+            server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=10)
+            server.starttls()
+            result["connection"] = "Connected via default hostname and started TLS"
+
+        server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+        result["login"] = "Login successful"
+        
+        server.sendmail(EMAIL_ADDRESS, to_email, msg.as_string())
+        result["send"] = "Send successful"
+        server.quit()
+        result["status"] = "success"
+    except Exception as e:
+        import traceback
+        result["status"] = "failed"
+        result["error"] = str(e)
+        result["traceback"] = traceback.format_exc()
+        
+    return jsonify(result)
+
+
+@app.route('/debug/system-logs')
+def debug_system_logs():
+    try:
+        from memory import get_db
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, log_type, message, created_at FROM system_logs ORDER BY created_at DESC LIMIT 50")
+            rows = cursor.fetchall()
+            logs = []
+            for row in rows:
+                logs.append({
+                    "id": row[0],
+                    "log_type": row[1],
+                    "message": row[2],
+                    "created_at": str(row[3])
+                })
+            return jsonify({"status": "success", "logs": logs})
+    except Exception as e:
+        import traceback
+        return jsonify({"status": "failed", "error": str(e), "traceback": traceback.format_exc()})
+
+
 @app.route('/login')
 def login_page():
     if 'user_id' in session:
