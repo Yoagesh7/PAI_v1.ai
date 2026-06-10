@@ -43,9 +43,18 @@ def send_email(to_email, subject, body):
         msg['Subject'] = subject
         msg.attach(MIMEText(body, 'plain'))
 
-        # Add timeout to prevent hanging
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=10)
-        server.starttls()
+        # Force IPv4 resolution to prevent Vercel IPv6 connection issues
+        import socket
+        try:
+            resolved_ip = socket.gethostbyname(SMTP_SERVER)
+            server = smtplib.SMTP(resolved_ip, SMTP_PORT, timeout=10)
+            server.host = SMTP_SERVER  # Force SSL to verify domain
+            server.starttls()
+        except Exception as dns_err:
+            logging.warning(f"Forced IPv4 resolution failed: {dns_err}. Falling back to default.")
+            server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=10)
+            server.starttls()
+
         server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
         text = msg.as_string()
         server.sendmail(EMAIL_ADDRESS, to_email, text)

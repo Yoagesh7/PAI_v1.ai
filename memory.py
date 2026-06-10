@@ -40,6 +40,16 @@ class _SQLiteCompatConnectionProxy:
             kwargs["cursor_factory"] = psycopg2.extras.DictCursor
         return _SQLiteCompatCursorProxy(object.__getattribute__(self, "_conn").cursor(*args, **kwargs))
 
+    def execute(self, sql, *args, **kwargs):
+        cur = self.cursor()
+        cur.execute(sql, *args, **kwargs)
+        return cur
+
+    def executemany(self, sql, *args, **kwargs):
+        cur = self.cursor()
+        cur.executemany(sql, *args, **kwargs)
+        return cur
+
     def __enter__(self):
         return self
 
