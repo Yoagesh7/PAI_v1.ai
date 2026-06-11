@@ -32,6 +32,8 @@ partnerai.log
 *.rar
 wallpaper/
 song/
+!web/static/images/*.png
+!web/static/images/*.svg
 
 # Exclude non-production mockups and landing pages
 landing-page/
